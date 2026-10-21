@@ -22,7 +22,8 @@
         .room-input { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; width: 80px; text-align: center; }
         .btn-lobby { background: #0284c7; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
         .btn-lobby.create { background: #16a34a; }
-        .room-status { font-size: 0.6rem; color: #38bdf8; margin-top: 6px; font-weight: bold; }
+        .room-status { font-size: 0.6rem; color: #38bdf8; margin-top: 6px; font-weight: bold; word-break: break-all; }
+        .btn-share { background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: bold; cursor: pointer; margin-top: 6px; display: inline-block; }
 
         .scoreboard { display: flex; justify-content: space-between; align-items: center; background: #020617; padding: 8px 10px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 6px; }
         .score-box { text-align: center; }
@@ -79,6 +80,7 @@
         .btn-attack { background: #1e293b; border: 1px solid #334155; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
 
         .btn-pass { background: #f59e0b; color: #020617; font-weight: 900; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; cursor: pointer; }
+        .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; }
 
         /* Manos */
         .hand-container { background: rgba(2, 6, 23, 0.6); padding: 6px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 4px; }
@@ -115,6 +117,7 @@
                 <button onclick="joinRoom()" class="btn-lobby">Unirme</button>
             </div>
             <div id="room-status" class="room-status">Crea una sala o unete con un código.</div>
+            <button id="btn-share-link" onclick="shareRoomLink()" class="btn-share hidden">🔗 Copiar Enlace de Invitación</button>
         </div>
 
         <div class="turn-bar">
@@ -127,7 +130,7 @@
                 <div class="score-val score-red" id="score-red">0 / 7</div>
                 <div class="deck-info">Mazo: <span id="deck-red">4</span> | Desc: <span id="discard-red">0</span></div>
             </div>
-            <button onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
+            <button id="btn-pass-turn" onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
             <div class="score-box">
                 <div class="score-val score-blue" id="score-blue">0 / 7</div>
                 <div class="deck-info">Mazo: <span id="deck-blue">4</span> | Desc: <span id="discard-blue">0</span></div>
@@ -212,6 +215,7 @@
         let myRole = null; // 'red' o 'blue'
         let currentRoomCode = null;
         let roomRef = null;
+        let isSyncing = false; // Flag para evitar colisiones de estado local/remoto
 
         let board = Array(9).fill(null);
         let revealedBoardGems = Array(9).fill(false);
@@ -235,6 +239,16 @@
         let decks = { red: [], blue: [] };
         let discards = { red: [], blue: [] };
 
+        // Auto-detección de sala por URL al cargar la página
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('sala');
+            if (roomParam) {
+                document.getElementById('room-code-input').value = roomParam;
+                joinRoomAuto(roomParam);
+            }
+        };
+
         function shuffle(array) { return [...array].sort(() => Math.random() - 0.5); }
 
         function generateBalancedDeck() {
@@ -256,12 +270,29 @@
             myRole = 'red';
             currentRoomCode = code;
             document.getElementById('room-code-input').value = code;
-            document.getElementById('room-status').innerText = `Sala: ${code} (Sos ROJO). Compartí el código.`;
+            document.getElementById('room-status').innerText = `Sala: ${code} (Sos ROJO).`;
+            document.getElementById('btn-share-link').classList.remove('hidden');
 
             roomRef = database.ref('rooms/' + code);
             const initialState = createInitialGameState();
             roomRef.set(initialState);
             listenRoomState();
+        }
+
+        function shareRoomLink() {
+            if (!currentRoomCode) return;
+            const baseUrl = window.location.href.split('?')[0];
+            const inviteUrl = `${baseUrl}?sala=${currentRoomCode}`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(inviteUrl).then(() => {
+                    alert("¡Enlace de invitación copiado al portapapeles! Ya podés pegárselo a tu rival.");
+                }).catch(() => {
+                    prompt("Copiá este enlace para tu rival:", inviteUrl);
+                });
+            } else {
+                prompt("Copiá este enlace para tu rival:", inviteUrl);
+            }
         }
 
         function joinRoom() {
@@ -273,6 +304,15 @@
             myRole = 'blue';
             currentRoomCode = code;
             document.getElementById('room-status').innerText = `Conectado a Sala: ${code} (Sos AZUL).`;
+
+            roomRef = database.ref('rooms/' + code);
+            listenRoomState();
+        }
+
+        function joinRoomAuto(code) {
+            myRole = 'blue';
+            currentRoomCode = code;
+            document.getElementById('room-status').innerText = `Entrando automáticamente como AZUL a sala ${code}...`;
 
             roomRef = database.ref('rooms/' + code);
             listenRoomState();
@@ -310,10 +350,11 @@
         function listenRoomState() {
             if (!roomRef) return;
             roomRef.on('value', (snapshot) => {
+                if (isSyncing) return; // Ignorar respuestas de red mientras enviamos nuestra propia jugada
+
                 const data = snapshot.val();
                 if (!data) return;
 
-                // Sanitizar arreglos recuperados de Firebase
                 board = (data.board || Array(9).fill(false)).map(item => item === false ? null : item);
                 revealedBoardGems = data.revealedBoardGems || Array(9).fill(false);
                 gems = data.gems || [];
@@ -346,7 +387,7 @@
 
         function syncGameState(logText) {
             if (!roomRef) return;
-            // Convertir null a false para mantener la estructura del array en Firebase
+            isSyncing = true; // Bloqueamos actualizaciones remotas durante el envío
             const boardToSync = board.map(item => item === null ? false : item);
 
             roomRef.update({
@@ -364,6 +405,10 @@
                 decks: decks,
                 discards: discards,
                 lastLog: logText
+            }).then(() => {
+                setTimeout(() => { isSyncing = false; }, 200); // Liberar bloqueo
+            }).catch(() => {
+                isSyncing = false;
             });
         }
 
@@ -405,6 +450,7 @@
             document.getElementById('attack-panel').classList.add('hidden');
 
             const log = `Turno de ${turn === 'red' ? 'Rojo' : 'Azul'}. Energía: ${currentEnergy}⚡.`;
+            render();
             syncGameState(log);
         }
 
@@ -465,6 +511,7 @@
                     isInspectMode = false;
                     
                     let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló Gema ${gems[index].name}!`;
+                    render();
                     syncGameState(logText);
                     return;
                 } else {
@@ -563,6 +610,7 @@
             selectedCard = null;
             selectedHandIndex = null;
             
+            render();
             syncGameState(logText);
         }
 
@@ -584,6 +632,7 @@
                 logText += ` 🔵 [+1⚡ Bonus]`;
             }
 
+            render();
             syncGameState(logText);
         }
 
@@ -611,6 +660,7 @@
                 logText += ` 🟡 [+1⚡ Bonus]`;
             }
 
+            render();
             syncGameState(logText);
         }
 
@@ -635,6 +685,7 @@
                 logText += ` 🖤 [+1⚡ Bonus]`;
             }
 
+            render();
             syncGameState(logText);
         }
 
@@ -752,6 +803,7 @@
             selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
             
+            render();
             syncGameState(attackMsg);
         }
 
@@ -833,6 +885,7 @@
             document.getElementById('inspect-cost-label').innerText = `(${inspectCost}⚡)`;
 
             const isMyTurnActive = turn === myRole;
+            document.getElementById('btn-pass-turn').disabled = !isMyTurnActive;
             document.getElementById('btn-action-draw').disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
             document.getElementById('btn-action-recover').disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
             const opp = turn === 'red' ? 'blue' : 'red';
