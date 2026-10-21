@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>9 Gemas - Multijugador Online</title>
+    <!-- Firebase para tiempo real online -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background-color: #020617; color: #ffffff; font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 8px; }
+        .container { width: 100%; max-width: 380px; background-color: #0f172a; border-radius: 16px; padding: 12px; border: 1px solid #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .header { text-align: center; margin-bottom: 6px; }
+        .title { color: #fbbf24; font-size: 1.2rem; font-weight: 900; }
+        .subtitle { font-size: 0.65rem; color: #94a3b8; }
+        
+        /* Panel de Login / Salas Online */
+        .lobby-panel { background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; }
+        .lobby-title { font-size: 0.75rem; font-weight: bold; color: #fbbf24; margin-bottom: 6px; }
+        .lobby-inputs { display: flex; gap: 4px; justify-content: center; align-items: center; }
+        .room-input { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; width: 80px; text-align: center; }
+        .btn-lobby { background: #0284c7; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
+        .btn-lobby.create { background: #16a34a; }
+        .room-status { font-size: 0.6rem; color: #38bdf8; margin-top: 6px; font-weight: bold; }
+
+        .scoreboard { display: flex; justify-content: space-between; align-items: center; background: #020617; padding: 8px 10px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 6px; }
+        .score-box { text-align: center; }
+        .score-val { font-size: 1rem; font-weight: 900; }
+        .score-red { color: #f43f5e; }
+        .score-blue { color: #38bdf8; }
+        .deck-info { font-size: 0.55rem; color: #64748b; margin-top: 2px; }
+
+        .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.75rem; font-weight: bold; }
+        .energy-tag { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 2px 6px; border-radius: 12px; }
+
+        /* Tablero 3x3 */
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #020617; padding: 8px; border-radius: 12px; border: 1px solid #1e293b; aspect-ratio: 1; margin-bottom: 6px; }
+        .cell { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+        .cell.inspectable { border: 1px dashed #a855f7; background: rgba(168, 85, 247, 0.15); }
+        .cell.card-red { background: rgba(136, 19, 55, 0.7); border-color: #f43f5e; }
+        .cell.card-blue { background: rgba(12, 74, 110, 0.7); border-color: #38bdf8; }
+        .cell.selected-attacker { border-color: #fbbf24; box-shadow: 0 0 10px #fbbf24; z-index: 10; }
+
+        /* Valores de cartas */
+        .card-val { position: absolute; font-size: 0.6rem; font-weight: bold; color: #e2e8f0; }
+        .val-top { top: 2px; }
+        .val-bottom { bottom: 2px; }
+        .val-left { left: 4px; top: 50%; transform: translateY(-50%); }
+        .val-right { right: 4px; top: 50%; transform: translateY(-50%); }
+
+        .gem-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.6); }
+
+        /* Paneles de Acciones */
+        .actions-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 6px; }
+        .btn-action { background: #1e293b; color: white; border: 1px solid #334155; padding: 6px; border-radius: 6px; font-size: 0.6rem; font-weight: bold; flex: 1; min-width: 45%; cursor: pointer; position: relative; }
+        .btn-action:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* Indicadores flotantes de energía */
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.08); }
+        }
+        .energy-indicator {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #f59e0b;
+            color: #020617;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 1px 4px;
+            border-radius: 9999px;
+            border: 1px solid #fde68a;
+            animation: pulse-fast 1.5s infinite;
+        }
+
+        .attack-panel { display: flex; justify-content: center; gap: 4px; background: rgba(2, 6, 23, 0.9); border: 1px solid rgba(245, 158, 11, 0.5); padding: 6px; border-radius: 8px; margin-bottom: 6px; position: relative; }
+        .btn-attack { background: #1e293b; border: 1px solid #334155; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+
+        .btn-pass { background: #f59e0b; color: #020617; font-weight: 900; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; cursor: pointer; }
+
+        /* Manos */
+        .hand-container { background: rgba(2, 6, 23, 0.6); padding: 6px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 4px; }
+        .hand-title { font-size: 0.6rem; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
+        .hand-cards { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+        .card-item { width: 46px; height: 60px; border-radius: 6px; border: 1px solid; position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .card-item.red { background: rgba(136, 19, 55, 0.8); border-color: #9f1239; }
+        .card-item.blue { background: rgba(12, 74, 110, 0.8); border-color: #075985; }
+        .card-item.hidden-card { background: #1e293b; border-color: #475569; }
+        .card-item.selected { border-color: #fbbf24; box-shadow: 0 0 8px #fbbf24; transform: scale(1.05); }
+
+        .log-msg { text-align: center; font-size: 0.6rem; color: #fbbf24; font-style: italic; min-height: 24px; margin-bottom: 4px; line-height: 1.2; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+        .modal-box { background: #0f172a; border: 1px solid #334155; padding: 20px; border-radius: 16px; text-align: center; max-width: 280px; width: 100%; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">💎 9 GEMAS ONLINE</h1>
+            <p class="subtitle">Multijugador en Tiempo Real</p>
+        </div>
+
+        <!-- Panel para Crear / Unirse a Sala Online -->
+        <div class="lobby-panel">
+            <div class="lobby-title">🌐 LOBBY MULTIJUGADOR</div>
+            <div class="lobby-inputs">
+                <button onclick="createRoom()" class="btn-lobby create">Crear Sala</button>
+                <span style="font-size:0.6rem; color:#64748b;">ó</span>
+                <input id="room-code-input" class="room-input" type="text" placeholder="CÓDIGO" maxlength="4">
+                <button onclick="joinRoom()" class="btn-lobby">Unirme</button>
+            </div>
+            <div id="room-status" class="room-status">Crea una sala o unete con un código.</div>
+        </div>
+
+        <div class="turn-bar">
+            <span id="turn-indicator" style="color: #f43f5e;">Turno: Rojo</span>
+            <span id="energy-badge" class="energy-tag">⚡ 3 / 3 ENERGÍA</span>
+        </div>
+
+        <div class="scoreboard">
+            <div class="score-box">
+                <div class="score-val score-red" id="score-red">0 / 7</div>
+                <div class="deck-info">Mazo: <span id="deck-red">4</span> | Desc: <span id="discard-red">0</span></div>
+            </div>
+            <button onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
+            <div class="score-box">
+                <div class="score-val score-blue" id="score-blue">0 / 7</div>
+                <div class="deck-info">Mazo: <span id="deck-blue">4</span> | Desc: <span id="discard-blue">0</span></div>
+            </div>
+        </div>
+
+        <div id="board" class="board"></div>
+
+        <!-- Panel de Ataque -->
+        <div id="attack-panel" class="attack-panel hidden">
+            <span id="indicator-attack" class="energy-indicator hidden">⚡ +1</span>
+            <span style="font-size: 0.65rem; color: #fbbf24; align-self: center;">Atacar (1⚡):</span>
+            <button onclick="executeAttack('top')" class="btn-attack">⬆️</button>
+            <button onclick="executeAttack('bottom')" class="btn-attack">⬇️</button>
+            <button onclick="executeAttack('left')" class="btn-attack">⬅️</button>
+            <button onclick="executeAttack('right')" class="btn-attack">➡️</button>
+            <button onclick="cancelAttack()" class="btn-attack" style="background: #881337;">❌</button>
+        </div>
+
+        <!-- Acciones por Energía -->
+        <div class="actions-grid">
+            <button id="btn-action-draw" onclick="actionDrawCard()" class="btn-action">
+                🔵 Robar 1 (1⚡)
+                <span id="indicator-draw" class="energy-indicator hidden">⚡+1</span>
+            </button>
+            <button id="btn-action-recover" onclick="actionRecoverDiscard()" class="btn-action">
+                🟨 Recup. 2 (1⚡)
+                <span id="indicator-recover" class="energy-indicator hidden">⚡+1</span>
+            </button>
+            <button id="btn-action-discard-opp" onclick="actionDiscardOpponent()" class="btn-action">
+                🖤 Descartar Rival (1⚡)
+                <span id="indicator-discard" class="energy-indicator hidden">⚡+1</span>
+            </button>
+            <button id="btn-action-inspect" onclick="toggleInspectMode()" class="btn-action">
+                👁️ Ver Gema <span id="inspect-cost-label">(1⚡)</span>
+                <span id="indicator-inspect" class="energy-indicator hidden">🟣 0⚡</span>
+            </button>
+        </div>
+
+        <div id="log-message" class="log-msg">Crea o únete a una sala para comenzar.</div>
+
+        <div class="hand-container">
+            <div class="hand-title" style="color: #f43f5e;">Mano Jugador Rojo</div>
+            <div id="hand-red" class="hand-cards"></div>
+        </div>
+
+        <div class="hand-container">
+            <div class="hand-title" style="color: #38bdf8;">Mano Jugador Azul</div>
+            <div id="hand-blue" class="hand-cards"></div>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="modal">
+        <div class="modal-box">
+            <h2 id="winner-text" style="color: #fbbf24; margin-bottom: 8px;">¡Victoria!</h2>
+            <p id="winner-detail" style="font-size: 0.8rem; margin-bottom: 16px;">Ganaste la partida.</p>
+            <button onclick="resetGameOnline()" class="btn-pass" style="width: 100%; padding: 8px;">Reiniciar Partida</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Servidor con tu URL de Firebase
+        const firebaseConfig = {
+            databaseURL: "https://wayki-cacl2.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const TARGET_SCORE = 7;
+        const GEM_TYPES = [
+            { name: 'Rojo', color: '#ef4444', pts: 1, type: 'primary' },
+            { name: 'Azul', color: '#3b82f6', pts: 1, type: 'primary' },
+            { name: 'Amarillo', color: '#eab308', pts: 1, type: 'primary' },
+            { name: 'Verde', color: '#22c55e', pts: 1, type: 'secondary' },
+            { name: 'Naranja', color: '#f97316', pts: 1, type: 'secondary' },
+            { name: 'Violeta', color: '#a855f7', pts: 2, type: 'secondary' },
+            { name: 'Blanco', color: '#f8fafc', pts: 0, protected: true, type: 'special' }, 
+            { name: 'Negro', color: '#1e293b', pts: 1, type: 'special' },
+            { name: 'Marrón', color: '#78350f', pts: 1, type: 'special' }      
+        ];
+
+        let myRole = null; // 'red' o 'blue'
+        let currentRoomCode = null;
+        let roomRef = null;
+
+        let board = Array(9).fill(null);
+        let revealedBoardGems = Array(9).fill(false);
+        let gems = [];
+        let turn = 'red';
+        
+        let currentEnergy = 3;
+        let maxEnergy = 3;
+        
+        let usedRedEnergyBonusThisTurn = false;
+        let usedBlueEnergyBonusThisTurn = false;
+        let usedYellowEnergyBonusThisTurn = false;
+        let usedBlackEnergyBonusThisTurn = false;
+        
+        let isInspectMode = false;
+
+        let selectedCard = null;
+        let selectedHandIndex = null;
+        let selectedBoardIndex = null;
+        let hands = { red: [], blue: [] };
+        let decks = { red: [], blue: [] };
+        let discards = { red: [], blue: [] };
+
+        function shuffle(array) { return [...array].sort(() => Math.random() - 0.5); }
+
+        function generateBalancedDeck() {
+            const globals = [5, 5, 6, 6, 7, 7, 8, 8, 9];
+            const minors = shuffle([0, 1, 1, 2, 2, 3, 3, 4, 4]);
+            const directions = ['top', 'right', 'bottom', 'left'];
+
+            return globals.map((majorVal, idx) => {
+                const specialDir = directions[Math.floor(Math.random() * directions.length)];
+                let card = { top: majorVal, right: majorVal, bottom: majorVal, left: majorVal, specialDir };
+                card[specialDir] = minors[idx];
+                return card;
+            });
+        }
+
+        // --- SISTEMA DE SALAS MULTIJUGADOR ---
+        function createRoom() {
+            const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+            myRole = 'red';
+            currentRoomCode = code;
+            document.getElementById('room-code-input').value = code;
+            document.getElementById('room-status').innerText = `Sala: ${code} (Sos ROJO). Compartí el código.`;
+
+            roomRef = database.ref('rooms/' + code);
+            const initialState = createInitialGameState();
+            roomRef.set(initialState);
+            listenRoomState();
+        }
+
+        function joinRoom() {
+            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (code.length !== 4) {
+                alert("Ingresá un código válido de 4 letras.");
+                return;
+            }
+            myRole = 'blue';
+            currentRoomCode = code;
+            document.getElementById('room-status').innerText = `Conectado a Sala: ${code} (Sos AZUL).`;
+
+            roomRef = database.ref('rooms/' + code);
+            listenRoomState();
+        }
+
+        function createInitialGameState() {
+            const shuffledGems = shuffle(GEM_TYPES);
+            const fullDeckRed = generateBalancedDeck();
+            const fullDeckBlue = generateBalancedDeck();
+
+            return {
+                board: Array(9).fill(false),
+                revealedBoardGems: Array(9).fill(false),
+                gems: shuffledGems,
+                turn: 'red',
+                currentEnergy: 3,
+                maxEnergy: 3,
+                usedRedEnergyBonusThisTurn: false,
+                usedBlueEnergyBonusThisTurn: false,
+                usedYellowEnergyBonusThisTurn: false,
+                usedBlackEnergyBonusThisTurn: false,
+                hands: {
+                    red: fullDeckRed.splice(0, 5),
+                    blue: fullDeckBlue.splice(0, 5)
+                },
+                decks: {
+                    red: fullDeckRed,
+                    blue: fullDeckBlue
+                },
+                discards: { red: [], blue: [] },
+                lastLog: "Partida iniciada. Turno del Jugador Rojo."
+            };
+        }
+
+        function listenRoomState() {
+            if (!roomRef) return;
+            roomRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                // Sanitizar arreglos recuperados de Firebase
+                board = (data.board || Array(9).fill(false)).map(item => item === false ? null : item);
+                revealedBoardGems = data.revealedBoardGems || Array(9).fill(false);
+                gems = data.gems || [];
+                turn = data.turn || 'red';
+                currentEnergy = data.currentEnergy !== undefined ? data.currentEnergy : 3;
+                maxEnergy = data.maxEnergy !== undefined ? data.maxEnergy : 3;
+                usedRedEnergyBonusThisTurn = data.usedRedEnergyBonusThisTurn || false;
+                usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
+                usedYellowEnergyBonusThisTurn = data.usedYellowEnergyBonusThisTurn || false;
+                usedBlackEnergyBonusThisTurn = data.usedBlackEnergyBonusThisTurn || false;
+                
+                hands = data.hands || { red: [], blue: [] };
+                if (!hands.red) hands.red = [];
+                if (!hands.blue) hands.blue = [];
+
+                decks = data.decks || { red: [], blue: [] };
+                if (!decks.red) decks.red = [];
+                if (!decks.blue) decks.blue = [];
+
+                discards = data.discards || { red: [], blue: [] };
+                if (!discards.red) discards.red = [];
+                if (!discards.blue) discards.blue = [];
+
+                document.getElementById('log-message').innerText = data.lastLog || "";
+                
+                checkGameOver();
+                render();
+            });
+        }
+
+        function syncGameState(logText) {
+            if (!roomRef) return;
+            // Convertir null a false para mantener la estructura del array en Firebase
+            const boardToSync = board.map(item => item === null ? false : item);
+
+            roomRef.update({
+                board: boardToSync,
+                revealedBoardGems: revealedBoardGems,
+                gems: gems,
+                turn: turn,
+                currentEnergy: currentEnergy,
+                maxEnergy: maxEnergy,
+                usedRedEnergyBonusThisTurn: usedRedEnergyBonusThisTurn,
+                usedBlueEnergyBonusThisTurn: usedBlueEnergyBonusThisTurn,
+                usedYellowEnergyBonusThisTurn: usedYellowEnergyBonusThisTurn,
+                usedBlackEnergyBonusThisTurn: usedBlackEnergyBonusThisTurn,
+                hands: hands,
+                decks: decks,
+                discards: discards,
+                lastLog: logText
+            });
+        }
+
+        function isMyTurn() {
+            if (!myRole) {
+                alert("Primero crea o únete a una sala.");
+                return false;
+            }
+            if (turn !== myRole) {
+                document.getElementById('log-message').innerText = "⚠️ Es el turno de tu rival. Esperá a que juegue.";
+                return false;
+            }
+            return true;
+        }
+
+        function getMaxEnergyForPlayer(player) {
+            const controlledNaranja = board.some(c => c !== null && c.owner === player && c.gemRevealed.name === 'Naranja');
+            return controlledNaranja ? 4 : 3;
+        }
+
+        function hasPlayerControlledGem(player, gemName) {
+            return board.some(c => c !== null && c.owner === player && c.gemRevealed.name === gemName);
+        }
+
+        function startTurn(player) {
+            turn = player;
+            maxEnergy = getMaxEnergyForPlayer(player);
+            currentEnergy = maxEnergy;
+            
+            usedRedEnergyBonusThisTurn = false;
+            usedBlueEnergyBonusThisTurn = false;
+            usedYellowEnergyBonusThisTurn = false;
+            usedBlackEnergyBonusThisTurn = false;
+
+            isInspectMode = false;
+            selectedCard = null;
+            selectedHandIndex = null;
+            selectedBoardIndex = null;
+            document.getElementById('attack-panel').classList.add('hidden');
+
+            const log = `Turno de ${turn === 'red' ? 'Rojo' : 'Azul'}. Energía: ${currentEnergy}⚡.`;
+            syncGameState(log);
+        }
+
+        function endTurnManual() {
+            if (!isMyTurn()) return;
+            const nextTurn = turn === 'red' ? 'blue' : 'red';
+            startTurn(nextTurn);
+        }
+
+        function selectHandCard(player, index) {
+            if (!isMyTurn()) return;
+            if (currentEnergy < 2) {
+                document.getElementById('log-message').innerText = "⚠️ Necesitás al menos 2⚡ para jugar una carta.";
+                return;
+            }
+            isInspectMode = false;
+            selectedCard = hands[player][index];
+            selectedHandIndex = index;
+            selectedBoardIndex = null;
+            document.getElementById('attack-panel').classList.add('hidden');
+            document.getElementById('log-message').innerText = "Tocá casilla vacía para JUGAR la carta (2⚡).";
+            render();
+        }
+
+        function toggleInspectMode() {
+            if (!isMyTurn()) return;
+            const controlsViolet = hasPlayerControlledGem(turn, 'Violeta');
+            const inspectCost = controlsViolet ? 0 : 1;
+
+            if (currentEnergy < inspectCost) {
+                document.getElementById('log-message').innerText = "⚠️ Sin energía suficiente para inspeccionar.";
+                return;
+            }
+            isInspectMode = !isInspectMode;
+            selectedCard = null;
+            selectedHandIndex = null;
+            selectedBoardIndex = null;
+            document.getElementById('attack-panel').classList.add('hidden');
+
+            document.getElementById('log-message').innerText = isInspectMode ? `👁️ Inspección activa (${inspectCost}⚡). Tocá casilla vacía.` : "Inspección cancelada.";
+            render();
+        }
+
+        function handleBoardClick(index) {
+            if (!isMyTurn()) return;
+
+            if (isInspectMode) {
+                if (board[index] === null) {
+                    if (revealedBoardGems[index]) {
+                        document.getElementById('log-message').innerText = "⚠️ Esta casilla ya fue inspeccionada.";
+                        return;
+                    }
+                    const controlsViolet = hasPlayerControlledGem(turn, 'Violeta');
+                    const inspectCost = controlsViolet ? 0 : 1;
+
+                    currentEnergy -= inspectCost;
+                    revealedBoardGems[index] = true;
+                    isInspectMode = false;
+                    
+                    let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló Gema ${gems[index].name}!`;
+                    syncGameState(logText);
+                    return;
+                } else {
+                    document.getElementById('log-message').innerText = "⚠️ Solo podés inspeccionar casillas vacías.";
+                    return;
+                }
+            }
+
+            if (selectedCard !== null && board[index] === null) {
+                if (currentEnergy < 2) return;
+                playCard(index);
+                return;
+            }
+
+            if (board[index] !== null && board[index].owner === turn) {
+                if (currentEnergy < 1) {
+                    document.getElementById('log-message').innerText = "⚠️ Necesitás 1⚡ para iniciar ataque.";
+                    return;
+                }
+                selectedBoardIndex = index;
+                selectedCard = null;
+                selectedHandIndex = null;
+                document.getElementById('attack-panel').classList.remove('hidden');
+                document.getElementById('log-message').innerText = "Elegí dirección para ATACAR (1⚡).";
+                render();
+            }
+        }
+
+        function cancelAttack() {
+            selectedBoardIndex = null;
+            document.getElementById('attack-panel').classList.add('hidden');
+            document.getElementById('log-message').innerText = "Ataque cancelado.";
+            render();
+        }
+
+        function triggerGreenGemDeploymentEffect(player) {
+            let details = [];
+            let recovered = 0;
+            for (let i = 0; i < 2; i++) {
+                if (discards[player].length > 0) {
+                    decks[player].push(discards[player].pop());
+                    recovered++;
+                }
+            }
+            if (recovered > 0) details.push(`${recovered} descarte al mazo`);
+
+            if (decks[player].length > 0) {
+                hands[player].push(decks[player].pop());
+                details.push("1 robada");
+            }
+
+            const opponent = player === 'red' ? 'blue' : 'red';
+            if (hands[opponent].length > 0) {
+                const randomIdx = Math.floor(Math.random() * hands[opponent].length);
+                const removedCard = hands[opponent].splice(randomIdx, 1)[0];
+                discards[opponent].push(removedCard);
+                details.push("1 desc. al rival");
+            }
+
+            return details.length > 0 ? ` 🟢 [Verde: ${details.join(', ')}]` : '';
+        }
+
+        function playCard(index) {
+            currentEnergy -= 2;
+            const gem = gems[index];
+            revealedBoardGems[index] = true;
+
+            let playedCard = {
+                top: selectedCard.top,
+                right: selectedCard.right,
+                bottom: selectedCard.bottom,
+                left: selectedCard.left,
+                specialDir: selectedCard.specialDir,
+                owner: turn,
+                gemRevealed: gem,
+                isProtected: gem.protected || false
+            };
+
+            board[index] = playedCard;
+            hands[turn].splice(selectedHandIndex, 1);
+
+            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en Gema ${gem.name}! (-2⚡)`;
+            
+            if (gem.name === 'Violeta') {
+                currentEnergy += 1;
+                logText += ` 🟣 [+1⚡]`;
+            }
+            if (gem.name === 'Naranja') {
+                maxEnergy = getMaxEnergyForPlayer(turn);
+                logText += ` 🟠 [Máx. 4⚡]`;
+            }
+            if (gem.name === 'Verde') {
+                logText += triggerGreenGemDeploymentEffect(turn);
+            }
+
+            selectedCard = null;
+            selectedHandIndex = null;
+            
+            syncGameState(logText);
+        }
+
+        function actionDrawCard() {
+            if (!isMyTurn() || currentEnergy < 1) return;
+            if (decks[turn].length === 0) {
+                document.getElementById('log-message').innerText = "⚠️ Tu mazo está vacío.";
+                return;
+            }
+            currentEnergy -= 1;
+            hands[turn].push(decks[turn].pop());
+
+            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} robó 1 carta (-1⚡).`;
+
+            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+            if (controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn) {
+                usedBlueEnergyBonusThisTurn = true;
+                currentEnergy += 1;
+                logText += ` 🔵 [+1⚡ Bonus]`;
+            }
+
+            syncGameState(logText);
+        }
+
+        function actionRecoverDiscard() {
+            if (!isMyTurn() || currentEnergy < 1) return;
+            if (discards[turn].length === 0) {
+                document.getElementById('log-message').innerText = "⚠️ Descarte vacío.";
+                return;
+            }
+            currentEnergy -= 1;
+            let recovered = 0;
+            for (let i = 0; i < 2; i++) {
+                if (discards[turn].length > 0) {
+                    decks[turn].push(discards[turn].pop());
+                    recovered++;
+                }
+            }
+
+            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} recuperó cartas al mazo (-1⚡).`;
+
+            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+            if (controlledGems.includes('Amarillo') && !usedYellowEnergyBonusThisTurn) {
+                usedYellowEnergyBonusThisTurn = true;
+                currentEnergy += 1;
+                logText += ` 🟡 [+1⚡ Bonus]`;
+            }
+
+            syncGameState(logText);
+        }
+
+        function actionDiscardOpponent() {
+            if (!isMyTurn() || currentEnergy < 1) return;
+            const opponent = turn === 'red' ? 'blue' : 'red';
+            if (hands[opponent].length === 0) {
+                document.getElementById('log-message').innerText = "⚠️ El oponente no tiene cartas en la mano.";
+                return;
+            }
+            currentEnergy -= 1;
+            const randomIdx = Math.floor(Math.random() * hands[opponent].length);
+            const removedCard = hands[opponent].splice(randomIdx, 1)[0];
+            discards[opponent].push(removedCard);
+
+            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} descartó 1 carta al rival (-1⚡).`;
+
+            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+            if (controlledGems.includes('Negro') && !usedBlackEnergyBonusThisTurn) {
+                usedBlackEnergyBonusThisTurn = true;
+                currentEnergy += 1;
+                logText += ` 🖤 [+1⚡ Bonus]`;
+            }
+
+            syncGameState(logText);
+        }
+
+        function getEffectiveCardValues(boardIndex) {
+            const card = board[boardIndex];
+            if (!card) return null;
+
+            const owner = card.owner;
+            const ownerGems = board
+                .filter(c => c !== null && c.owner === owner)
+                .map(c => c.gemRevealed.name);
+
+            const hasMarron = ownerGems.includes('Marrón');
+            const cardGemName = card.gemRevealed.name;
+
+            let values = { top: card.top, right: card.right, bottom: card.bottom, left: card.left };
+
+            if (hasMarron) {
+                const currentMax = Math.max(values.top, values.right, values.bottom, values.left);
+                values.top = currentMax;
+                values.right = currentMax;
+                values.bottom = currentMax;
+                values.left = currentMax;
+            }
+
+            if (cardGemName === 'Blanco') {
+                values.top *= 2;
+                values.right *= 2;
+                values.bottom *= 2;
+                values.left *= 2;
+            }
+
+            return values;
+        }
+
+        function executeAttack(dir) {
+            if (!isMyTurn() || selectedBoardIndex === null || currentEnergy < 1) return;
+
+            const idx = selectedBoardIndex;
+            const row = Math.floor(idx / 3);
+            const col = idx % 3;
+
+            let targetIdx = null;
+            let oppSide = '';
+
+            if (dir === 'top' && row > 0) { targetIdx = idx - 3; oppSide = 'bottom'; }
+            if (dir === 'bottom' && row < 2) { targetIdx = idx + 3; oppSide = 'top'; }
+            if (dir === 'left' && col > 0) { targetIdx = idx - 1; oppSide = 'right'; }
+            if (dir === 'right' && col < 2) { targetIdx = idx + 1; oppSide = 'left'; }
+
+            if (targetIdx === null || board[targetIdx] === null) {
+                document.getElementById('log-message').innerText = "⚠️ Sin carta objetivo en esa dirección.";
+                return;
+            }
+
+            const defender = board[targetIdx];
+
+            if (defender.owner === turn) {
+                document.getElementById('log-message').innerText = "⚠️ No podés atacar a tus propias cartas.";
+                return;
+            }
+
+            if (defender.isProtected) {
+                document.getElementById('log-message').innerText = "🛡️ Carta protegida por Gema Blanca.";
+                return;
+            }
+
+            currentEnergy -= 1;
+
+            const attVals = getEffectiveCardValues(idx);
+            const defVals = getEffectiveCardValues(targetIdx);
+
+            let attackVal = attVals[dir];
+            let defenseVal = defVals[oppSide];
+
+            let attackMsg = "";
+
+            if (attackVal > defenseVal) {
+                discards[defender.owner].push(defender);
+                
+                let attackerCard = board[idx];
+                const targetGem = gems[targetIdx];
+                revealedBoardGems[targetIdx] = true;
+                
+                attackerCard.gemRevealed = targetGem;
+                attackerCard.isProtected = targetGem.protected || false;
+
+                board[targetIdx] = attackerCard;
+                board[idx] = null;
+
+                attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó Gema ${targetGem.name} (-1⚡).`;
+
+                if (targetGem.name === 'Violeta') {
+                    currentEnergy += 1;
+                    attackMsg += ` 🟣 [+1⚡]`;
+                }
+                if (targetGem.name === 'Naranja') {
+                    maxEnergy = getMaxEnergyForPlayer(turn);
+                    attackMsg += ` 🟠 [Máx. 4⚡]`;
+                }
+                if (targetGem.name === 'Verde') {
+                    attackMsg += triggerGreenGemDeploymentEffect(turn);
+                }
+
+                const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+                if (controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn) {
+                    usedRedEnergyBonusThisTurn = true;
+                    currentEnergy += 1;
+                    attackMsg += ` 🔴 [+1⚡ Bonus]`;
+                }
+            } else {
+                attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
+            }
+
+            selectedBoardIndex = null;
+            document.getElementById('attack-panel').classList.add('hidden');
+            
+            syncGameState(attackMsg);
+        }
+
+        function checkCombos(controlledGemNames) {
+            let comboPts = 0;
+            const hasAll = (arr) => arr.every(item => controlledGemNames.includes(item));
+
+            if (hasAll(['Azul', 'Verde', 'Violeta'])) comboPts += 1;
+            if (hasAll(['Rojo', 'Amarillo', 'Naranja'])) comboPts += 1;
+            if (hasAll(['Rojo', 'Azul', 'Amarillo'])) comboPts += 1;
+            if (hasAll(['Verde', 'Naranja', 'Violeta'])) comboPts += 1;
+            if (hasAll(['Blanco', 'Negro', 'Marrón'])) comboPts += 2;
+
+            return comboPts;
+        }
+
+        function getPlayerTotalScore(player) {
+            const controlledCards = board.filter(c => c !== null && c.owner === player);
+            const controlledGems = controlledCards.map(c => c.gemRevealed);
+            
+            const gemPts = controlledGems.reduce((sum, g) => sum + g.pts, 0);
+            const gemNames = controlledGems.map(g => g.name);
+            const comboPts = checkCombos(gemNames);
+
+            return gemPts + comboPts;
+        }
+
+        function checkGameOver() {
+            let redTotal = getPlayerTotalScore('red');
+            let blueTotal = getPlayerTotalScore('blue');
+
+            if (redTotal >= TARGET_SCORE || blueTotal >= TARGET_SCORE) {
+                let title = "¡Fin del Duelo!";
+                let detail = redTotal >= TARGET_SCORE ? "¡Victoria del Jugador Rojo!" : "¡Victoria del Jugador Azul!";
+
+                document.getElementById('winner-text').innerText = title;
+                document.getElementById('winner-detail').innerText = detail;
+                document.getElementById('game-over-modal').style.display = 'flex';
+            }
+        }
+
+        function resetGameOnline() {
+            if (!roomRef) return;
+            const initialState = createInitialGameState();
+            roomRef.set(initialState);
+            document.getElementById('game-over-modal').style.display = 'none';
+        }
+
+        function render() {
+            let redTotal = getPlayerTotalScore('red');
+            let blueTotal = getPlayerTotalScore('blue');
+
+            document.getElementById('score-red').innerText = `${redTotal} / ${TARGET_SCORE}`;
+            document.getElementById('score-blue').innerText = `${blueTotal} / ${TARGET_SCORE}`;
+            document.getElementById('discard-red').innerText = discards.red ? discards.red.length : 0;
+            document.getElementById('discard-blue').innerText = discards.blue ? discards.blue.length : 0;
+            document.getElementById('deck-red').innerText = decks.red ? decks.red.length : 0;
+            document.getElementById('deck-blue').innerText = decks.blue ? decks.blue.length : 0;
+
+            document.getElementById('turn-indicator').innerText = `Turno: ${turn === 'red' ? 'Rojo' : 'Azul'}`;
+            document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
+            document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
+
+            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+            
+            const hasBlueBonus = controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn;
+            const hasYellowBonus = controlledGems.includes('Amarillo') && !usedYellowEnergyBonusThisTurn;
+            const hasBlackBonus = controlledGems.includes('Negro') && !usedBlackEnergyBonusThisTurn;
+            const hasRedBonus = controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn;
+            const controlsViolet = controlledGems.includes('Violeta');
+
+            document.getElementById('indicator-draw').classList.toggle('hidden', !hasBlueBonus);
+            document.getElementById('indicator-recover').classList.toggle('hidden', !hasYellowBonus);
+            document.getElementById('indicator-discard').classList.toggle('hidden', !hasBlackBonus);
+            document.getElementById('indicator-attack').classList.toggle('hidden', !hasRedBonus);
+            document.getElementById('indicator-inspect').classList.toggle('hidden', !controlsViolet);
+
+            const inspectCost = controlsViolet ? 0 : 1;
+            document.getElementById('inspect-cost-label').innerText = `(${inspectCost}⚡)`;
+
+            const isMyTurnActive = turn === myRole;
+            document.getElementById('btn-action-draw').disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
+            document.getElementById('btn-action-recover').disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
+            const opp = turn === 'red' ? 'blue' : 'red';
+            document.getElementById('btn-action-discard-opp').disabled = !isMyTurnActive || currentEnergy < 1 || !hands[opp] || hands[opp].length === 0;
+            document.getElementById('btn-action-inspect').disabled = !isMyTurnActive || currentEnergy < inspectCost;
+
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            board.forEach((cell, idx) => {
+                const div = document.createElement('div');
+                const isSelectedAttacker = selectedBoardIndex === idx;
+                div.className = `cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''}`;
+                div.onclick = () => handleBoardClick(idx);
+
+                if (cell) {
+                    const effectiveVals = getEffectiveCardValues(idx);
+                    div.innerHTML = `
+                        <div class="card-val val-top">${effectiveVals.top}</div>
+                        <div class="card-val val-bottom">${effectiveVals.bottom}</div>
+                        <div class="card-val val-left">${effectiveVals.left}</div>
+                        <div class="card-val val-right">${effectiveVals.right}</div>
+                        <div class="gem-dot" style="background-color: ${cell.gemRevealed.color}"></div>
+                        ${cell.isProtected ? '<div style="position:absolute; top:2px; right:2px; font-size:8px;">🛡️</div>' : ''}
+                    `;
+                } else if (revealedBoardGems[idx]) {
+                    div.innerHTML = `
+                        <div class="gem-dot" style="background-color: ${gems[idx].color}"></div>
+                        <span style="font-size:0.55rem; margin-top:2px; color:#cbd5e1;">${gems[idx].name}</span>
+                    `;
+                } else {
+                    div.innerHTML = `<span style="font-size:0.7rem; opacity:0.3;">💎</span>`;
+                }
+                boardEl.appendChild(div);
+            });
+
+            ['red', 'blue'].forEach(p => {
+                const handEl = document.getElementById(`hand-${p}`);
+                handEl.innerHTML = '';
+                if (hands[p]) {
+                    hands[p].forEach((card, idx) => {
+                        const div = document.createElement('div');
+                        const isSel = turn === p && selectedHandIndex === idx;
+                        const isRivalHand = myRole && myRole !== p;
+
+                        if (isRivalHand) {
+                            div.className = `card-item hidden-card`;
+                            div.innerHTML = `<span style="font-size:0.7rem; opacity:0.4;">💎</span>`;
+                        } else {
+                            div.className = `card-item ${p} ${isSel ? 'selected' : ''}`;
+                            div.onclick = () => selectHandCard(p, idx);
+                            div.innerHTML = `
+                                <div class="card-val val-top">${card.top}</div>
+                                <div class="card-val val-bottom">${card.bottom}</div>
+                                <div class="card-val val-left">${card.left}</div>
+                                <div class="card-val val-right">${card.right}</div>
+                            `;
+                        }
+                        handEl.appendChild(div);
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
