@@ -215,7 +215,6 @@
     </div>
 
     <script>
-        // Firebase Config
         const firebaseConfig = {
             databaseURL: "https://wayki-cacl2.firebaseio.com"
         };
@@ -235,9 +234,9 @@
             { name: 'Marrón', color: '#78350f', pts: 1, type: 'special' }      
         ];
 
-        let gameMode = 'online'; // 'online' o 'ai'
-        let aiDifficulty = 'normal'; // 'easy', 'normal', 'hard'
-        let myRole = null; // 'red' o 'blue'
+        let gameMode = 'online';
+        let aiDifficulty = 'normal';
+        let myRole = null;
         let currentRoomCode = null;
         let roomRef = null;
         let isSyncing = false;
@@ -320,7 +319,6 @@
             render();
         }
 
-        // --- SISTEMA MULTIJUGADOR ---
         function createRoom() {
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             myRole = 'red';
@@ -499,11 +497,9 @@
             startTurn(nextTurn);
         }
 
-        // --- SISTEMA DE INTELIGENCIA ARTIFICIAL (IA) ---
         function executeAITurn() {
             if (turn !== 'blue' || gameMode !== 'ai') return;
 
-            // IA Fácil: Decisiones casi aleatorias
             if (aiDifficulty === 'easy') {
                 if (currentEnergy >= 2 && hands.blue.length > 0) {
                     const emptyCells = board.map((c, i) => c === null ? i : null).filter(i => i !== null);
@@ -518,7 +514,6 @@
                 return;
             }
 
-            // IA Normal y Avanzada: Evaluación táctica
             let bestAttack = findBestAIAttack();
             if (bestAttack) {
                 aiExecuteAttack(bestAttack);
@@ -544,7 +539,6 @@
                 }
             }
 
-            // Si no hay mejores movimientos, pasa el turno
             startTurn('red');
         }
 
@@ -574,8 +568,6 @@
                             if (attVals[dir] > defVals[oppSide]) {
                                 let priority = 10;
                                 const gemTarget = gems[targetIdx];
-                                
-                                // En Avanzado, prioriza gemas de alto valor/combo
                                 if (aiDifficulty === 'hard') {
                                     if (gemTarget.name === 'Violeta' || gemTarget.name === 'Naranja') priority += 20;
                                     if (gemTarget.pts >= 2) priority += 15;
@@ -647,7 +639,6 @@
             executeAttack(attackData.dir);
         }
 
-        // --- LÓGICA DE JUEGO MESA Y MANDO ---
         function selectHandCard(player, index) {
             if (!isMyTurn()) return;
             if (currentEnergy < 2) {
@@ -878,6 +869,13 @@
                 if (targetGem.name === 'Violeta') currentEnergy += 1;
                 if (targetGem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer(turn);
                 if (targetGem.name === 'Verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
+
+                const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+                if (controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn) {
+                    usedRedEnergyBonusThisTurn = true;
+                    currentEnergy += 1;
+                    attackMsg += ` 🔴 [+1⚡ Bonus]`;
+                }
             } else {
                 attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
             }
@@ -946,8 +944,21 @@
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
+            // Verificación y renderizado de los hints / indicadores de bonuses de energía por gema controlada
             const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+            
+            const hasBlueBonus = controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn;
+            const hasYellowBonus = controlledGems.includes('Amarillo') && !usedYellowEnergyBonusThisTurn;
+            const hasBlackBonus = controlledGems.includes('Negro') && !usedBlackEnergyBonusThisTurn;
+            const hasRedBonus = controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn;
             const controlsViolet = controlledGems.includes('Violeta');
+
+            document.getElementById('indicator-draw').classList.toggle('hidden', !hasBlueBonus);
+            document.getElementById('indicator-recover').classList.toggle('hidden', !hasYellowBonus);
+            document.getElementById('indicator-discard').classList.toggle('hidden', !hasBlackBonus);
+            document.getElementById('indicator-attack').classList.toggle('hidden', !hasRedBonus);
+            document.getElementById('indicator-inspect').classList.toggle('hidden', !controlsViolet);
+
             const inspectCost = controlsViolet ? 0 : 1;
             document.getElementById('inspect-cost-label').innerText = `(${inspectCost}⚡)`;
 
@@ -993,7 +1004,8 @@
                 handEl.innerHTML = '';
                 if (hands[p]) {
                     hands[p].forEach((card, idx) => {
-                        const div = document.createElement('div');
+                        TheDiv = document.createElement('div');
+                        const div = TheDiv;
                         const isSel = turn === p && selectedHandIndex === idx;
                         const isRivalHand = gameMode === 'online' ? (myRole && myRole !== p) : (p === 'blue');
 
