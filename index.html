@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>9 Gemas - Multijugador Online</title>
+    <title>9 Gemas - Multijugador & Vs IA</title>
     <!-- Firebase para tiempo real online -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -15,13 +15,19 @@
         .title { color: #fbbf24; font-size: 1.2rem; font-weight: 900; }
         .subtitle { font-size: 0.65rem; color: #94a3b8; }
         
-        /* Panel de Login / Salas Online */
+        /* Panel de Login / Modos de Juego */
         .lobby-panel { background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; }
         .lobby-title { font-size: 0.75rem; font-weight: bold; color: #fbbf24; margin-bottom: 6px; }
+        .mode-selector { display: flex; gap: 4px; justify-content: center; margin-bottom: 6px; }
+        .btn-mode { background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-mode.active { background: #3b82f6; color: #ffffff; border-color: #60a5fa; }
+        
         .lobby-inputs { display: flex; gap: 4px; justify-content: center; align-items: center; }
         .room-input { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; width: 80px; text-align: center; }
         .btn-lobby { background: #0284c7; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
         .btn-lobby.create { background: #16a34a; }
+        .ai-select { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; }
+        
         .room-status { font-size: 0.6rem; color: #38bdf8; margin-top: 6px; font-weight: bold; word-break: break-all; }
         .btn-share { background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: bold; cursor: pointer; margin-top: 6px; display: inline-block; }
 
@@ -104,19 +110,36 @@
     <div class="container">
         <div class="header">
             <h1 class="title">💎 9 GEMAS ONLINE</h1>
-            <p class="subtitle">Multijugador en Tiempo Real</p>
+            <p class="subtitle">Multijugador en Tiempo Real & Modo IA</p>
         </div>
 
-        <!-- Panel para Crear / Unirse a Sala Online -->
+        <!-- Panel de Selección de Modo / Lobby -->
         <div class="lobby-panel">
-            <div class="lobby-title">🌐 LOBBY MULTIJUGADOR</div>
-            <div class="lobby-inputs">
+            <div class="lobby-title">MODO DE JUEGO</div>
+            <div class="mode-selector">
+                <button id="btn-mode-online" onclick="switchGameMode('online')" class="btn-mode active">🌐 Online</button>
+                <button id="btn-mode-ai" onclick="switchGameMode('ai')" class="btn-mode">🤖 vs IA</button>
+            </div>
+
+            <!-- Controles Modo Online -->
+            <div id="online-controls" class="lobby-inputs">
                 <button onclick="createRoom()" class="btn-lobby create">Crear Sala</button>
                 <span style="font-size:0.6rem; color:#64748b;">ó</span>
                 <input id="room-code-input" class="room-input" type="text" placeholder="CÓDIGO" maxlength="4">
                 <button onclick="joinRoom()" class="btn-lobby">Unirme</button>
             </div>
-            <div id="room-status" class="room-status">Crea una sala o unete con un código.</div>
+
+            <!-- Controles Modo IA -->
+            <div id="ai-controls" class="lobby-inputs hidden">
+                <select id="ai-difficulty" class="ai-select">
+                    <option value="easy">🟢 Fácil</option>
+                    <option value="normal" selected>🟡 Normal</option>
+                    <option value="hard">🔴 Avanzado</option>
+                </select>
+                <button onclick="startAIGame()" class="btn-lobby create">Iniciar Partida</button>
+            </div>
+
+            <div id="room-status" class="room-status">Elige un modo para comenzar.</div>
             <button id="btn-share-link" onclick="shareRoomLink()" class="btn-share hidden">🔗 Copiar Enlace de Invitación</button>
         </div>
 
@@ -170,15 +193,15 @@
             </button>
         </div>
 
-        <div id="log-message" class="log-msg">Crea o únete a una sala para comenzar.</div>
+        <div id="log-message" class="log-msg">Crea una sala online o inicia vs IA.</div>
 
         <div class="hand-container">
-            <div class="hand-title" style="color: #f43f5e;">Mano Jugador Rojo</div>
+            <div class="hand-title" style="color: #f43f5e;">Mano Jugador Rojo (Vos)</div>
             <div id="hand-red" class="hand-cards"></div>
         </div>
 
         <div class="hand-container">
-            <div class="hand-title" style="color: #38bdf8;">Mano Jugador Azul</div>
+            <div class="hand-title" style="color: #38bdf8;" id="label-hand-blue">Mano Jugador Azul</div>
             <div id="hand-blue" class="hand-cards"></div>
         </div>
     </div>
@@ -187,12 +210,12 @@
         <div class="modal-box">
             <h2 id="winner-text" style="color: #fbbf24; margin-bottom: 8px;">¡Victoria!</h2>
             <p id="winner-detail" style="font-size: 0.8rem; margin-bottom: 16px;">Ganaste la partida.</p>
-            <button onclick="resetGameOnline()" class="btn-pass" style="width: 100%; padding: 8px;">Reiniciar Partida</button>
+            <button onclick="resetGame()" class="btn-pass" style="width: 100%; padding: 8px;">Reiniciar Partida</button>
         </div>
     </div>
 
     <script>
-        // Configuración de Servidor con tu URL de Firebase
+        // Firebase Config
         const firebaseConfig = {
             databaseURL: "https://wayki-cacl2.firebaseio.com"
         };
@@ -212,10 +235,12 @@
             { name: 'Marrón', color: '#78350f', pts: 1, type: 'special' }      
         ];
 
+        let gameMode = 'online'; // 'online' o 'ai'
+        let aiDifficulty = 'normal'; // 'easy', 'normal', 'hard'
         let myRole = null; // 'red' o 'blue'
         let currentRoomCode = null;
         let roomRef = null;
-        let isSyncing = false; // Flag para evitar colisiones de estado local/remoto
+        let isSyncing = false;
 
         let board = Array(9).fill(null);
         let revealedBoardGems = Array(9).fill(false);
@@ -239,15 +264,33 @@
         let decks = { red: [], blue: [] };
         let discards = { red: [], blue: [] };
 
-        // Auto-detección de sala por URL al cargar la página
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('sala');
             if (roomParam) {
+                switchGameMode('online');
                 document.getElementById('room-code-input').value = roomParam;
                 joinRoomAuto(roomParam);
             }
         };
+
+        function switchGameMode(mode) {
+            gameMode = mode;
+            document.getElementById('btn-mode-online').classList.toggle('active', mode === 'online');
+            document.getElementById('btn-mode-ai').classList.toggle('active', mode === 'ai');
+            
+            document.getElementById('online-controls').classList.toggle('hidden', mode !== 'online');
+            document.getElementById('ai-controls').classList.toggle('hidden', mode !== 'ai');
+            document.getElementById('btn-share-link').classList.add('hidden');
+
+            if (mode === 'ai') {
+                document.getElementById('room-status').innerText = "Modo vs IA seleccionado. Elige dificultad e inicia.";
+                document.getElementById('label-hand-blue').innerText = "Mano IA (Azul)";
+            } else {
+                document.getElementById('room-status').innerText = "Crea una sala o únete con un código.";
+                document.getElementById('label-hand-blue').innerText = "Mano Jugador Azul";
+            }
+        }
 
         function shuffle(array) { return [...array].sort(() => Math.random() - 0.5); }
 
@@ -264,7 +307,20 @@
             });
         }
 
-        // --- SISTEMA DE SALAS MULTIJUGADOR ---
+        function startAIGame() {
+            aiDifficulty = document.getElementById('ai-difficulty').value;
+            myRole = 'red';
+            
+            const initialState = createInitialGameState();
+            applyGameState(initialState);
+            
+            const diffNames = { easy: 'Fácil', normal: 'Normal', hard: 'Avanzado' };
+            document.getElementById('room-status').innerText = `Jugando vs IA (${diffNames[aiDifficulty]}). Sos ROJO.`;
+            document.getElementById('log-message').innerText = `Partida contra IA iniciada. ¡Tu turno!`;
+            render();
+        }
+
+        // --- SISTEMA MULTIJUGADOR ---
         function createRoom() {
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             myRole = 'red';
@@ -283,28 +339,19 @@
             if (!currentRoomCode) return;
             const baseUrl = window.location.href.split('?')[0];
             const inviteUrl = `${baseUrl}?sala=${currentRoomCode}`;
-            
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(inviteUrl).then(() => {
-                    alert("¡Enlace de invitación copiado al portapapeles! Ya podés pegárselo a tu rival.");
-                }).catch(() => {
-                    prompt("Copiá este enlace para tu rival:", inviteUrl);
-                });
-            } else {
-                prompt("Copiá este enlace para tu rival:", inviteUrl);
-            }
+                    alert("¡Enlace copiado al portapapeles!");
+                }).catch(() => { prompt("Copiá este enlace:", inviteUrl); });
+            } else { prompt("Copiá este enlace:", inviteUrl); }
         }
 
         function joinRoom() {
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if (code.length !== 4) {
-                alert("Ingresá un código válido de 4 letras.");
-                return;
-            }
+            if (code.length !== 4) return alert("Ingresá un código válido de 4 letras.");
             myRole = 'blue';
             currentRoomCode = code;
             document.getElementById('room-status').innerText = `Conectado a Sala: ${code} (Sos AZUL).`;
-
             roomRef = database.ref('rooms/' + code);
             listenRoomState();
         }
@@ -312,8 +359,7 @@
         function joinRoomAuto(code) {
             myRole = 'blue';
             currentRoomCode = code;
-            document.getElementById('room-status').innerText = `Entrando automáticamente como AZUL a sala ${code}...`;
-
+            document.getElementById('room-status').innerText = `Entrando a sala ${code}...`;
             roomRef = database.ref('rooms/' + code);
             listenRoomState();
         }
@@ -334,60 +380,60 @@
                 usedBlueEnergyBonusThisTurn: false,
                 usedYellowEnergyBonusThisTurn: false,
                 usedBlackEnergyBonusThisTurn: false,
-                hands: {
-                    red: fullDeckRed.splice(0, 5),
-                    blue: fullDeckBlue.splice(0, 5)
-                },
-                decks: {
-                    red: fullDeckRed,
-                    blue: fullDeckBlue
-                },
+                hands: { red: fullDeckRed.splice(0, 5), blue: fullDeckBlue.splice(0, 5) },
+                decks: { red: fullDeckRed, blue: fullDeckBlue },
                 discards: { red: [], blue: [] },
                 lastLog: "Partida iniciada. Turno del Jugador Rojo."
             };
         }
 
-        function listenRoomState() {
-            if (!roomRef) return;
-            roomRef.on('value', (snapshot) => {
-                if (isSyncing) return; // Ignorar respuestas de red mientras enviamos nuestra propia jugada
+        function applyGameState(data) {
+            board = (data.board || Array(9).fill(false)).map(item => item === false ? null : item);
+            revealedBoardGems = data.revealedBoardGems || Array(9).fill(false);
+            gems = data.gems || [];
+            turn = data.turn || 'red';
+            currentEnergy = data.currentEnergy !== undefined ? data.currentEnergy : 3;
+            maxEnergy = data.maxEnergy !== undefined ? data.maxEnergy : 3;
+            usedRedEnergyBonusThisTurn = data.usedRedEnergyBonusThisTurn || false;
+            usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
+            usedYellowEnergyBonusThisTurn = data.usedYellowEnergyBonusThisTurn || false;
+            usedBlackEnergyBonusThisTurn = data.usedBlackEnergyBonusThisTurn || false;
+            
+            hands = data.hands || { red: [], blue: [] };
+            decks = data.decks || { red: [], blue: [] };
+            discards = data.discards || { red: [], blue: [] };
 
+            if (!hands.red) hands.red = []; if (!hands.blue) hands.blue = [];
+            if (!decks.red) decks.red = []; if (!decks.blue) decks.blue = [];
+            if (!discards.red) discards.red = []; if (!discards.blue) discards.blue = [];
+
+            document.getElementById('log-message').innerText = data.lastLog || "";
+            checkGameOver();
+        }
+
+        function listenRoomState() {
+            if (!roomRef || gameMode !== 'online') return;
+            roomRef.on('value', (snapshot) => {
+                if (isSyncing) return;
                 const data = snapshot.val();
                 if (!data) return;
-
-                board = (data.board || Array(9).fill(false)).map(item => item === false ? null : item);
-                revealedBoardGems = data.revealedBoardGems || Array(9).fill(false);
-                gems = data.gems || [];
-                turn = data.turn || 'red';
-                currentEnergy = data.currentEnergy !== undefined ? data.currentEnergy : 3;
-                maxEnergy = data.maxEnergy !== undefined ? data.maxEnergy : 3;
-                usedRedEnergyBonusThisTurn = data.usedRedEnergyBonusThisTurn || false;
-                usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
-                usedYellowEnergyBonusThisTurn = data.usedYellowEnergyBonusThisTurn || false;
-                usedBlackEnergyBonusThisTurn = data.usedBlackEnergyBonusThisTurn || false;
-                
-                hands = data.hands || { red: [], blue: [] };
-                if (!hands.red) hands.red = [];
-                if (!hands.blue) hands.blue = [];
-
-                decks = data.decks || { red: [], blue: [] };
-                if (!decks.red) decks.red = [];
-                if (!decks.blue) decks.blue = [];
-
-                discards = data.discards || { red: [], blue: [] };
-                if (!discards.red) discards.red = [];
-                if (!discards.blue) discards.blue = [];
-
-                document.getElementById('log-message').innerText = data.lastLog || "";
-                
-                checkGameOver();
+                applyGameState(data);
                 render();
             });
         }
 
         function syncGameState(logText) {
+            if (gameMode === 'ai') {
+                document.getElementById('log-message').innerText = logText;
+                render();
+                if (turn === 'blue') {
+                    setTimeout(executeAITurn, 700);
+                }
+                return;
+            }
+
             if (!roomRef) return;
-            isSyncing = true; // Bloqueamos actualizaciones remotas durante el envío
+            isSyncing = true;
             const boardToSync = board.map(item => item === null ? false : item);
 
             roomRef.update({
@@ -401,24 +447,17 @@
                 usedBlueEnergyBonusThisTurn: usedBlueEnergyBonusThisTurn,
                 usedYellowEnergyBonusThisTurn: usedYellowEnergyBonusThisTurn,
                 usedBlackEnergyBonusThisTurn: usedBlackEnergyBonusThisTurn,
-                hands: hands,
-                decks: decks,
-                discards: discards,
-                lastLog: logText
+                hands: hands, decks: decks, discards: discards, lastLog: logText
             }).then(() => {
-                setTimeout(() => { isSyncing = false; }, 200); // Liberar bloqueo
-            }).catch(() => {
-                isSyncing = false;
-            });
+                setTimeout(() => { isSyncing = false; }, 200);
+            }).catch(() => { isSyncing = false; });
         }
 
         function isMyTurn() {
-            if (!myRole) {
-                alert("Primero crea o únete a una sala.");
-                return false;
-            }
+            if (gameMode === 'ai') return turn === 'red';
+            if (!myRole) { alert("Primero crea o únete a una sala."); return false; }
             if (turn !== myRole) {
-                document.getElementById('log-message').innerText = "⚠️ Es el turno de tu rival. Esperá a que juegue.";
+                document.getElementById('log-message').innerText = "⚠️ Es el turno de tu rival.";
                 return false;
             }
             return true;
@@ -460,6 +499,155 @@
             startTurn(nextTurn);
         }
 
+        // --- SISTEMA DE INTELIGENCIA ARTIFICIAL (IA) ---
+        function executeAITurn() {
+            if (turn !== 'blue' || gameMode !== 'ai') return;
+
+            // IA Fácil: Decisiones casi aleatorias
+            if (aiDifficulty === 'easy') {
+                if (currentEnergy >= 2 && hands.blue.length > 0) {
+                    const emptyCells = board.map((c, i) => c === null ? i : null).filter(i => i !== null);
+                    if (emptyCells.length > 0) {
+                        const targetCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                        const cardIdx = Math.floor(Math.random() * hands.blue.length);
+                        aiPlayCard(cardIdx, targetCell);
+                        return;
+                    }
+                }
+                startTurn('red');
+                return;
+            }
+
+            // IA Normal y Avanzada: Evaluación táctica
+            let bestAttack = findBestAIAttack();
+            if (bestAttack) {
+                aiExecuteAttack(bestAttack);
+                return;
+            }
+
+            if (currentEnergy >= 2 && hands.blue.length > 0) {
+                let bestPlacement = findBestAICardPlacement();
+                if (bestPlacement) {
+                    aiPlayCard(bestPlacement.handIndex, bestPlacement.boardIndex);
+                    return;
+                }
+            }
+
+            if (currentEnergy >= 1) {
+                if (decks.blue.length > 0 && hands.blue.length < 5) {
+                    actionDrawCard();
+                    return;
+                }
+                if (discards.blue.length > 0) {
+                    actionRecoverDiscard();
+                    return;
+                }
+            }
+
+            // Si no hay mejores movimientos, pasa el turno
+            startTurn('red');
+        }
+
+        function findBestAIAttack() {
+            if (currentEnergy < 1) return null;
+
+            let possibleAttacks = [];
+            const directions = ['top', 'bottom', 'left', 'right'];
+
+            board.forEach((cell, idx) => {
+                if (cell && cell.owner === 'blue') {
+                    const row = Math.floor(idx / 3);
+                    const col = idx % 3;
+
+                    directions.forEach(dir => {
+                        let targetIdx = null;
+                        let oppSide = '';
+                        if (dir === 'top' && row > 0) { targetIdx = idx - 3; oppSide = 'bottom'; }
+                        if (dir === 'bottom' && row < 2) { targetIdx = idx + 3; oppSide = 'top'; }
+                        if (dir === 'left' && col > 0) { targetIdx = idx - 1; oppSide = 'right'; }
+                        if (dir === 'right' && col < 2) { targetIdx = idx + 1; oppSide = 'left'; }
+
+                        if (targetIdx !== null && board[targetIdx] && board[targetIdx].owner === 'red' && !board[targetIdx].isProtected) {
+                            const attVals = getEffectiveCardValues(idx);
+                            const defVals = getEffectiveCardValues(targetIdx);
+
+                            if (attVals[dir] > defVals[oppSide]) {
+                                let priority = 10;
+                                const gemTarget = gems[targetIdx];
+                                
+                                // En Avanzado, prioriza gemas de alto valor/combo
+                                if (aiDifficulty === 'hard') {
+                                    if (gemTarget.name === 'Violeta' || gemTarget.name === 'Naranja') priority += 20;
+                                    if (gemTarget.pts >= 2) priority += 15;
+                                }
+                                possibleAttacks.push({ from: idx, dir: dir, priority: priority });
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (possibleAttacks.length === 0) return null;
+            possibleAttacks.sort((a, b) => b.priority - a.priority);
+            return possibleAttacks[0];
+        }
+
+        function findBestAICardPlacement() {
+            const emptyCells = board.map((c, i) => c === null ? i : null).filter(i => i !== null);
+            if (emptyCells.length === 0) return null;
+
+            let bestChoice = null;
+            let maxScore = -999;
+
+            hands.blue.forEach((card, hIdx) => {
+                emptyCells.forEach(bIdx => {
+                    let score = card.top + card.bottom + card.left + card.right;
+                    const gem = gems[bIdx];
+
+                    if (aiDifficulty === 'hard') {
+                        if (gem.name === 'Violeta') score += 15;
+                        if (gem.name === 'Naranja') score += 10;
+                        if (gem.name === 'Blanco') score += 8;
+                    }
+
+                    if (score > maxScore) {
+                        maxScore = score;
+                        bestChoice = { handIndex: hIdx, boardIndex: bIdx };
+                    }
+                });
+            });
+
+            return bestChoice;
+        }
+
+        function aiPlayCard(handIdx, boardIdx) {
+            currentEnergy -= 2;
+            const gem = gems[boardIdx];
+            revealedBoardGems[boardIdx] = true;
+            const card = hands.blue[handIdx];
+
+            let playedCard = {
+                top: card.top, right: card.right, bottom: card.bottom, left: card.left,
+                specialDir: card.specialDir, owner: 'blue', gemRevealed: gem, isProtected: gem.protected || false
+            };
+
+            board[boardIdx] = playedCard;
+            hands.blue.splice(handIdx, 1);
+
+            let logText = `🤖 IA jugó en Gema ${gem.name}! (-2⚡)`;
+            if (gem.name === 'Violeta') currentEnergy += 1;
+            if (gem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer('blue');
+            if (gem.name === 'Verde') logText += triggerGreenGemDeploymentEffect('blue');
+
+            syncGameState(logText);
+        }
+
+        function aiExecuteAttack(attackData) {
+            selectedBoardIndex = attackData.from;
+            executeAttack(attackData.dir);
+        }
+
+        // --- LÓGICA DE JUEGO MESA Y MANDO ---
         function selectHandCard(player, index) {
             if (!isMyTurn()) return;
             if (currentEnergy < 2) {
@@ -485,11 +673,8 @@
                 return;
             }
             isInspectMode = !isInspectMode;
-            selectedCard = null;
-            selectedHandIndex = null;
-            selectedBoardIndex = null;
+            selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
-
             document.getElementById('log-message').innerText = isInspectMode ? `👁️ Inspección activa (${inspectCost}⚡). Tocá casilla vacía.` : "Inspección cancelada.";
             render();
         }
@@ -499,10 +684,7 @@
 
             if (isInspectMode) {
                 if (board[index] === null) {
-                    if (revealedBoardGems[index]) {
-                        document.getElementById('log-message').innerText = "⚠️ Esta casilla ya fue inspeccionada.";
-                        return;
-                    }
+                    if (revealedBoardGems[index]) return;
                     const controlsViolet = hasPlayerControlledGem(turn, 'Violeta');
                     const inspectCost = controlsViolet ? 0 : 1;
 
@@ -514,9 +696,6 @@
                     render();
                     syncGameState(logText);
                     return;
-                } else {
-                    document.getElementById('log-message').innerText = "⚠️ Solo podés inspeccionar casillas vacías.";
-                    return;
                 }
             }
 
@@ -527,13 +706,9 @@
             }
 
             if (board[index] !== null && board[index].owner === turn) {
-                if (currentEnergy < 1) {
-                    document.getElementById('log-message').innerText = "⚠️ Necesitás 1⚡ para iniciar ataque.";
-                    return;
-                }
+                if (currentEnergy < 1) return;
                 selectedBoardIndex = index;
-                selectedCard = null;
-                selectedHandIndex = null;
+                selectedCard = null; selectedHandIndex = null;
                 document.getElementById('attack-panel').classList.remove('hidden');
                 document.getElementById('log-message').innerText = "Elegí dirección para ATACAR (1⚡).";
                 render();
@@ -551,23 +726,15 @@
             let details = [];
             let recovered = 0;
             for (let i = 0; i < 2; i++) {
-                if (discards[player].length > 0) {
-                    decks[player].push(discards[player].pop());
-                    recovered++;
-                }
+                if (discards[player].length > 0) { decks[player].push(discards[player].pop()); recovered++; }
             }
             if (recovered > 0) details.push(`${recovered} descarte al mazo`);
-
-            if (decks[player].length > 0) {
-                hands[player].push(decks[player].pop());
-                details.push("1 robada");
-            }
+            if (decks[player].length > 0) { hands[player].push(decks[player].pop()); details.push("1 robada"); }
 
             const opponent = player === 'red' ? 'blue' : 'red';
             if (hands[opponent].length > 0) {
                 const randomIdx = Math.floor(Math.random() * hands[opponent].length);
-                const removedCard = hands[opponent].splice(randomIdx, 1)[0];
-                discards[opponent].push(removedCard);
+                discards[opponent].push(hands[opponent].splice(randomIdx, 1)[0]);
                 details.push("1 desc. al rival");
             }
 
@@ -580,56 +747,32 @@
             revealedBoardGems[index] = true;
 
             let playedCard = {
-                top: selectedCard.top,
-                right: selectedCard.right,
-                bottom: selectedCard.bottom,
-                left: selectedCard.left,
-                specialDir: selectedCard.specialDir,
-                owner: turn,
-                gemRevealed: gem,
-                isProtected: gem.protected || false
+                top: selectedCard.top, right: selectedCard.right, bottom: selectedCard.bottom, left: selectedCard.left,
+                specialDir: selectedCard.specialDir, owner: turn, gemRevealed: gem, isProtected: gem.protected || false
             };
 
             board[index] = playedCard;
             hands[turn].splice(selectedHandIndex, 1);
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en Gema ${gem.name}! (-2⚡)`;
-            
-            if (gem.name === 'Violeta') {
-                currentEnergy += 1;
-                logText += ` 🟣 [+1⚡]`;
-            }
-            if (gem.name === 'Naranja') {
-                maxEnergy = getMaxEnergyForPlayer(turn);
-                logText += ` 🟠 [Máx. 4⚡]`;
-            }
-            if (gem.name === 'Verde') {
-                logText += triggerGreenGemDeploymentEffect(turn);
-            }
+            if (gem.name === 'Violeta') { currentEnergy += 1; logText += ` 🟣 [+1⚡]`; }
+            if (gem.name === 'Naranja') { maxEnergy = getMaxEnergyForPlayer(turn); logText += ` 🟠 [Máx. 4⚡]`; }
+            if (gem.name === 'Verde') { logText += triggerGreenGemDeploymentEffect(turn); }
 
-            selectedCard = null;
-            selectedHandIndex = null;
-            
+            selectedCard = null; selectedHandIndex = null;
             render();
             syncGameState(logText);
         }
 
         function actionDrawCard() {
-            if (!isMyTurn() || currentEnergy < 1) return;
-            if (decks[turn].length === 0) {
-                document.getElementById('log-message').innerText = "⚠️ Tu mazo está vacío.";
-                return;
-            }
+            if (currentEnergy < 1 || decks[turn].length === 0) return;
             currentEnergy -= 1;
             hands[turn].push(decks[turn].pop());
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} robó 1 carta (-1⚡).`;
-
             const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
             if (controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn) {
-                usedBlueEnergyBonusThisTurn = true;
-                currentEnergy += 1;
-                logText += ` 🔵 [+1⚡ Bonus]`;
+                usedBlueEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🔵 [+1⚡ Bonus]`;
             }
 
             render();
@@ -637,27 +780,16 @@
         }
 
         function actionRecoverDiscard() {
-            if (!isMyTurn() || currentEnergy < 1) return;
-            if (discards[turn].length === 0) {
-                document.getElementById('log-message').innerText = "⚠️ Descarte vacío.";
-                return;
-            }
+            if (currentEnergy < 1 || discards[turn].length === 0) return;
             currentEnergy -= 1;
-            let recovered = 0;
             for (let i = 0; i < 2; i++) {
-                if (discards[turn].length > 0) {
-                    decks[turn].push(discards[turn].pop());
-                    recovered++;
-                }
+                if (discards[turn].length > 0) decks[turn].push(discards[turn].pop());
             }
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} recuperó cartas al mazo (-1⚡).`;
-
             const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
             if (controlledGems.includes('Amarillo') && !usedYellowEnergyBonusThisTurn) {
-                usedYellowEnergyBonusThisTurn = true;
-                currentEnergy += 1;
-                logText += ` 🟡 [+1⚡ Bonus]`;
+                usedYellowEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🟡 [+1⚡ Bonus]`;
             }
 
             render();
@@ -665,24 +797,18 @@
         }
 
         function actionDiscardOpponent() {
-            if (!isMyTurn() || currentEnergy < 1) return;
+            if (currentEnergy < 1) return;
             const opponent = turn === 'red' ? 'blue' : 'red';
-            if (hands[opponent].length === 0) {
-                document.getElementById('log-message').innerText = "⚠️ El oponente no tiene cartas en la mano.";
-                return;
-            }
+            if (hands[opponent].length === 0) return;
+
             currentEnergy -= 1;
             const randomIdx = Math.floor(Math.random() * hands[opponent].length);
-            const removedCard = hands[opponent].splice(randomIdx, 1)[0];
-            discards[opponent].push(removedCard);
+            discards[opponent].push(hands[opponent].splice(randomIdx, 1)[0]);
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} descartó 1 carta al rival (-1⚡).`;
-
             const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
             if (controlledGems.includes('Negro') && !usedBlackEnergyBonusThisTurn) {
-                usedBlackEnergyBonusThisTurn = true;
-                currentEnergy += 1;
-                logText += ` 🖤 [+1⚡ Bonus]`;
+                usedBlackEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🖤 [+1⚡ Bonus]`;
             }
 
             render();
@@ -694,35 +820,23 @@
             if (!card) return null;
 
             const owner = card.owner;
-            const ownerGems = board
-                .filter(c => c !== null && c.owner === owner)
-                .map(c => c.gemRevealed.name);
-
+            const ownerGems = board.filter(c => c !== null && c.owner === owner).map(c => c.gemRevealed.name);
             const hasMarron = ownerGems.includes('Marrón');
             const cardGemName = card.gemRevealed.name;
 
             let values = { top: card.top, right: card.right, bottom: card.bottom, left: card.left };
-
             if (hasMarron) {
                 const currentMax = Math.max(values.top, values.right, values.bottom, values.left);
-                values.top = currentMax;
-                values.right = currentMax;
-                values.bottom = currentMax;
-                values.left = currentMax;
+                values.top = currentMax; values.right = currentMax; values.bottom = currentMax; values.left = currentMax;
             }
-
             if (cardGemName === 'Blanco') {
-                values.top *= 2;
-                values.right *= 2;
-                values.bottom *= 2;
-                values.left *= 2;
+                values.top *= 2; values.right *= 2; values.bottom *= 2; values.left *= 2;
             }
-
             return values;
         }
 
         function executeAttack(dir) {
-            if (!isMyTurn() || selectedBoardIndex === null || currentEnergy < 1) return;
+            if (selectedBoardIndex === null || currentEnergy < 1) return;
 
             const idx = selectedBoardIndex;
             const row = Math.floor(idx / 3);
@@ -736,36 +850,20 @@
             if (dir === 'left' && col > 0) { targetIdx = idx - 1; oppSide = 'right'; }
             if (dir === 'right' && col < 2) { targetIdx = idx + 1; oppSide = 'left'; }
 
-            if (targetIdx === null || board[targetIdx] === null) {
-                document.getElementById('log-message').innerText = "⚠️ Sin carta objetivo en esa dirección.";
-                return;
-            }
-
+            if (targetIdx === null || board[targetIdx] === null) return;
             const defender = board[targetIdx];
-
-            if (defender.owner === turn) {
-                document.getElementById('log-message').innerText = "⚠️ No podés atacar a tus propias cartas.";
-                return;
-            }
-
-            if (defender.isProtected) {
-                document.getElementById('log-message').innerText = "🛡️ Carta protegida por Gema Blanca.";
-                return;
-            }
+            if (defender.owner === turn || defender.isProtected) return;
 
             currentEnergy -= 1;
-
             const attVals = getEffectiveCardValues(idx);
             const defVals = getEffectiveCardValues(targetIdx);
 
             let attackVal = attVals[dir];
             let defenseVal = defVals[oppSide];
-
             let attackMsg = "";
 
             if (attackVal > defenseVal) {
                 discards[defender.owner].push(defender);
-                
                 let attackerCard = board[idx];
                 const targetGem = gems[targetIdx];
                 revealedBoardGems[targetIdx] = true;
@@ -777,32 +875,15 @@
                 board[idx] = null;
 
                 attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó Gema ${targetGem.name} (-1⚡).`;
-
-                if (targetGem.name === 'Violeta') {
-                    currentEnergy += 1;
-                    attackMsg += ` 🟣 [+1⚡]`;
-                }
-                if (targetGem.name === 'Naranja') {
-                    maxEnergy = getMaxEnergyForPlayer(turn);
-                    attackMsg += ` 🟠 [Máx. 4⚡]`;
-                }
-                if (targetGem.name === 'Verde') {
-                    attackMsg += triggerGreenGemDeploymentEffect(turn);
-                }
-
-                const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
-                if (controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn) {
-                    usedRedEnergyBonusThisTurn = true;
-                    currentEnergy += 1;
-                    attackMsg += ` 🔴 [+1⚡ Bonus]`;
-                }
+                if (targetGem.name === 'Violeta') currentEnergy += 1;
+                if (targetGem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer(turn);
+                if (targetGem.name === 'Verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
             } else {
                 attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
             }
 
             selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
-            
             render();
             syncGameState(attackMsg);
         }
@@ -823,12 +904,8 @@
         function getPlayerTotalScore(player) {
             const controlledCards = board.filter(c => c !== null && c.owner === player);
             const controlledGems = controlledCards.map(c => c.gemRevealed);
-            
             const gemPts = controlledGems.reduce((sum, g) => sum + g.pts, 0);
-            const gemNames = controlledGems.map(g => g.name);
-            const comboPts = checkCombos(gemNames);
-
-            return gemPts + comboPts;
+            return gemPts + checkCombos(controlledGems.map(g => g.name));
         }
 
         function checkGameOver() {
@@ -838,18 +915,20 @@
             if (redTotal >= TARGET_SCORE || blueTotal >= TARGET_SCORE) {
                 let title = "¡Fin del Duelo!";
                 let detail = redTotal >= TARGET_SCORE ? "¡Victoria del Jugador Rojo!" : "¡Victoria del Jugador Azul!";
-
                 document.getElementById('winner-text').innerText = title;
                 document.getElementById('winner-detail').innerText = detail;
                 document.getElementById('game-over-modal').style.display = 'flex';
             }
         }
 
-        function resetGameOnline() {
-            if (!roomRef) return;
-            const initialState = createInitialGameState();
-            roomRef.set(initialState);
+        function resetGame() {
             document.getElementById('game-over-modal').style.display = 'none';
+            if (gameMode === 'ai') {
+                startAIGame();
+            } else if (roomRef) {
+                const initialState = createInitialGameState();
+                roomRef.set(initialState);
+            }
         }
 
         function render() {
@@ -868,23 +947,11 @@
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
             const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
-            
-            const hasBlueBonus = controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn;
-            const hasYellowBonus = controlledGems.includes('Amarillo') && !usedYellowEnergyBonusThisTurn;
-            const hasBlackBonus = controlledGems.includes('Negro') && !usedBlackEnergyBonusThisTurn;
-            const hasRedBonus = controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn;
             const controlsViolet = controlledGems.includes('Violeta');
-
-            document.getElementById('indicator-draw').classList.toggle('hidden', !hasBlueBonus);
-            document.getElementById('indicator-recover').classList.toggle('hidden', !hasYellowBonus);
-            document.getElementById('indicator-discard').classList.toggle('hidden', !hasBlackBonus);
-            document.getElementById('indicator-attack').classList.toggle('hidden', !hasRedBonus);
-            document.getElementById('indicator-inspect').classList.toggle('hidden', !controlsViolet);
-
             const inspectCost = controlsViolet ? 0 : 1;
             document.getElementById('inspect-cost-label').innerText = `(${inspectCost}⚡)`;
 
-            const isMyTurnActive = turn === myRole;
+            const isMyTurnActive = gameMode === 'ai' ? turn === 'red' : turn === myRole;
             document.getElementById('btn-pass-turn').disabled = !isMyTurnActive;
             document.getElementById('btn-action-draw').disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
             document.getElementById('btn-action-recover').disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
@@ -928,7 +995,7 @@
                     hands[p].forEach((card, idx) => {
                         const div = document.createElement('div');
                         const isSel = turn === p && selectedHandIndex === idx;
-                        const isRivalHand = myRole && myRole !== p;
+                        const isRivalHand = gameMode === 'online' ? (myRole && myRole !== p) : (p === 'blue');
 
                         if (isRivalHand) {
                             div.className = `card-item hidden-card`;
