@@ -368,29 +368,29 @@
 
         const TARGET_SCORE = 7;
 
-        // Ónix corregido con cuerpo negro profundo y Cuarzo marrón oscuro diferenciado
+        // SVGs mapeados por IDs limpios (sin tildes) para evitar errores de codificación en Chrome
         const GEM_SVGS = {
-            'Rubí': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffe4e6" d="M12 2L6 8h12l-6-6z"/><path fill="#f43f5e" d="M2 8l10 14L6 8H2z"/><path fill="#e11d48" d="M22 8l-10 14 6-14h4z"/><path fill="#ffffff" opacity="0.8" d="M12 2l6 6H6l6-6z"/><path fill="#be123c" d="M6 8l6 14 6-14H6z"/></svg>`,
-            'Zafiro': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#e0f2fe" d="M12 2L5 8h14l-7-6z"/><path fill="#38bdf8" d="M1 8l11 14L5 8H1z"/><path fill="#0284c7" d="M23 8l-11 14 6-14h5z"/><path fill="#ffffff" opacity="0.85" d="M12 2l7 6H5l7-6z"/><path fill="#0369a1" d="M5 8l7 14 7-14H5z"/></svg>`,
-            'Topacio': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#fef08a" d="M12 2l9 4v12l-9 4-9-4V6l9-4zm0 2.8L5 7.5v9l7 3.1 7-3.1v-9l-7-2.7z"/><path fill="#ca8a04" d="M3 6l9 14V7.5z"/><path fill="#fde047" d="M12 2v5.5h9z"/></svg>`,
-            'Esmeralda': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#dcfce7" d="M5 3h14l4 6-11 13L1 9l4-6zm7 2.2L4 9h16l-8-3.8z"/><path fill="#15803d" d="M1 9l11 13V9H1z"/><path fill="#4ade80" d="M12 3v6h8z"/></svg>`,
-            'Ámbar': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffedd5" d="M12 2L3 8l9 14 9-14-9-6zm0 3.5l5.5 3.7H6.5L12 5.5z"/><path fill="#ea580c" d="M3 8l9 14V9.2z"/><path fill="#f97316" d="M12 2v7.2h6.5z"/></svg>`,
-            'Amatista': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#f3e8ff" d="M12 2l8 5-3 13H7L4 7l8-5zm0 3L6 8h12l-6-3z"/><path fill="#6b21a8" d="M4 7l3 13 5-12z"/><path fill="#c084fc" d="M12 2v8h8z"/></svg>`,
-            'Diamante': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffffff" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#94a3b8" d="M2 9l10 13V9.5z"/><path fill="#f8fafc" d="M12 2v7.5h6.5z"/></svg>`,
-            'Ónix': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#475569" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#000000" d="M2 9l10 13V9.5z"/><path fill="#0f172a" d="M12 2v7.5h6.5z"/><path fill="#94a3b8" opacity="0.6" d="M12 4.5l6.5 4.5H12z"/></svg>`,
-            'Cuarzo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#fed7aa" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#1c0a00" d="M1 8l11 14V8H1z"/><path fill="#582307" d="M12 2v6h8.2z"/></svg>`
+            'rojo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffe4e6" d="M12 2L6 8h12l-6-6z"/><path fill="#f43f5e" d="M2 8l10 14L6 8H2z"/><path fill="#e11d48" d="M22 8l-10 14 6-14h4z"/><path fill="#ffffff" opacity="0.8" d="M12 2l6 6H6l6-6z"/><path fill="#be123c" d="M6 8l6 14 6-14H6z"/></svg>`,
+            'azul': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#e0f2fe" d="M12 2L5 8h14l-7-6z"/><path fill="#38bdf8" d="M1 8l11 14L5 8H1z"/><path fill="#0284c7" d="M23 8l-11 14 6-14h5z"/><path fill="#ffffff" opacity="0.85" d="M12 2l7 6H5l7-6z"/><path fill="#0369a1" d="M5 8l7 14 7-14H5z"/></svg>`,
+            'amarillo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#fef08a" d="M12 2l9 4v12l-9 4-9-4V6l9-4zm0 2.8L5 7.5v9l7 3.1 7-3.1v-9l-7-2.7z"/><path fill="#ca8a04" d="M3 6l9 14V7.5z"/><path fill="#fde047" d="M12 2v5.5h9z"/></svg>`,
+            'verde': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#dcfce7" d="M5 3h14l4 6-11 13L1 9l4-6zm7 2.2L4 9h16l-8-3.8z"/><path fill="#15803d" d="M1 9l11 13V9H1z"/><path fill="#4ade80" d="M12 3v6h8z"/></svg>`,
+            'naranja': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffedd5" d="M12 2L3 8l9 14 9-14-9-6zm0 3.5l5.5 3.7H6.5L12 5.5z"/><path fill="#ea580c" d="M3 8l9 14V9.2z"/><path fill="#f97316" d="M12 2v7.2h6.5z"/></svg>`,
+            'violeta': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#f3e8ff" d="M12 2l8 5-3 13H7L4 7l8-5zm0 3L6 8h12l-6-3z"/><path fill="#6b21a8" d="M4 7l3 13 5-12z"/><path fill="#c084fc" d="M12 2v8h8z"/></svg>`,
+            'blanco': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffffff" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#94a3b8" d="M2 9l10 13V9.5z"/><path fill="#f8fafc" d="M12 2v7.5h6.5z"/></svg>`,
+            'negro': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#475569" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#000000" d="M2 9l10 13V9.5z"/><path fill="#0f172a" d="M12 2v7.5h6.5z"/><path fill="#94a3b8" opacity="0.6" d="M12 4.5l6.5 4.5H12z"/></svg>`,
+            'marron': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#fed7aa" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#1c0a00" d="M1 8l11 14V8H1z"/><path fill="#582307" d="M12 2v6h8.2z"/></svg>`
         };
 
         const GEM_TYPES = [
-            { name: 'Rojo', gemReal: 'Rubí', pts: 1, type: 'primary' },
-            { name: 'Azul', gemReal: 'Zafiro', pts: 1, type: 'primary' },
-            { name: 'Amarillo', gemReal: 'Topacio', pts: 1, type: 'primary' },
-            { name: 'Verde', gemReal: 'Esmeralda', pts: 1, type: 'secondary' },
-            { name: 'Naranja', gemReal: 'Ámbar', pts: 1, type: 'secondary' },
-            { name: 'Violeta', gemReal: 'Amatista', pts: 2, type: 'secondary' },
-            { name: 'Blanco', gemReal: 'Diamante', pts: 0, protected: true, type: 'special' }, 
-            { name: 'Negro', gemReal: 'Ónix', pts: 1, type: 'special' },
-            { name: 'Marrón', gemReal: 'Cuarzo', pts: 1, type: 'special' }      
+            { id: 'rojo', name: 'Rubí', pts: 1, type: 'primary' },
+            { id: 'azul', name: 'Zafiro', pts: 1, type: 'primary' },
+            { id: 'amarillo', name: 'Topacio', pts: 1, type: 'primary' },
+            { id: 'verde', name: 'Esmeralda', pts: 1, type: 'secondary' },
+            { id: 'naranja', name: 'Ámbar', pts: 1, type: 'secondary' },
+            { id: 'violeta', name: 'Amatista', pts: 2, type: 'secondary' },
+            { id: 'blanco', name: 'Diamante', pts: 0, protected: true, type: 'special' }, 
+            { id: 'negro', name: 'Ónix', pts: 1, type: 'special' },
+            { id: 'marron', name: 'Cuarzo', pts: 1, type: 'special' }      
         ];
 
         let gameMode = 'online';
@@ -618,12 +618,12 @@
         }
 
         function getMaxEnergyForPlayer(player) {
-            const controlledNaranja = board.some(c => c !== null && c.owner === player && c.gemRevealed.name === 'Naranja');
+            const controlledNaranja = board.some(c => c !== null && c.owner === player && c.gemRevealed.id === 'naranja');
             return controlledNaranja ? 4 : 3;
         }
 
-        function hasPlayerControlledGem(player, gemName) {
-            return board.some(c => c !== null && c.owner === player && c.gemRevealed.name === gemName);
+        function hasPlayerControlledGem(player, gemId) {
+            return board.some(c => c !== null && c.owner === player && c.gemRevealed.id === gemId);
         }
 
         function startTurn(player) {
@@ -709,7 +709,7 @@
                                 let priority = 10;
                                 const gemTarget = gems[targetIdx];
                                 if (aiDifficulty === 'hard') {
-                                    if (gemTarget.name === 'Violeta' || gemTarget.name === 'Naranja') priority += 20;
+                                    if (gemTarget.id === 'violeta' || gemTarget.id === 'naranja') priority += 20;
                                     if (gemTarget.pts >= 2) priority += 15;
                                 }
                                 possibleAttacks.push({ from: idx, dir: dir, priority: priority });
@@ -734,9 +734,9 @@
                     let score = card.top + card.bottom + card.left + card.right;
                     const gem = gems[bIdx];
                     if (aiDifficulty === 'hard') {
-                        if (gem.name === 'Violeta') score += 15;
-                        if (gem.name === 'Naranja') score += 10;
-                        if (gem.name === 'Blanco') score += 8;
+                        if (gem.id === 'violeta') score += 15;
+                        if (gem.id === 'naranja') score += 10;
+                        if (gem.id === 'blanco') score += 8;
                     }
                     if (score > maxScore) { maxScore = score; bestChoice = { handIndex: hIdx, boardIndex: bIdx }; }
                 });
@@ -759,10 +759,10 @@
             board[boardIdx] = playedCard;
             hands.blue.splice(handIdx, 1);
 
-            let logText = `🤖 IA jugó en ${gem.gemReal || gem.name}! (-2⚡)`;
-            if (gem.name === 'Violeta') currentEnergy += 1;
-            if (gem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer('blue');
-            if (gem.name === 'Verde') logText += triggerGreenGemDeploymentEffect('blue');
+            let logText = `🤖 IA jugó en ${gem.name}! (-2⚡)`;
+            if (gem.id === 'violeta') currentEnergy += 1;
+            if (gem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer('blue');
+            if (gem.id === 'verde') logText += triggerGreenGemDeploymentEffect('blue');
 
             syncGameState(logText);
         }
@@ -789,7 +789,7 @@
 
         function toggleInspectMode() {
             if (!isMyTurn()) return;
-            const controlsViolet = hasPlayerControlledGem(turn, 'Violeta');
+            const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
             const inspectCost = controlsViolet ? 0 : 1;
 
             if (currentEnergy < inspectCost) {
@@ -809,14 +809,14 @@
             if (isInspectMode) {
                 if (board[index] === null) {
                     if (revealedBoardGems[index]) return;
-                    const controlsViolet = hasPlayerControlledGem(turn, 'Violeta');
+                    const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
                     const inspectCost = controlsViolet ? 0 : 1;
 
                     currentEnergy -= inspectCost;
                     revealedBoardGems[index] = true;
                     isInspectMode = false;
                     
-                    let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló ${gems[index].gemReal || gems[index].name}!`;
+                    let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló ${gems[index].name}!`;
                     render();
                     syncGameState(logText);
                     return;
@@ -878,10 +878,10 @@
             board[index] = playedCard;
             hands[turn].splice(selectedHandIndex, 1);
 
-            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.gemReal || gem.name}! (-2⚡)`;
-            if (gem.name === 'Violeta') { currentEnergy += 1; logText += ` 🟣 [+1⚡]`; }
-            if (gem.name === 'Naranja') { maxEnergy = getMaxEnergyForPlayer(turn); logText += ` 🟠 [Máx. 4⚡]`; }
-            if (gem.name === 'Verde') { logText += triggerGreenGemDeploymentEffect(turn); }
+            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-2⚡)`;
+            if (gem.id === 'violeta') { currentEnergy += 1; logText += ` 🟣 [+1⚡]`; }
+            if (gem.id === 'naranja') { maxEnergy = getMaxEnergyForPlayer(turn); logText += ` 🟠 [Máx. 4⚡]`; }
+            if (gem.id === 'verde') { logText += triggerGreenGemDeploymentEffect(turn); }
 
             selectedCard = null; selectedHandIndex = null;
             render();
@@ -894,8 +894,8 @@
             hands[turn].push(decks[turn].pop());
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} robó 1 carta (-1⚡).`;
-            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
-            if (controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn) {
+            const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
+            if (controlledGemIds.includes('azul') && !usedBlueEnergyBonusThisTurn) {
                 usedBlueEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🔵 [+1⚡ Bonus]`;
             }
 
@@ -911,8 +911,8 @@
             }
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} recuperó cartas al mazo (-1⚡).`;
-            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
-            if (controlledGems.includes('Amarillo') && !usedYellowEnergyBonusThisTurn) {
+            const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
+            if (controlledGemIds.includes('amarillo') && !usedYellowEnergyBonusThisTurn) {
                 usedYellowEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🟡 [+1⚡ Bonus]`;
             }
 
@@ -930,8 +930,8 @@
             discards[opponent].push(hands[opponent].splice(randomIdx, 1)[0]);
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} descartó 1 carta al rival (-1⚡).`;
-            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
-            if (controlledGems.includes('Negro') && !usedBlackEnergyBonusThisTurn) {
+            const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
+            if (controlledGemIds.includes('negro') && !usedBlackEnergyBonusThisTurn) {
                 usedBlackEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🖤 [+1⚡ Bonus]`;
             }
 
@@ -944,16 +944,16 @@
             if (!card) return null;
 
             const owner = card.owner;
-            const ownerGems = board.filter(c => c !== null && c.owner === owner).map(c => c.gemRevealed.name);
-            const hasMarron = ownerGems.includes('Marrón');
-            const cardGemName = card.gemRevealed.name;
+            const ownerGemIds = board.filter(c => c !== null && c.owner === owner).map(c => c.gemRevealed.id);
+            const hasMarron = ownerGemIds.includes('marron');
+            const cardGemId = card.gemRevealed.id;
 
             let values = { top: card.top, right: card.right, bottom: card.bottom, left: card.left };
             if (hasMarron) {
                 const currentMax = Math.max(values.top, values.right, values.bottom, values.left);
                 values.top = currentMax; values.right = currentMax; values.bottom = currentMax; values.left = currentMax;
             }
-            if (cardGemName === 'Blanco') {
+            if (cardGemId === 'blanco') {
                 values.top *= 2; values.right *= 2; values.bottom *= 2; values.left *= 2;
             }
             return values;
@@ -996,13 +996,13 @@
                 board[targetIdx] = attackerCard;
                 board[idx] = null;
 
-                attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.gemReal || targetGem.name} (-1⚡).`;
-                if (targetGem.name === 'Violeta') currentEnergy += 1;
-                if (targetGem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer(turn);
-                if (targetGem.name === 'Verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
+                attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.name} (-1⚡).`;
+                if (targetGem.id === 'violeta') currentEnergy += 1;
+                if (targetGem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer(turn);
+                if (targetGem.id === 'verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
 
-                const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
-                if (controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn) {
+                const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
+                if (controlledGemIds.includes('rojo') && !usedRedEnergyBonusThisTurn) {
                     usedRedEnergyBonusThisTurn = true; currentEnergy += 1; attackMsg += ` 🔴 [+1⚡ Bonus]`;
                 }
             } else {
@@ -1015,15 +1015,15 @@
             syncGameState(attackMsg);
         }
 
-        function checkCombos(controlledGemNames) {
+        function checkCombos(controlledGemIds) {
             let comboPts = 0;
-            const hasAll = (arr) => arr.every(item => controlledGemNames.includes(item));
+            const hasAll = (arr) => arr.every(item => controlledGemIds.includes(item));
 
-            if (hasAll(['Azul', 'Verde', 'Violeta'])) comboPts += 1;
-            if (hasAll(['Rojo', 'Amarillo', 'Naranja'])) comboPts += 1;
-            if (hasAll(['Rojo', 'Azul', 'Amarillo'])) comboPts += 1;
-            if (hasAll(['Verde', 'Naranja', 'Violeta'])) comboPts += 1;
-            if (hasAll(['Blanco', 'Negro', 'Marrón'])) comboPts += 2;
+            if (hasAll(['azul', 'verde', 'violeta'])) comboPts += 1;
+            if (hasAll(['rojo', 'amarillo', 'naranja'])) comboPts += 1;
+            if (hasAll(['rojo', 'azul', 'amarillo'])) comboPts += 1;
+            if (hasAll(['verde', 'naranja', 'violeta'])) comboPts += 1;
+            if (hasAll(['blanco', 'negro', 'marron'])) comboPts += 2;
 
             return comboPts;
         }
@@ -1032,7 +1032,7 @@
             const controlledCards = board.filter(c => c !== null && c.owner === player);
             const controlledGems = controlledCards.map(c => c.gemRevealed);
             const gemPts = controlledGems.reduce((sum, g) => sum + g.pts, 0);
-            return gemPts + checkCombos(controlledGems.map(g => g.name));
+            return gemPts + checkCombos(controlledGems.map(g => g.id));
         }
 
         function checkGameOver() {
@@ -1073,13 +1073,13 @@
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
-            const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
+            const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
             
-            const hasBlueBonus = controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn;
-            const hasYellowBonus = controlledGems.includes('Amarillo') && !usedYellowEnergyBonusThisTurn;
-            const hasBlackBonus = controlledGems.includes('Negro') && !usedBlackEnergyBonusThisTurn;
-            const hasRedBonus = controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn;
-            const controlsViolet = controlledGems.includes('Violeta');
+            const hasBlueBonus = controlledGemIds.includes('azul') && !usedBlueEnergyBonusThisTurn;
+            const hasYellowBonus = controlledGemIds.includes('amarillo') && !usedYellowEnergyBonusThisTurn;
+            const hasBlackBonus = controlledGemIds.includes('negro') && !usedBlackEnergyBonusThisTurn;
+            const hasRedBonus = controlledGemIds.includes('rojo') && !usedRedEnergyBonusThisTurn;
+            const controlsViolet = controlledGemIds.includes('violeta');
 
             document.getElementById('indicator-draw').classList.toggle('hidden', !hasBlueBonus);
             document.getElementById('indicator-recover').classList.toggle('hidden', !hasYellowBonus);
@@ -1108,7 +1108,7 @@
 
                 if (cell) {
                     const effectiveVals = getEffectiveCardValues(idx);
-                    const gemSvg = GEM_SVGS[cell.gemRevealed.gemReal] || GEM_SVGS[cell.gemRevealed.name] || '';
+                    const gemSvg = GEM_SVGS[cell.gemRevealed.id] || '';
                     div.innerHTML = `
                         <div class="card-val val-top">${effectiveVals.top}</div>
                         <div class="card-val val-bottom">${effectiveVals.bottom}</div>
@@ -1118,10 +1118,10 @@
                         ${cell.isProtected ? '<div style="position:absolute; top:2px; right:3px; font-size:9px;">🛡️</div>' : ''}
                     `;
                 } else if (revealedBoardGems[idx]) {
-                    const gemSvg = GEM_SVGS[gems[idx].gemReal] || GEM_SVGS[gems[idx].name] || '';
+                    const gemSvg = GEM_SVGS[gems[idx].id] || '';
                     div.innerHTML = `
                         <div class="gem-pod">${gemSvg}</div>
-                        <span style="font-size:0.55rem; margin-top:2px; color:#cbd5e1; font-weight:bold;">${gems[idx].gemReal || gems[idx].name}</span>
+                        <span style="font-size:0.55rem; margin-top:2px; color:#cbd5e1; font-weight:bold;">${gems[idx].name}</span>
                     `;
                 } else {
                     div.innerHTML = `<span style="font-size:0.8rem; opacity:0.25;">💎</span>`;
