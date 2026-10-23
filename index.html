@@ -3,67 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>9 Gemas - Multijugador & Vs IA</title>
+    <title>9 Gemas - Duelo de Cristales</title>
     <!-- Firebase para tiempo real online -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body { background-color: #020617; color: #ffffff; font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 8px; }
-        .container { width: 100%; max-width: 380px; background-color: #0f172a; border-radius: 16px; padding: 12px; border: 1px solid #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .header { text-align: center; margin-bottom: 6px; }
-        .title { color: #fbbf24; font-size: 1.2rem; font-weight: 900; }
-        .subtitle { font-size: 0.65rem; color: #94a3b8; }
+        body { 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); 
+            color: #ffffff; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 8px; 
+        }
+        .container { 
+            width: 100%; 
+            max-width: 380px; 
+            background: rgba(15, 23, 42, 0.85); 
+            backdrop-filter: blur(12px); 
+            border-radius: 20px; 
+            padding: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 0 15px rgba(255,255,255,0.03); 
+        }
+        .header { text-align: center; margin-bottom: 8px; }
+        .title { 
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            font-size: 1.3rem; 
+            font-weight: 900; 
+            letter-spacing: 0.5px;
+            filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.3));
+        }
+        .subtitle { font-size: 0.65rem; color: #94a3b8; font-weight: 600; }
         
-        /* Panel de Login / Modos de Juego */
-        .lobby-panel { background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; }
-        .lobby-title { font-size: 0.75rem; font-weight: bold; color: #fbbf24; margin-bottom: 6px; }
-        .mode-selector { display: flex; gap: 4px; justify-content: center; margin-bottom: 6px; }
-        .btn-mode { background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; flex: 1; }
-        .btn-mode.active { background: #3b82f6; color: #ffffff; border-color: #60a5fa; }
+        /* Panel de Lobby */
+        .lobby-panel { 
+            background: rgba(2, 6, 23, 0.7); 
+            border: 1px solid rgba(51, 65, 85, 0.6); 
+            border-radius: 14px; 
+            padding: 10px; 
+            text-align: center; 
+            margin-bottom: 8px; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .lobby-title { font-size: 0.7rem; font-weight: 800; color: #fbbf24; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .mode-selector { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
+        .btn-mode { 
+            background: rgba(30, 41, 59, 0.8); 
+            color: #94a3b8; 
+            border: 1px solid rgba(51, 65, 85, 0.8); 
+            padding: 5px 10px; 
+            border-radius: 8px; 
+            font-size: 0.65rem; 
+            font-weight: 700; 
+            cursor: pointer; 
+            flex: 1; 
+            transition: all 0.2s;
+        }
+        .btn-mode.active { 
+            background: linear-gradient(135deg, #2563eb, #1d4ed8); 
+            color: #ffffff; 
+            border-color: #60a5fa; 
+            box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+        }
         
         .lobby-inputs { display: flex; gap: 4px; justify-content: center; align-items: center; }
-        .room-input { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; width: 80px; text-align: center; }
-        .btn-lobby { background: #0284c7; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
-        .btn-lobby.create { background: #16a34a; }
+        .room-input { 
+            background: #0f172a; 
+            border: 1px solid #334155; 
+            color: #fbbf24; 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 0.75rem; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            width: 80px; 
+            text-align: center; 
+        }
+        .btn-lobby { 
+            background: #0284c7; 
+            color: white; 
+            border: none; 
+            padding: 5px 10px; 
+            border-radius: 6px; 
+            font-size: 0.65rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .btn-lobby.create { background: linear-gradient(135deg, #16a34a, #15803d); }
         .ai-select { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; }
         
         .room-status { font-size: 0.6rem; color: #38bdf8; margin-top: 6px; font-weight: bold; word-break: break-all; }
         .btn-share { background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: bold; cursor: pointer; margin-top: 6px; display: inline-block; }
 
-        .scoreboard { display: flex; justify-content: space-between; align-items: center; background: #020617; padding: 8px 10px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 6px; }
+        .scoreboard { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: rgba(2, 6, 23, 0.8); 
+            padding: 8px 12px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            margin-bottom: 6px; 
+        }
         .score-box { text-align: center; }
-        .score-val { font-size: 1rem; font-weight: 900; }
-        .score-red { color: #f43f5e; }
-        .score-blue { color: #38bdf8; }
+        .score-val { font-size: 1.1rem; font-weight: 900; }
+        .score-red { color: #f43f5e; text-shadow: 0 0 8px rgba(244, 63, 94, 0.4); }
+        .score-blue { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
         .deck-info { font-size: 0.55rem; color: #64748b; margin-top: 2px; }
 
         .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.75rem; font-weight: bold; }
-        .energy-tag { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 2px 6px; border-radius: 12px; }
+        .energy-tag { 
+            background: rgba(245, 158, 11, 0.15); 
+            color: #fbbf24; 
+            border: 1px solid rgba(245, 158, 11, 0.3); 
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
 
         /* Tablero 3x3 */
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #020617; padding: 8px; border-radius: 12px; border: 1px solid #1e293b; aspect-ratio: 1; margin-bottom: 6px; }
-        .cell { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 6px; 
+            background: rgba(2, 6, 23, 0.9); 
+            padding: 8px; 
+            border-radius: 14px; 
+            border: 1px solid rgba(51, 65, 85, 0.5); 
+            aspect-ratio: 1; 
+            margin-bottom: 6px; 
+        }
+        .cell { 
+            background: rgba(15, 23, 42, 0.6); 
+            border: 1px solid rgba(51, 65, 85, 0.4); 
+            border-radius: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
         .cell.inspectable { border: 1px dashed #a855f7; background: rgba(168, 85, 247, 0.15); }
-        .cell.card-red { background: rgba(136, 19, 55, 0.7); border-color: #f43f5e; }
-        .cell.card-blue { background: rgba(12, 74, 110, 0.7); border-color: #38bdf8; }
-        .cell.selected-attacker { border-color: #fbbf24; box-shadow: 0 0 10px #fbbf24; z-index: 10; }
+        .cell.card-red { 
+            background: linear-gradient(135deg, rgba(136, 19, 55, 0.85), rgba(76, 5, 25, 0.95)); 
+            border-color: #f43f5e; 
+            box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+        }
+        .cell.card-blue { 
+            background: linear-gradient(135deg, rgba(12, 74, 110, 0.85), rgba(3, 37, 65, 0.95)); 
+            border-color: #38bdf8; 
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        }
+        .cell.selected-attacker { border-color: #fbbf24; box-shadow: 0 0 15px #fbbf24; z-index: 10; transform: scale(1.02); }
 
         /* Valores de cartas */
-        .card-val { position: absolute; font-size: 0.6rem; font-weight: bold; color: #e2e8f0; }
-        .val-top { top: 2px; }
-        .val-bottom { bottom: 2px; }
-        .val-left { left: 4px; top: 50%; transform: translateY(-50%); }
-        .val-right { right: 4px; top: 50%; transform: translateY(-50%); }
+        .card-val { position: absolute; font-size: 0.65rem; font-weight: 800; color: #f8fafc; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .val-top { top: 3px; }
+        .val-bottom { bottom: 3px; }
+        .val-left { left: 5px; top: 50%; transform: translateY(-50%); }
+        .val-right { right: 5px; top: 50%; transform: translateY(-50%); }
 
-        .gem-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.6); }
+        /* SVG Gemas Reales */
+        .gem-svg { width: 22px; height: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
 
         /* Paneles de Acciones */
         .actions-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 6px; }
-        .btn-action { background: #1e293b; color: white; border: 1px solid #334155; padding: 6px; border-radius: 6px; font-size: 0.6rem; font-weight: bold; flex: 1; min-width: 45%; cursor: pointer; position: relative; }
+        .btn-action { 
+            background: rgba(30, 41, 59, 0.7); 
+            color: white; 
+            border: 1px solid rgba(51, 65, 85, 0.8); 
+            padding: 6px; 
+            border-radius: 8px; 
+            font-size: 0.6rem; 
+            font-weight: bold; 
+            flex: 1; 
+            min-width: 45%; 
+            cursor: pointer; 
+            position: relative; 
+            transition: all 0.2s;
+        }
         .btn-action:disabled { opacity: 0.35; cursor: not-allowed; }
 
-        /* Indicadores flotantes de energía */
         @keyframes pulse-fast {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.7; transform: scale(1.08); }
@@ -82,21 +210,31 @@
             animation: pulse-fast 1.5s infinite;
         }
 
-        .attack-panel { display: flex; justify-content: center; gap: 4px; background: rgba(2, 6, 23, 0.9); border: 1px solid rgba(245, 158, 11, 0.5); padding: 6px; border-radius: 8px; margin-bottom: 6px; position: relative; }
+        .attack-panel { display: flex; justify-content: center; gap: 4px; background: rgba(2, 6, 23, 0.95); border: 1px solid rgba(245, 158, 11, 0.5); padding: 6px; border-radius: 8px; margin-bottom: 6px; position: relative; }
         .btn-attack { background: #1e293b; border: 1px solid #334155; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
 
-        .btn-pass { background: #f59e0b; color: #020617; font-weight: 900; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; cursor: pointer; }
-        .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-pass { 
+            background: linear-gradient(135deg, #f59e0b, #d97706); 
+            color: #020617; 
+            font-weight: 900; 
+            border: none; 
+            padding: 5px 10px; 
+            border-radius: 8px; 
+            font-size: 0.65rem; 
+            cursor: pointer; 
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+        .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
         /* Manos */
-        .hand-container { background: rgba(2, 6, 23, 0.6); padding: 6px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 4px; }
-        .hand-title { font-size: 0.6rem; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
+        .hand-container { background: rgba(2, 6, 23, 0.6); padding: 6px; border-radius: 10px; border: 1px solid rgba(30, 41, 59, 0.8); margin-bottom: 4px; }
+        .hand-title { font-size: 0.6rem; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
         .hand-cards { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
-        .card-item { width: 46px; height: 60px; border-radius: 6px; border: 1px solid; position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .card-item.red { background: rgba(136, 19, 55, 0.8); border-color: #9f1239; }
-        .card-item.blue { background: rgba(12, 74, 110, 0.8); border-color: #075985; }
+        .card-item { width: 46px; height: 60px; border-radius: 8px; border: 1px solid; position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+        .card-item.red { background: linear-gradient(135deg, rgba(136, 19, 55, 0.8), rgba(76, 5, 25, 0.9)); border-color: #9f1239; }
+        .card-item.blue { background: linear-gradient(135deg, rgba(12, 74, 110, 0.8), rgba(3, 37, 65, 0.9)); border-color: #075985; }
         .card-item.hidden-card { background: #1e293b; border-color: #475569; }
-        .card-item.selected { border-color: #fbbf24; box-shadow: 0 0 8px #fbbf24; transform: scale(1.05); }
+        .card-item.selected { border-color: #fbbf24; box-shadow: 0 0 10px #fbbf24; transform: scale(1.06); }
 
         .log-msg { text-align: center; font-size: 0.6rem; color: #fbbf24; font-style: italic; min-height: 24px; margin-bottom: 4px; line-height: 1.2; }
 
@@ -109,11 +247,10 @@
 
     <div class="container">
         <div class="header">
-            <h1 class="title">💎 9 GEMAS ONLINE</h1>
-            <p class="subtitle">Multijugador en Tiempo Real & Modo IA</p>
+            <h1 class="title">💎 9 GEMAS</h1>
+            <p class="subtitle">Duelo de Cristales Reales</p>
         </div>
 
-        <!-- Panel de Selección de Modo / Lobby -->
         <div class="lobby-panel">
             <div class="lobby-title">MODO DE JUEGO</div>
             <div class="mode-selector">
@@ -121,7 +258,6 @@
                 <button id="btn-mode-ai" onclick="switchGameMode('ai')" class="btn-mode">🤖 vs IA</button>
             </div>
 
-            <!-- Controles Modo Online -->
             <div id="online-controls" class="lobby-inputs">
                 <button onclick="createRoom()" class="btn-lobby create">Crear Sala</button>
                 <span style="font-size:0.6rem; color:#64748b;">ó</span>
@@ -129,7 +265,6 @@
                 <button onclick="joinRoom()" class="btn-lobby">Unirme</button>
             </div>
 
-            <!-- Controles Modo IA -->
             <div id="ai-controls" class="lobby-inputs hidden">
                 <select id="ai-difficulty" class="ai-select">
                     <option value="easy">🟢 Fácil</option>
@@ -162,7 +297,6 @@
 
         <div id="board" class="board"></div>
 
-        <!-- Panel de Ataque -->
         <div id="attack-panel" class="attack-panel hidden">
             <span id="indicator-attack" class="energy-indicator hidden">⚡ +1</span>
             <span style="font-size: 0.65rem; color: #fbbf24; align-self: center;">Atacar (1⚡):</span>
@@ -173,7 +307,6 @@
             <button onclick="cancelAttack()" class="btn-attack" style="background: #881337;">❌</button>
         </div>
 
-        <!-- Acciones por Energía -->
         <div class="actions-grid">
             <button id="btn-action-draw" onclick="actionDrawCard()" class="btn-action">
                 🔵 Robar 1 (1⚡)
@@ -215,23 +348,35 @@
     </div>
 
     <script>
-        const firebaseConfig = {
-            databaseURL: "https://wayki-cacl2.firebaseio.com"
-        };
+        const firebaseConfig = { databaseURL: "https://wayki-cacl2.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
         const TARGET_SCORE = 7;
+
+        // SVG Vectoriales de Gemas Reales Facetadas
+        const GEM_SVGS = {
+            'Rubí': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2L2 9l10 13L22 9 12 2zm0 3.2l6.2 4.8H5.8L12 5.2z"/><path fill="#dc2626" d="M2 9l10 13V10H2.8z"/><path fill="#f87171" d="M12 2v8h9.2z"/></svg>`,
+            'Zafiro': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#3b82f6" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#1d4ed8" d="M1 8l11 14V8H1z"/><path fill="#60a5fa" d="M12 2v6h8.2z"/></svg>`,
+            'Amarillo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#eab308" d="M12 2l9 4v12l-9 4-9-4V6l9-4zm0 2.8L5 7.5v9l7 3.1 7-3.1v-9l-7-2.7z"/><path fill="#ca8a04" d="M3 6l9 14V7.5z"/><path fill="#fde047" d="M12 2v5.5h9z"/></svg>`,
+            'Verde': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#22c55e" d="M5 3h14l4 6-11 13L1 9l4-6zm7 2.2L4 9h16l-8-3.8z"/><path fill="#15803d" d="M1 9l11 13V9H1z"/><path fill="#4ade80" d="M12 3v6h8z"/></svg>`,
+            'Naranja': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#f97316" d="M12 2L3 8l9 14 9-14-9-6zm0 3.5l5.5 3.7H6.5L12 5.5z"/><path fill="#c2410c" d="M3 8l9 14V9.2z"/><path fill="#fb923c" d="M12 2v7.2h6.5z"/></svg>`,
+            'Violeta': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#a855f7" d="M12 2l8 5-3 13H7L4 7l8-5zm0 3L6 8h12l-6-3z"/><path fill="#6b21a8" d="M4 7l3 13 5-12z"/><path fill="#c084fc" d="M12 2v8h8z"/></svg>`,
+            'Blanco': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#f8fafc" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#cbd5e1" d="M2 9l10 13V9.5z"/><path fill="#ffffff" d="M12 2v7.5h6.5z"/></svg>`,
+            'Negro': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#334155" d="M12 2L2 9l10 13L22 9 12 2zm0 3.2l6.2 4.8H5.8L12 5.2z"/><path fill="#0f172a" d="M2 9l10 13V10H2.8z"/><path fill="#64748b" d="M12 2v8h9.2z"/></svg>`,
+            'Marrón': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#78350f" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#451a03" d="M1 8l11 14V8H1z"/><path fill="#b45309" d="M12 2v6h8.2z"/></svg>`
+        };
+
         const GEM_TYPES = [
-            { name: 'Rojo', color: '#ef4444', pts: 1, type: 'primary' },
-            { name: 'Azul', color: '#3b82f6', pts: 1, type: 'primary' },
-            { name: 'Amarillo', color: '#eab308', pts: 1, type: 'primary' },
-            { name: 'Verde', color: '#22c55e', pts: 1, type: 'secondary' },
-            { name: 'Naranja', color: '#f97316', pts: 1, type: 'secondary' },
-            { name: 'Violeta', color: '#a855f7', pts: 2, type: 'secondary' },
-            { name: 'Blanco', color: '#f8fafc', pts: 0, protected: true, type: 'special' }, 
-            { name: 'Negro', color: '#1e293b', pts: 1, type: 'special' },
-            { name: 'Marrón', color: '#78350f', pts: 1, type: 'special' }      
+            { name: 'Rojo', gemReal: 'Rubí', pts: 1, type: 'primary' },
+            { name: 'Azul', gemReal: 'Zafiro', pts: 1, type: 'primary' },
+            { name: 'Amarillo', gemReal: 'Topacio', pts: 1, type: 'primary' },
+            { name: 'Verde', gemReal: 'Esmeralda', pts: 1, type: 'secondary' },
+            { name: 'Naranja', gemReal: 'Ámbar', pts: 1, type: 'secondary' },
+            { name: 'Violeta', gemReal: 'Amatista', pts: 2, type: 'secondary' },
+            { name: 'Blanco', gemReal: 'Diamante', pts: 0, protected: true, type: 'special' }, 
+            { name: 'Negro', gemReal: 'Ónix', pts: 1, type: 'special' },
+            { name: 'Marrón', gemReal: 'Cuarzo', pts: 1, type: 'special' }      
         ];
 
         let gameMode = 'online';
@@ -309,7 +454,6 @@
         function startAIGame() {
             aiDifficulty = document.getElementById('ai-difficulty').value;
             myRole = 'red';
-            
             const initialState = createInitialGameState();
             applyGameState(initialState);
             
@@ -424,9 +568,7 @@
             if (gameMode === 'ai') {
                 document.getElementById('log-message').innerText = logText;
                 render();
-                if (turn === 'blue') {
-                    setTimeout(executeAITurn, 700);
-                }
+                if (turn === 'blue') { setTimeout(executeAITurn, 700); }
                 return;
             }
 
@@ -481,9 +623,7 @@
             usedBlackEnergyBonusThisTurn = false;
 
             isInspectMode = false;
-            selectedCard = null;
-            selectedHandIndex = null;
-            selectedBoardIndex = null;
+            selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
 
             const log = `Turno de ${turn === 'red' ? 'Rojo' : 'Azul'}. Energía: ${currentEnergy}⚡.`;
@@ -515,28 +655,16 @@
             }
 
             let bestAttack = findBestAIAttack();
-            if (bestAttack) {
-                aiExecuteAttack(bestAttack);
-                return;
-            }
+            if (bestAttack) { aiExecuteAttack(bestAttack); return; }
 
             if (currentEnergy >= 2 && hands.blue.length > 0) {
                 let bestPlacement = findBestAICardPlacement();
-                if (bestPlacement) {
-                    aiPlayCard(bestPlacement.handIndex, bestPlacement.boardIndex);
-                    return;
-                }
+                if (bestPlacement) { aiPlayCard(bestPlacement.handIndex, bestPlacement.boardIndex); return; }
             }
 
             if (currentEnergy >= 1) {
-                if (decks.blue.length > 0 && hands.blue.length < 5) {
-                    actionDrawCard();
-                    return;
-                }
-                if (discards.blue.length > 0) {
-                    actionRecoverDiscard();
-                    return;
-                }
+                if (decks.blue.length > 0 && hands.blue.length < 5) { actionDrawCard(); return; }
+                if (discards.blue.length > 0) { actionRecoverDiscard(); return; }
             }
 
             startTurn('red');
@@ -544,7 +672,6 @@
 
         function findBestAIAttack() {
             if (currentEnergy < 1) return null;
-
             let possibleAttacks = [];
             const directions = ['top', 'bottom', 'left', 'right'];
 
@@ -554,8 +681,7 @@
                     const col = idx % 3;
 
                     directions.forEach(dir => {
-                        let targetIdx = null;
-                        let oppSide = '';
+                        let targetIdx = null; let oppSide = '';
                         if (dir === 'top' && row > 0) { targetIdx = idx - 3; oppSide = 'bottom'; }
                         if (dir === 'bottom' && row < 2) { targetIdx = idx + 3; oppSide = 'top'; }
                         if (dir === 'left' && col > 0) { targetIdx = idx - 1; oppSide = 'right'; }
@@ -588,24 +714,17 @@
             const emptyCells = board.map((c, i) => c === null ? i : null).filter(i => i !== null);
             if (emptyCells.length === 0) return null;
 
-            let bestChoice = null;
-            let maxScore = -999;
-
+            let bestChoice = null; let maxScore = -999;
             hands.blue.forEach((card, hIdx) => {
                 emptyCells.forEach(bIdx => {
                     let score = card.top + card.bottom + card.left + card.right;
                     const gem = gems[bIdx];
-
                     if (aiDifficulty === 'hard') {
                         if (gem.name === 'Violeta') score += 15;
                         if (gem.name === 'Naranja') score += 10;
                         if (gem.name === 'Blanco') score += 8;
                     }
-
-                    if (score > maxScore) {
-                        maxScore = score;
-                        bestChoice = { handIndex: hIdx, boardIndex: bIdx };
-                    }
+                    if (score > maxScore) { maxScore = score; bestChoice = { handIndex: hIdx, boardIndex: bIdx }; }
                 });
             });
 
@@ -626,7 +745,7 @@
             board[boardIdx] = playedCard;
             hands.blue.splice(handIdx, 1);
 
-            let logText = `🤖 IA jugó en Gema ${gem.name}! (-2⚡)`;
+            let logText = `🤖 IA jugó en Gema ${gem.gemReal || gem.name}! (-2⚡)`;
             if (gem.name === 'Violeta') currentEnergy += 1;
             if (gem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer('blue');
             if (gem.name === 'Verde') logText += triggerGreenGemDeploymentEffect('blue');
@@ -683,7 +802,7 @@
                     revealedBoardGems[index] = true;
                     isInspectMode = false;
                     
-                    let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló Gema ${gems[index].name}!`;
+                    let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló ${gems[index].gemReal || gems[index].name}!`;
                     render();
                     syncGameState(logText);
                     return;
@@ -745,7 +864,7 @@
             board[index] = playedCard;
             hands[turn].splice(selectedHandIndex, 1);
 
-            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en Gema ${gem.name}! (-2⚡)`;
+            let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.gemReal || gem.name}! (-2⚡)`;
             if (gem.name === 'Violeta') { currentEnergy += 1; logText += ` 🟣 [+1⚡]`; }
             if (gem.name === 'Naranja') { maxEnergy = getMaxEnergyForPlayer(turn); logText += ` 🟠 [Máx. 4⚡]`; }
             if (gem.name === 'Verde') { logText += triggerGreenGemDeploymentEffect(turn); }
@@ -833,9 +952,7 @@
             const row = Math.floor(idx / 3);
             const col = idx % 3;
 
-            let targetIdx = null;
-            let oppSide = '';
-
+            let targetIdx = null; let oppSide = '';
             if (dir === 'top' && row > 0) { targetIdx = idx - 3; oppSide = 'bottom'; }
             if (dir === 'bottom' && row < 2) { targetIdx = idx + 3; oppSide = 'top'; }
             if (dir === 'left' && col > 0) { targetIdx = idx - 1; oppSide = 'right'; }
@@ -865,16 +982,14 @@
                 board[targetIdx] = attackerCard;
                 board[idx] = null;
 
-                attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó Gema ${targetGem.name} (-1⚡).`;
+                attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.gemReal || targetGem.name} (-1⚡).`;
                 if (targetGem.name === 'Violeta') currentEnergy += 1;
                 if (targetGem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer(turn);
                 if (targetGem.name === 'Verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
 
                 const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
                 if (controlledGems.includes('Rojo') && !usedRedEnergyBonusThisTurn) {
-                    usedRedEnergyBonusThisTurn = true;
-                    currentEnergy += 1;
-                    attackMsg += ` 🔴 [+1⚡ Bonus]`;
+                    usedRedEnergyBonusThisTurn = true; currentEnergy += 1; attackMsg += ` 🔴 [+1⚡ Bonus]`;
                 }
             } else {
                 attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
@@ -944,7 +1059,6 @@
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
-            // Verificación y renderizado de los hints / indicadores de bonuses de energía por gema controlada
             const controlledGems = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.name);
             
             const hasBlueBonus = controlledGems.includes('Azul') && !usedBlueEnergyBonusThisTurn;
@@ -980,21 +1094,23 @@
 
                 if (cell) {
                     const effectiveVals = getEffectiveCardValues(idx);
+                    const gemSvg = GEM_SVGS[cell.gemRevealed.name] || '';
                     div.innerHTML = `
                         <div class="card-val val-top">${effectiveVals.top}</div>
                         <div class="card-val val-bottom">${effectiveVals.bottom}</div>
                         <div class="card-val val-left">${effectiveVals.left}</div>
                         <div class="card-val val-right">${effectiveVals.right}</div>
-                        <div class="gem-dot" style="background-color: ${cell.gemRevealed.color}"></div>
-                        ${cell.isProtected ? '<div style="position:absolute; top:2px; right:2px; font-size:8px;">🛡️</div>' : ''}
+                        ${gemSvg}
+                        ${cell.isProtected ? '<div style="position:absolute; top:2px; right:3px; font-size:9px;">🛡️</div>' : ''}
                     `;
                 } else if (revealedBoardGems[idx]) {
+                    const gemSvg = GEM_SVGS[gems[idx].name] || '';
                     div.innerHTML = `
-                        <div class="gem-dot" style="background-color: ${gems[idx].color}"></div>
-                        <span style="font-size:0.55rem; margin-top:2px; color:#cbd5e1;">${gems[idx].name}</span>
+                        ${gemSvg}
+                        <span style="font-size:0.55rem; margin-top:2px; color:#cbd5e1; font-weight:bold;">${gems[idx].gemReal || gems[idx].name}</span>
                     `;
                 } else {
-                    div.innerHTML = `<span style="font-size:0.7rem; opacity:0.3;">💎</span>`;
+                    div.innerHTML = `<span style="font-size:0.8rem; opacity:0.25;">💎</span>`;
                 }
                 boardEl.appendChild(div);
             });
@@ -1004,14 +1120,13 @@
                 handEl.innerHTML = '';
                 if (hands[p]) {
                     hands[p].forEach((card, idx) => {
-                        TheDiv = document.createElement('div');
-                        const div = TheDiv;
+                        const div = document.createElement('div');
                         const isSel = turn === p && selectedHandIndex === idx;
                         const isRivalHand = gameMode === 'online' ? (myRole && myRole !== p) : (p === 'blue');
 
                         if (isRivalHand) {
                             div.className = `card-item hidden-card`;
-                            div.innerHTML = `<span style="font-size:0.7rem; opacity:0.4;">💎</span>`;
+                            div.innerHTML = `<span style="font-size:0.7rem; opacity:0.3;">💎</span>`;
                         } else {
                             div.className = `card-item ${p} ${isSel ? 'selected' : ''}`;
                             div.onclick = () => selectHandCard(p, idx);
