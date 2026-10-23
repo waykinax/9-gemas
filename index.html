@@ -140,7 +140,7 @@
             margin-bottom: 6px; 
         }
         .cell { 
-            background: rgba(15, 23, 42, 0.6); 
+            background: rgba(15, 23, 42, 0.7); 
             border: 1px solid rgba(51, 65, 85, 0.4); 
             border-radius: 10px; 
             display: flex; 
@@ -152,17 +152,28 @@
             transition: all 0.2s;
         }
         .cell.inspectable { border: 1px dashed #a855f7; background: rgba(168, 85, 247, 0.15); }
+        
         .cell.card-red { 
-            background: linear-gradient(135deg, rgba(136, 19, 55, 0.85), rgba(76, 5, 25, 0.95)); 
-            border-color: #f43f5e; 
-            box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+            background: radial-gradient(circle at center, #2d0612 0%, #0f172a 100%); 
+            border: 2px solid #f43f5e; 
+            box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
         }
         .cell.card-blue { 
-            background: linear-gradient(135deg, rgba(12, 74, 110, 0.85), rgba(3, 37, 65, 0.95)); 
-            border-color: #38bdf8; 
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+            background: radial-gradient(circle at center, #082f49 0%, #0f172a 100%); 
+            border: 2px solid #38bdf8; 
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
         }
-        .cell.selected-attacker { border-color: #fbbf24; box-shadow: 0 0 15px #fbbf24; z-index: 10; transform: scale(1.02); }
+        .cell.selected-attacker { border-color: #fbbf24 !important; box-shadow: 0 0 15px #fbbf24 !important; z-index: 10; transform: scale(1.02); }
+
+        .gem-pod {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 70%, transparent 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
         /* Valores de cartas */
         .card-val { position: absolute; font-size: 0.65rem; font-weight: 800; color: #f8fafc; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
@@ -171,8 +182,11 @@
         .val-left { left: 5px; top: 50%; transform: translateY(-50%); }
         .val-right { right: 5px; top: 50%; transform: translateY(-50%); }
 
-        /* SVG Gemas Reales */
-        .gem-svg { width: 22px; height: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+        .gem-svg { 
+            width: 24px; 
+            height: 24px; 
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.8)); 
+        }
 
         /* Paneles de Acciones */
         .actions-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 6px; }
@@ -354,17 +368,17 @@
 
         const TARGET_SCORE = 7;
 
-        // SVG Vectoriales de Gemas Reales Facetadas
+        // Ónix corregido con cuerpo negro profundo y Cuarzo marrón oscuro diferenciado
         const GEM_SVGS = {
-            'Rubí': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2L2 9l10 13L22 9 12 2zm0 3.2l6.2 4.8H5.8L12 5.2z"/><path fill="#dc2626" d="M2 9l10 13V10H2.8z"/><path fill="#f87171" d="M12 2v8h9.2z"/></svg>`,
-            'Zafiro': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#3b82f6" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#1d4ed8" d="M1 8l11 14V8H1z"/><path fill="#60a5fa" d="M12 2v6h8.2z"/></svg>`,
-            'Amarillo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#eab308" d="M12 2l9 4v12l-9 4-9-4V6l9-4zm0 2.8L5 7.5v9l7 3.1 7-3.1v-9l-7-2.7z"/><path fill="#ca8a04" d="M3 6l9 14V7.5z"/><path fill="#fde047" d="M12 2v5.5h9z"/></svg>`,
-            'Verde': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#22c55e" d="M5 3h14l4 6-11 13L1 9l4-6zm7 2.2L4 9h16l-8-3.8z"/><path fill="#15803d" d="M1 9l11 13V9H1z"/><path fill="#4ade80" d="M12 3v6h8z"/></svg>`,
-            'Naranja': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#f97316" d="M12 2L3 8l9 14 9-14-9-6zm0 3.5l5.5 3.7H6.5L12 5.5z"/><path fill="#c2410c" d="M3 8l9 14V9.2z"/><path fill="#fb923c" d="M12 2v7.2h6.5z"/></svg>`,
-            'Violeta': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#a855f7" d="M12 2l8 5-3 13H7L4 7l8-5zm0 3L6 8h12l-6-3z"/><path fill="#6b21a8" d="M4 7l3 13 5-12z"/><path fill="#c084fc" d="M12 2v8h8z"/></svg>`,
-            'Blanco': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#f8fafc" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#cbd5e1" d="M2 9l10 13V9.5z"/><path fill="#ffffff" d="M12 2v7.5h6.5z"/></svg>`,
-            'Negro': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#334155" d="M12 2L2 9l10 13L22 9 12 2zm0 3.2l6.2 4.8H5.8L12 5.2z"/><path fill="#0f172a" d="M2 9l10 13V10H2.8z"/><path fill="#64748b" d="M12 2v8h9.2z"/></svg>`,
-            'Marrón': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#78350f" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#451a03" d="M1 8l11 14V8H1z"/><path fill="#b45309" d="M12 2v6h8.2z"/></svg>`
+            'Rubí': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffe4e6" d="M12 2L6 8h12l-6-6z"/><path fill="#f43f5e" d="M2 8l10 14L6 8H2z"/><path fill="#e11d48" d="M22 8l-10 14 6-14h4z"/><path fill="#ffffff" opacity="0.8" d="M12 2l6 6H6l6-6z"/><path fill="#be123c" d="M6 8l6 14 6-14H6z"/></svg>`,
+            'Zafiro': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#e0f2fe" d="M12 2L5 8h14l-7-6z"/><path fill="#38bdf8" d="M1 8l11 14L5 8H1z"/><path fill="#0284c7" d="M23 8l-11 14 6-14h5z"/><path fill="#ffffff" opacity="0.85" d="M12 2l7 6H5l7-6z"/><path fill="#0369a1" d="M5 8l7 14 7-14H5z"/></svg>`,
+            'Topacio': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#fef08a" d="M12 2l9 4v12l-9 4-9-4V6l9-4zm0 2.8L5 7.5v9l7 3.1 7-3.1v-9l-7-2.7z"/><path fill="#ca8a04" d="M3 6l9 14V7.5z"/><path fill="#fde047" d="M12 2v5.5h9z"/></svg>`,
+            'Esmeralda': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#dcfce7" d="M5 3h14l4 6-11 13L1 9l4-6zm7 2.2L4 9h16l-8-3.8z"/><path fill="#15803d" d="M1 9l11 13V9H1z"/><path fill="#4ade80" d="M12 3v6h8z"/></svg>`,
+            'Ámbar': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffedd5" d="M12 2L3 8l9 14 9-14-9-6zm0 3.5l5.5 3.7H6.5L12 5.5z"/><path fill="#ea580c" d="M3 8l9 14V9.2z"/><path fill="#f97316" d="M12 2v7.2h6.5z"/></svg>`,
+            'Amatista': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#f3e8ff" d="M12 2l8 5-3 13H7L4 7l8-5zm0 3L6 8h12l-6-3z"/><path fill="#6b21a8" d="M4 7l3 13 5-12z"/><path fill="#c084fc" d="M12 2v8h8z"/></svg>`,
+            'Diamante': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffffff" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#94a3b8" d="M2 9l10 13V9.5z"/><path fill="#f8fafc" d="M12 2v7.5h6.5z"/></svg>`,
+            'Ónix': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#475569" d="M12 2L2 9l10 13L22 9 12 2zm0 2.5l6.5 5H5.5L12 4.5z"/><path fill="#000000" d="M2 9l10 13V9.5z"/><path fill="#0f172a" d="M12 2v7.5h6.5z"/><path fill="#94a3b8" opacity="0.6" d="M12 4.5l6.5 4.5H12z"/></svg>`,
+            'Cuarzo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#fed7aa" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#1c0a00" d="M1 8l11 14V8H1z"/><path fill="#582307" d="M12 2v6h8.2z"/></svg>`
         };
 
         const GEM_TYPES = [
@@ -745,7 +759,7 @@
             board[boardIdx] = playedCard;
             hands.blue.splice(handIdx, 1);
 
-            let logText = `🤖 IA jugó en Gema ${gem.gemReal || gem.name}! (-2⚡)`;
+            let logText = `🤖 IA jugó en ${gem.gemReal || gem.name}! (-2⚡)`;
             if (gem.name === 'Violeta') currentEnergy += 1;
             if (gem.name === 'Naranja') maxEnergy = getMaxEnergyForPlayer('blue');
             if (gem.name === 'Verde') logText += triggerGreenGemDeploymentEffect('blue');
@@ -1094,19 +1108,19 @@
 
                 if (cell) {
                     const effectiveVals = getEffectiveCardValues(idx);
-                    const gemSvg = GEM_SVGS[cell.gemRevealed.name] || '';
+                    const gemSvg = GEM_SVGS[cell.gemRevealed.gemReal] || GEM_SVGS[cell.gemRevealed.name] || '';
                     div.innerHTML = `
                         <div class="card-val val-top">${effectiveVals.top}</div>
                         <div class="card-val val-bottom">${effectiveVals.bottom}</div>
                         <div class="card-val val-left">${effectiveVals.left}</div>
                         <div class="card-val val-right">${effectiveVals.right}</div>
-                        ${gemSvg}
+                        <div class="gem-pod">${gemSvg}</div>
                         ${cell.isProtected ? '<div style="position:absolute; top:2px; right:3px; font-size:9px;">🛡️</div>' : ''}
                     `;
                 } else if (revealedBoardGems[idx]) {
-                    const gemSvg = GEM_SVGS[gems[idx].name] || '';
+                    const gemSvg = GEM_SVGS[gems[idx].gemReal] || GEM_SVGS[gems[idx].name] || '';
                     div.innerHTML = `
-                        ${gemSvg}
+                        <div class="gem-pod">${gemSvg}</div>
                         <span style="font-size:0.55rem; margin-top:2px; color:#cbd5e1; font-weight:bold;">${gems[idx].gemReal || gems[idx].name}</span>
                     `;
                 } else {
