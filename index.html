@@ -512,11 +512,10 @@
             listenRoomState();
         }
 
-        // Automatización mejorada para lectura inmediata al entrar por enlace
         function joinRoomAuto(code) {
             myRole = 'blue';
             currentRoomCode = code;
-            document.getElementById('room-status').innerText = `Entrando a sala ${code}...`;
+            document.getElementById('room-status').innerText = `Conectado a Sala: ${code} (Sos AZUL).`;
             roomRef = database.ref('rooms/' + code);
             
             roomRef.once('value').then((snapshot) => {
@@ -1052,7 +1051,10 @@
 
             if (redTotal >= TARGET_SCORE || blueTotal >= TARGET_SCORE) {
                 let title = "¡Fin del Duelo!";
-                let detail = redTotal >= TARGET_SCORE ? "¡Victoria del Jugador Rojo!" : "¡Victoria del Jugador Azul!";
+                let winnerText = redTotal >= TARGET_SCORE ? "Jugador Rojo" : "Jugador Azul";
+                let winningScore = redTotal >= TARGET_SCORE ? redTotal : blueTotal;
+                let detail = `¡Victoria de ${winnerText} con ${winningScore} puntos! (Rojo: ${redTotal} - Azul: ${blueTotal})`;
+                
                 document.getElementById('winner-text').innerText = title;
                 document.getElementById('winner-detail').innerText = detail;
                 document.getElementById('game-over-modal').style.display = 'flex';
