@@ -368,7 +368,7 @@
 
         const TARGET_SCORE = 7;
 
-        // SVGs mapeados por IDs limpios (sin tildes) para evitar errores de codificación en Chrome
+        // SVGs mapeados por IDs limpios (sin tildes)
         const GEM_SVGS = {
             'rojo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffe4e6" d="M12 2L6 8h12l-6-6z"/><path fill="#f43f5e" d="M2 8l10 14L6 8H2z"/><path fill="#e11d48" d="M22 8l-10 14 6-14h4z"/><path fill="#ffffff" opacity="0.8" d="M12 2l6 6H6l6-6z"/><path fill="#be123c" d="M6 8l6 14 6-14H6z"/></svg>`,
             'azul': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#e0f2fe" d="M12 2L5 8h14l-7-6z"/><path fill="#38bdf8" d="M1 8l11 14L5 8H1z"/><path fill="#0284c7" d="M23 8l-11 14 6-14h5z"/><path fill="#ffffff" opacity="0.85" d="M12 2l7 6H5l7-6z"/><path fill="#0369a1" d="M5 8l7 14 7-14H5z"/></svg>`,
@@ -512,12 +512,23 @@
             listenRoomState();
         }
 
+        // Automatización mejorada para lectura inmediata al entrar por enlace
         function joinRoomAuto(code) {
             myRole = 'blue';
             currentRoomCode = code;
             document.getElementById('room-status').innerText = `Entrando a sala ${code}...`;
             roomRef = database.ref('rooms/' + code);
-            listenRoomState();
+            
+            roomRef.once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    applyGameState(data);
+                    render();
+                }
+                listenRoomState();
+            }).catch((err) => {
+                console.error("Error al unirse automáticamente:", err);
+            });
         }
 
         function createInitialGameState() {
