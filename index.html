@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>9 Gemas - Duelo de Cristales</title>
+    
+    <!-- Enlaces para PWA / PWABuilder -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
+
     <!-- Firebase para tiempo real online -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -1080,7 +1090,6 @@
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
-            // Configuración de títulos según tu rol
             const myPlayerRole = myRole || 'red';
             if (myPlayerRole === 'blue') {
                 document.getElementById('label-hand-red').innerText = 'Mano Jugador Rojo';
@@ -1146,7 +1155,6 @@
                 boardEl.appendChild(div);
             });
 
-            // Renderizado de manos limpio
             ['red', 'blue'].forEach(p => {
                 const handEl = document.getElementById(`hand-${p}`);
                 handEl.innerHTML = '';
