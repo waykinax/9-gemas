@@ -1,6 +1,7 @@
 {
   "name": "9 Gemas - Duelo de Cristales",
   "short_name": "9 Gemas",
+  "description": "Juego estratégico de cartas y gemas en tiempo real.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#020617",
