@@ -137,7 +137,7 @@
             box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
         }
 
-        /* Tablero 3x3 */
+        /* Tablero 3x3 por defecto */
         .board { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
@@ -265,9 +265,143 @@
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
         .modal-box { background: #0f172a; border: 1px solid #334155; padding: 20px; border-radius: 16px; text-align: center; max-width: 280px; width: 100%; }
         .hidden { display: none !important; }
+
+        /* ==========================================
+           CONFIGURACIÓN Y SKINS
+           ========================================== */
+        .settings-trigger {
+          position: fixed;
+          top: 12px;
+          right: 12px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: rgba(30, 30, 30, 0.85);
+          color: #ffffff;
+          font-size: 1.2rem;
+          cursor: pointer;
+          z-index: 999;
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .settings-trigger:active { transform: scale(0.92); }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0; left: 0; width: 100vw; height: 100vh;
+          background: rgba(0, 0, 0, 0.75);
+          display: flex; justify-content: center; align-items: center;
+          z-index: 1000; backdrop-filter: blur(3px);
+        }
+        .modal-content-settings {
+          background: #1e1e24;
+          border: 1px solid #33333f;
+          border-radius: 16px;
+          padding: 20px;
+          width: 85%;
+          max-width: 300px;
+          color: #f0f0f0;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+          text-align: center;
+        }
+        .modal-content-settings h2 {
+          margin-top: 0; font-size: 1.2rem; margin-bottom: 16px; color: #ffffff;
+        }
+        .setting-item {
+          display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px; text-align: left;
+        }
+        .setting-item label { font-size: 0.85rem; color: #aaaaaa; }
+        .setting-item select {
+          width: 100%; padding: 8px 10px; border-radius: 8px; background: #2a2a35; color: #ffffff; border: 1px solid #444455; font-size: 0.9rem; outline: none; cursor: pointer;
+        }
+        .btn-settings-close {
+          width: 100%; padding: 10px; border-radius: 8px; border: none; background: #ffcc00; color: #121212; font-weight: bold; font-size: 0.9rem; cursor: pointer;
+        }
+
+        /* Skin Clásico */
+        body.skin-classic .cell { border-radius: 6px; }
+        body.skin-classic .card-item { border-radius: 6px; }
+
+        /* Skin Medieval Neón */
+        body.skin-medieval-neon { background: radial-gradient(circle at center, #180826 0%, #05020a 100%); }
+        body.skin-medieval-neon .container { background: rgba(20, 10, 35, 0.9); border: 2px solid #a855f7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(236, 72, 153, 0.15); }
+        body.skin-medieval-neon .title { background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.6)); }
+        body.skin-medieval-neon .board { background: rgba(10, 5, 20, 0.95); border: 2px solid #3b82f6; box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.3); }
+        body.skin-medieval-neon .cell { background: rgba(30, 15, 50, 0.8); border: 1px solid #7c3aed; border-radius: 4px; }
+        body.skin-medieval-neon .cell.card-red { background: radial-gradient(circle at center, #4c0519 0%, #180826 100%); border: 2px solid #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
+        body.skin-medieval-neon .cell.card-blue { background: radial-gradient(circle at center, #082f49 0%, #180826 100%); border: 2px solid #06b6d4; box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); }
+        body.skin-medieval-neon .cell.inspectable { border: 2px dashed #ec4899 !important; background: rgba(236, 72, 153, 0.2) !important; box-shadow: 0 0 12px rgba(236, 72, 153, 0.4); }
+        body.skin-medieval-neon .card-item.red { background: linear-gradient(135deg, rgba(159, 18, 57, 0.9), rgba(76, 5, 25, 0.95)); border-color: #f43f5e; border-radius: 4px; }
+        body.skin-medieval-neon .card-item.blue { background: linear-gradient(135deg, rgba(8, 145, 178, 0.9), rgba(8, 51, 68, 0.95)); border-color: #06b6d4; border-radius: 4px; }
+        body.skin-medieval-neon .card-item.selected { border: 2px solid #ec4899 !important; box-shadow: 0 0 15px #ec4899 !important; transform: scale(1.08); z-index: 5; }
+
+        /* Skin Medieval Clásico (Piedra y Hierro) */
+        body.skin-medieval-pure { background: radial-gradient(circle at center, #1c1917 0%, #0c0a09 100%); }
+        body.skin-medieval-pure .container { background: rgba(28, 25, 23, 0.92); border: 2px solid #b45309; box-shadow: 0 15px 35px rgba(0,0,0,0.9), inset 0 0 20px rgba(120, 53, 15, 0.3); }
+        body.skin-medieval-pure .title { background: linear-gradient(135deg, #fde047 0%, #ca8a04 50%, #854d0e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+        body.skin-medieval-pure .board { background: #1c1917; border: 3px solid #78350f; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
+        body.skin-medieval-pure .cell { background: #292524; border: 2px solid #44403c; border-radius: 4px; }
+        body.skin-medieval-pure .cell.card-red { background: #450a0a; border: 2px solid #b91c1c; }
+        body.skin-medieval-pure .cell.card-blue { background: #082f49; border: 2px solid #0369a1; }
+        body.skin-medieval-pure .cell.inspectable { border: 2px dashed #fde047 !important; background: rgba(253, 224, 71, 0.2) !important; }
+        body.skin-medieval-pure .card-item.red { background: #7f1d1d; border-color: #b91c1c; border-radius: 4px; }
+        body.skin-medieval-pure .card-item.blue { background: #0369a1; border-color: #0284c7; border-radius: 4px; }
+        body.skin-medieval-pure .card-item.selected { border: 2px solid #fde047 !important; box-shadow: 0 0 12px #fde047 !important; transform: scale(1.08); z-index: 5; }
+
+        /* Skin Futurista / Sci-Fi Holográfico */
+        body.skin-futuristic { background: radial-gradient(circle at center, #030712 0%, #000000 100%); }
+        body.skin-futuristic .container { background: rgba(3, 7, 18, 0.92); border: 2px solid #06b6d4; box-shadow: 0 0 30px rgba(6, 182, 212, 0.35), inset 0 0 20px rgba(6, 182, 212, 0.1); }
+        body.skin-futuristic .title { background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 50%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.6)); }
+        body.skin-futuristic .board { background: rgba(2, 6, 23, 0.95); border: 2px solid #0284c7; box-shadow: inset 0 0 15px rgba(2, 132, 199, 0.4); }
+        body.skin-futuristic .cell { background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 2px; }
+        body.skin-futuristic .cell.card-red { background: radial-gradient(circle at center, #881337 0%, #030712 100%); border: 2px solid #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
+        body.skin-futuristic .cell.card-blue { background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%); border: 2px solid #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
+        body.skin-futuristic .cell.inspectable { border: 2px dashed #22d3ee !important; background: rgba(34, 211, 238, 0.25) !important; box-shadow: 0 0 15px rgba(34, 211, 238, 0.5); }
+        body.skin-futuristic .card-item.red { background: linear-gradient(135deg, #9f1239, #4c0519); border-color: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); border-radius: 2px; }
+        body.skin-futuristic .card-item.blue { background: linear-gradient(135deg, #0369a1, #0c4a6e); border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); border-radius: 2px; }
+        body.skin-futuristic .card-item.selected { border: 2px solid #22d3ee !important; box-shadow: 0 0 15px #22d3ee, inset 0 0 8px rgba(34, 211, 238, 0.5) !important; transform: scale(1.08); z-index: 5; }
+
+        /* Skin Jurásico (Ámbar y Selva) */
+        body.skin-jrasic { background: radial-gradient(circle at center, #14210d 0%, #060a04 100%); }
+        body.skin-jrasic .container { background: rgba(18, 30, 15, 0.92); border: 2px solid #ca8a04; box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 20px rgba(202, 138, 4, 0.2); }
+        body.skin-jrasic .title { background: linear-gradient(135deg, #fde047 0%, #eab308 50%, #854d0e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 6px rgba(202, 138, 4, 0.5)); }
+        body.skin-jrasic .board { background: #0f1c0a; border: 3px solid #854d0e; box-shadow: inset 0 0 15px rgba(0,0,0,0.9); }
+        body.skin-jrasic .cell { background: #1a2e13; border: 2px solid #422006; border-radius: 8px; }
+        body.skin-jrasic .cell.card-red { background: radial-gradient(circle at center, #450a0a 0%, #1a2e13 100%); border: 2px solid #dc2626; box-shadow: 0 0 12px rgba(220, 38, 38, 0.4); }
+        body.skin-jrasic .cell.card-blue { background: radial-gradient(circle at center, #14532d 0%, #1a2e13 100%); border: 2px solid #16a34a; box-shadow: 0 0 12px rgba(22, 163, 74, 0.4); }
+        body.skin-jrasic .cell.inspectable { border: 2px dashed #facc15 !important; background: rgba(250, 204, 21, 0.2) !important; box-shadow: 0 0 12px rgba(250, 204, 21, 0.4); }
+        body.skin-jrasic .card-item.red { background: linear-gradient(135deg, #991b1b, #450a0a); border-color: #dc2626; border-radius: 6px; }
+        body.skin-jrasic .card-item.blue { background: linear-gradient(135deg, #166534, #14532d); border-color: #22c55e; border-radius: 6px; }
+        body.skin-jrasic .card-item.selected { border: 2px solid #fde047 !important; box-shadow: 0 0 15px #fde047, inset 0 0 8px rgba(253, 224, 71, 0.4) !important; transform: scale(1.08); z-index: 5; }
     </style>
 </head>
 <body>
+
+    <!-- Botón Flotante de Configuración -->
+    <button id="btn-settings" class="settings-trigger" aria-label="Configuración" title="Configuración">⚙️</button>
+
+    <!-- Modal de Configuración -->
+    <div id="modal-settings" class="modal-overlay" style="display: none;">
+      <div class="modal-content-settings">
+        <h2>Configuración</h2>
+        <div class="setting-item">
+          <label for="select-skin">Aspecto Visual:</label>
+          <select id="select-skin">
+            <option value="modern">Moderno (Actual)</option>
+            <option value="classic">Clásico (Iconos)</option>
+            <option value="medieval-neon">🛡️⚡ Medieval Neón</option>
+            <option value="medieval-pure">⚔️ Medieval Clásico (Piedra y Hierro)</option>
+            <option value="futuristic">🚀 Futurista / Sci-Fi Holográfico</option>
+            <option value="jrasic">🦖 Jurásico (Ámbar y Selva)</option>
+          </select>
+        </div>
+        <button id="btn-close-settings" class="btn-settings-close">Guardar y Cerrar</button>
+      </div>
+    </div>
 
     <div class="container">
         <div class="header">
@@ -390,6 +524,12 @@
             'marron': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#fed7aa" d="M6 2h12l5 6-11 14L1 8l5-6zm6 2.5L3.8 8h16.4L12 4.5z"/><path fill="#1c0a00" d="M1 8l11 14V8H1z"/><path fill="#582307" d="M12 2v6h8.2z"/></svg>`
         };
 
+        const GEM_CLASSIC_ICONS = {
+            'rojo': '🔴', 'azul': '🔵', 'amarillo': '🟡',
+            'verde': '🟢', 'naranja': '🟠', 'violeta': '🟣',
+            'blanco': '⚪', 'negro': '⚫', 'marron': '🟤'
+        };
+
         const GEM_TYPES = [
             { id: 'rojo', name: 'Rubí', pts: 1, type: 'primary' },
             { id: 'azul', name: 'Zafiro', pts: 1, type: 'primary' },
@@ -432,6 +572,8 @@
         let discards = { red: [], blue: [] };
 
         window.onload = function() {
+            initSettingsManager();
+
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('sala');
             if (roomParam) {
@@ -440,6 +582,65 @@
                 joinRoomAuto(roomParam);
             }
         };
+
+        function initSettingsManager() {
+            const STORAGE_KEY = '9gemas_selected_skin';
+            const DEFAULT_SKIN = 'modern';
+
+            const btnSettings = document.getElementById('btn-settings');
+            const modalSettings = document.getElementById('modal-settings');
+            const btnCloseSettings = document.getElementById('btn-close-settings');
+            const selectSkin = document.getElementById('select-skin');
+
+            function applySkin(skinName) {
+                // Remover cualquier clase que comience con skin-
+                const classesToRemove = [];
+                document.body.classList.forEach(className => {
+                    if (className.startsWith('skin-')) {
+                        classesToRemove.push(className);
+                    }
+                });
+                classesToRemove.forEach(cls => document.body.classList.remove(cls));
+
+                // Asignar nueva skin
+                document.body.classList.add(`skin-${skinName}`);
+            }
+
+            function loadSavedSkin() {
+                const savedSkin = localStorage.getItem(STORAGE_KEY) || DEFAULT_SKIN;
+                applySkin(savedSkin);
+                if (selectSkin) selectSkin.value = savedSkin;
+            }
+
+            function saveSkinPreference() {
+                if (!selectSkin) return;
+                const chosenSkin = selectSkin.value;
+                localStorage.setItem(STORAGE_KEY, chosenSkin);
+                applySkin(chosenSkin);
+                if (modalSettings) modalSettings.style.display = 'none';
+                render();
+            }
+
+            if (btnSettings && modalSettings) {
+                btnSettings.addEventListener('click', () => {
+                    modalSettings.style.display = 'flex';
+                });
+            }
+
+            if (btnCloseSettings) {
+                btnCloseSettings.addEventListener('click', saveSkinPreference);
+            }
+
+            if (modalSettings) {
+                modalSettings.addEventListener('click', (e) => {
+                    if (e.target === modalSettings) {
+                        modalSettings.style.display = 'none';
+                    }
+                });
+            }
+
+            loadSavedSkin();
+        }
 
         function switchGameMode(mode) {
             gameMode = mode;
@@ -1124,6 +1325,8 @@
             document.getElementById('btn-action-discard-opp').disabled = !isMyTurnActive || currentEnergy < 1 || !hands[opp] || hands[opp].length === 0;
             document.getElementById('btn-action-inspect').disabled = !isMyTurnActive || currentEnergy < inspectCost;
 
+            const isClassic = document.body.classList.contains('skin-classic');
+
             const boardEl = document.getElementById('board');
             boardEl.innerHTML = '';
             board.forEach((cell, idx) => {
@@ -1134,19 +1337,23 @@
 
                 if (cell) {
                     const effectiveVals = getEffectiveCardValues(idx);
-                    const gemSvg = GEM_SVGS[cell.gemRevealed.id] || '';
+                    const gemDisplay = isClassic 
+                        ? `<span style="font-size: 1.2rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
+                        : (GEM_SVGS[cell.gemRevealed.id] || '');
                     div.innerHTML = `
                         <div class="card-val val-top">${effectiveVals.top}</div>
                         <div class="card-val val-bottom">${effectiveVals.bottom}</div>
                         <div class="card-val val-left">${effectiveVals.left}</div>
                         <div class="card-val val-right">${effectiveVals.right}</div>
-                        <div class="gem-pod">${gemSvg}</div>
+                        <div class="gem-pod">${gemDisplay}</div>
                         ${cell.isProtected ? '<div style="position:absolute; top:2px; right:3px; font-size:9px;">🛡️</div>' : ''}
                     `;
                 } else if (revealedBoardGems[idx]) {
-                    const gemSvg = GEM_SVGS[gems[idx].id] || '';
+                    const gemDisplay = isClassic 
+                        ? `<span style="font-size: 1.1rem;">${GEM_CLASSIC_ICONS[gems[idx].id] || '💎'}</span>`
+                        : (GEM_SVGS[gems[idx].id] || '');
                     div.innerHTML = `
-                        <div class="gem-pod">${gemSvg}</div>
+                        <div class="gem-pod">${gemDisplay}</div>
                         <span style="font-size:0.55rem; margin-top:2px; color:#cbd5e1; font-weight:bold;">${gems[idx].name}</span>
                     `;
                 } else {
