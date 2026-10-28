@@ -137,6 +137,29 @@
             box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
         }
 
+        /* Animaciones */
+        @keyframes shakeImpact {
+            0% { transform: scale(1) translate(0, 0) rotate(0deg); background-color: rgba(239, 68, 68, 0.8); border-color: #ef4444; }
+            20% { transform: scale(1.08) translate(-6px, 4px) rotate(-4deg); }
+            40% { transform: scale(1.08) translate(6px, -4px) rotate(4deg); }
+            60% { transform: scale(1.05) translate(-5px, -3px) rotate(-3deg); }
+            80% { transform: scale(1.02) translate(4px, 2px) rotate(2deg); }
+            100% { transform: scale(1) translate(0, 0) rotate(0deg); }
+        }
+        .anim-shake {
+            animation: shakeImpact 0.8s ease-in-out !important;
+            z-index: 25;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            80% { transform: scale(1.08); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .anim-pop {
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
         /* Tablero 3x3 por defecto */
         .board { 
             display: grid; 
@@ -161,16 +184,20 @@
             cursor: pointer; 
             transition: all 0.2s;
         }
-        .cell.inspectable { border: 1px dashed #a855f7; background: rgba(168, 85, 247, 0.15); }
+        .cell.inspectable { 
+            border: 2px dashed #eab308 !important; 
+            background: rgba(234, 179, 8, 0.25) !important; 
+            box-shadow: 0 0 12px rgba(234, 179, 8, 0.6) !important;
+        }
         
         .cell.card-red { 
             background: radial-gradient(circle at center, #2d0612 0%, #0f172a 100%); 
-            border: 2px solid #f43f5e; 
+            border: 2px solid #f43f5e !important; 
             box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
         }
         .cell.card-blue { 
             background: radial-gradient(circle at center, #082f49 0%, #0f172a 100%); 
-            border: 2px solid #38bdf8; 
+            border: 2px solid #38bdf8 !important; 
             box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
         }
         .cell.selected-attacker { border-color: #fbbf24 !important; box-shadow: 0 0 15px #fbbf24 !important; z-index: 10; transform: scale(1.02); }
@@ -258,7 +285,12 @@
         .card-item.red { background: linear-gradient(135deg, rgba(136, 19, 55, 0.8), rgba(76, 5, 25, 0.9)); border-color: #9f1239; }
         .card-item.blue { background: linear-gradient(135deg, rgba(12, 74, 110, 0.8), rgba(3, 37, 65, 0.9)); border-color: #075985; }
         .card-item.hidden-card { background: #1e293b; border-color: #475569; }
-        .card-item.selected { border-color: #fbbf24; box-shadow: 0 0 10px #fbbf24; transform: scale(1.06); }
+        
+        @keyframes selectedPulse {
+            0%, 100% { transform: scale(1.08); box-shadow: 0 0 12px #fbbf24; }
+            50% { transform: scale(1.02); box-shadow: 0 0 6px #fbbf24; }
+        }
+        .card-item.selected { border-color: #fbbf24 !important; animation: selectedPulse 1.2s infinite ease-in-out; z-index: 5; }
 
         .log-msg { text-align: center; font-size: 0.6rem; color: #fbbf24; font-style: italic; min-height: 24px; margin-bottom: 4px; line-height: 1.2; }
 
@@ -332,12 +364,9 @@
         body.skin-medieval-neon .title { background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.6)); }
         body.skin-medieval-neon .board { background: rgba(10, 5, 20, 0.95); border: 2px solid #3b82f6; box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.3); }
         body.skin-medieval-neon .cell { background: rgba(30, 15, 50, 0.8); border: 1px solid #7c3aed; border-radius: 4px; }
-        body.skin-medieval-neon .cell.card-red { background: radial-gradient(circle at center, #4c0519 0%, #180826 100%); border: 2px solid #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
-        body.skin-medieval-neon .cell.card-blue { background: radial-gradient(circle at center, #082f49 0%, #180826 100%); border: 2px solid #06b6d4; box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); }
-        body.skin-medieval-neon .cell.inspectable { border: 2px dashed #ec4899 !important; background: rgba(236, 72, 153, 0.2) !important; box-shadow: 0 0 12px rgba(236, 72, 153, 0.4); }
-        body.skin-medieval-neon .card-item.red { background: linear-gradient(135deg, rgba(159, 18, 57, 0.9), rgba(76, 5, 25, 0.95)); border-color: #f43f5e; border-radius: 4px; }
-        body.skin-medieval-neon .card-item.blue { background: linear-gradient(135deg, rgba(8, 145, 178, 0.9), rgba(8, 51, 68, 0.95)); border-color: #06b6d4; border-radius: 4px; }
-        body.skin-medieval-neon .card-item.selected { border: 2px solid #ec4899 !important; box-shadow: 0 0 15px #ec4899 !important; transform: scale(1.08); z-index: 5; }
+        body.skin-medieval-neon .cell.card-red { background: radial-gradient(circle at center, #4c0519 0%, #180826 100%); border: 2px solid #f43f5e !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
+        body.skin-medieval-neon .cell.card-blue { background: radial-gradient(circle at center, #082f49 0%, #180826 100%); border: 2px solid #06b6d4 !important; box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); }
+        body.skin-medieval-neon .cell.inspectable { border: 2px dashed #facc15 !important; background: rgba(250, 204, 21, 0.25) !important; box-shadow: 0 0 14px rgba(250, 204, 21, 0.7) !important; }
 
         /* Skin Medieval Clásico (Piedra y Hierro) */
         body.skin-medieval-pure { background: radial-gradient(circle at center, #1c1917 0%, #0c0a09 100%); }
@@ -345,12 +374,9 @@
         body.skin-medieval-pure .title { background: linear-gradient(135deg, #fde047 0%, #ca8a04 50%, #854d0e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
         body.skin-medieval-pure .board { background: #1c1917; border: 3px solid #78350f; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
         body.skin-medieval-pure .cell { background: #292524; border: 2px solid #44403c; border-radius: 4px; }
-        body.skin-medieval-pure .cell.card-red { background: #450a0a; border: 2px solid #b91c1c; }
-        body.skin-medieval-pure .cell.card-blue { background: #082f49; border: 2px solid #0369a1; }
-        body.skin-medieval-pure .cell.inspectable { border: 2px dashed #fde047 !important; background: rgba(253, 224, 71, 0.2) !important; }
-        body.skin-medieval-pure .card-item.red { background: #7f1d1d; border-color: #b91c1c; border-radius: 4px; }
-        body.skin-medieval-pure .card-item.blue { background: #0369a1; border-color: #0284c7; border-radius: 4px; }
-        body.skin-medieval-pure .card-item.selected { border: 2px solid #fde047 !important; box-shadow: 0 0 12px #fde047 !important; transform: scale(1.08); z-index: 5; }
+        body.skin-medieval-pure .cell.card-red { background: #450a0a; border: 2px solid #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        body.skin-medieval-pure .cell.card-blue { background: #082f49; border: 2px solid #38bdf8 !important; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        body.skin-medieval-pure .cell.inspectable { border: 2px dashed #fde047 !important; background: rgba(253, 224, 71, 0.25) !important; box-shadow: 0 0 12px rgba(253, 224, 71, 0.6) !important; }
 
         /* Skin Futurista / Sci-Fi Holográfico */
         body.skin-futuristic { background: radial-gradient(circle at center, #030712 0%, #000000 100%); }
@@ -358,25 +384,19 @@
         body.skin-futuristic .title { background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 50%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.6)); }
         body.skin-futuristic .board { background: rgba(2, 6, 23, 0.95); border: 2px solid #0284c7; box-shadow: inset 0 0 15px rgba(2, 132, 199, 0.4); }
         body.skin-futuristic .cell { background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 2px; }
-        body.skin-futuristic .cell.card-red { background: radial-gradient(circle at center, #881337 0%, #030712 100%); border: 2px solid #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
-        body.skin-futuristic .cell.card-blue { background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%); border: 2px solid #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
-        body.skin-futuristic .cell.inspectable { border: 2px dashed #22d3ee !important; background: rgba(34, 211, 238, 0.25) !important; box-shadow: 0 0 15px rgba(34, 211, 238, 0.5); }
-        body.skin-futuristic .card-item.red { background: linear-gradient(135deg, #9f1239, #4c0519); border-color: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); border-radius: 2px; }
-        body.skin-futuristic .card-item.blue { background: linear-gradient(135deg, #0369a1, #0c4a6e); border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); border-radius: 2px; }
-        body.skin-futuristic .card-item.selected { border: 2px solid #22d3ee !important; box-shadow: 0 0 15px #22d3ee, inset 0 0 8px rgba(34, 211, 238, 0.5) !important; transform: scale(1.08); z-index: 5; }
+        body.skin-futuristic .cell.card-red { background: radial-gradient(circle at center, #881337 0%, #030712 100%); border: 2px solid #f43f5e !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
+        body.skin-futuristic .cell.card-blue { background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%); border: 2px solid #38bdf8 !important; box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
+        body.skin-futuristic .cell.inspectable { border: 2px dashed #22d3ee !important; background: rgba(34, 211, 238, 0.3) !important; box-shadow: 0 0 15px rgba(34, 211, 238, 0.7) !important; }
 
-        /* Skin Jurásico (Ámbar y Selva) */
+        /* Skin Jurásico (Ámbar y Selva) - Corregido contraste Rojo / Azul */
         body.skin-jrasic { background: radial-gradient(circle at center, #14210d 0%, #060a04 100%); }
         body.skin-jrasic .container { background: rgba(18, 30, 15, 0.92); border: 2px solid #ca8a04; box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 20px rgba(202, 138, 4, 0.2); }
         body.skin-jrasic .title { background: linear-gradient(135deg, #fde047 0%, #eab308 50%, #854d0e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 6px rgba(202, 138, 4, 0.5)); }
         body.skin-jrasic .board { background: #0f1c0a; border: 3px solid #854d0e; box-shadow: inset 0 0 15px rgba(0,0,0,0.9); }
         body.skin-jrasic .cell { background: #1a2e13; border: 2px solid #422006; border-radius: 8px; }
-        body.skin-jrasic .cell.card-red { background: radial-gradient(circle at center, #450a0a 0%, #1a2e13 100%); border: 2px solid #dc2626; box-shadow: 0 0 12px rgba(220, 38, 38, 0.4); }
-        body.skin-jrasic .cell.card-blue { background: radial-gradient(circle at center, #14532d 0%, #1a2e13 100%); border: 2px solid #16a34a; box-shadow: 0 0 12px rgba(22, 163, 74, 0.4); }
-        body.skin-jrasic .cell.inspectable { border: 2px dashed #facc15 !important; background: rgba(250, 204, 21, 0.2) !important; box-shadow: 0 0 12px rgba(250, 204, 21, 0.4); }
-        body.skin-jrasic .card-item.red { background: linear-gradient(135deg, #991b1b, #450a0a); border-color: #dc2626; border-radius: 6px; }
-        body.skin-jrasic .card-item.blue { background: linear-gradient(135deg, #166534, #14532d); border-color: #22c55e; border-radius: 6px; }
-        body.skin-jrasic .card-item.selected { border: 2px solid #fde047 !important; box-shadow: 0 0 15px #fde047, inset 0 0 8px rgba(253, 224, 71, 0.4) !important; transform: scale(1.08); z-index: 5; }
+        body.skin-jrasic .cell.card-red { background: radial-gradient(circle at center, #7f1d1d 0%, #1a2e13 100%) !important; border: 2px solid #ef4444 !important; box-shadow: 0 0 14px rgba(239, 68, 68, 0.7) !important; }
+        body.skin-jrasic .cell.card-blue { background: radial-gradient(circle at center, #0c4a6e 0%, #1a2e13 100%) !important; border: 2px solid #38bdf8 !important; box-shadow: 0 0 14px rgba(56, 189, 248, 0.7) !important; }
+        body.skin-jrasic .cell.inspectable { border: 2px dashed #facc15 !important; background: rgba(250, 204, 21, 0.3) !important; box-shadow: 0 0 14px rgba(250, 204, 21, 0.7) !important; }
     </style>
 </head>
 <body>
@@ -550,6 +570,7 @@
         let isSyncing = false;
 
         let board = Array(9).fill(null);
+        let previousBoardOwners = Array(9).fill(null);
         let revealedBoardGems = Array(9).fill(false);
         let gems = [];
         let turn = 'red';
@@ -593,7 +614,6 @@
             const selectSkin = document.getElementById('select-skin');
 
             function applySkin(skinName) {
-                // Remover cualquier clase que comience con skin-
                 const classesToRemove = [];
                 document.body.classList.forEach(className => {
                     if (className.startsWith('skin-')) {
@@ -601,8 +621,6 @@
                     }
                 });
                 classesToRemove.forEach(cls => document.body.classList.remove(cls));
-
-                // Asignar nueva skin
                 document.body.classList.add(`skin-${skinName}`);
             }
 
@@ -1198,6 +1216,16 @@
             let defenseVal = defVals[oppSide];
             let attackMsg = "";
 
+            const boardElNodes = document.getElementById('board').children;
+            if (boardElNodes[targetIdx]) {
+                boardElNodes[targetIdx].classList.add('anim-shake');
+                setTimeout(() => {
+                    if (boardElNodes[targetIdx]) {
+                        boardElNodes[targetIdx].classList.remove('anim-shake');
+                    }
+                }, 800);
+            }
+
             if (attackVal > defenseVal) {
                 discards[defender.owner].push(defender);
                 let attackerCard = board[idx];
@@ -1268,6 +1296,7 @@
 
         function resetGame() {
             document.getElementById('game-over-modal').style.display = 'none';
+            previousBoardOwners = Array(9).fill(null);
             if (gameMode === 'ai') {
                 startAIGame();
             } else if (roomRef) {
@@ -1332,7 +1361,12 @@
             board.forEach((cell, idx) => {
                 const div = document.createElement('div');
                 const isSelectedAttacker = selectedBoardIndex === idx;
-                div.className = `cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''}`;
+                
+                // Evita doble animación verificando cambio de dueño en la celda
+                const currentOwner = cell ? cell.owner : null;
+                const isNewOwner = currentOwner !== null && previousBoardOwners[idx] !== currentOwner;
+                
+                div.className = `cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''} ${isNewOwner ? 'anim-pop' : ''}`;
                 div.onclick = () => handleBoardClick(idx);
 
                 if (cell) {
@@ -1360,6 +1394,7 @@
                     div.innerHTML = `<span style="font-size:0.8rem; opacity:0.25;">💎</span>`;
                 }
                 boardEl.appendChild(div);
+                previousBoardOwners[idx] = currentOwner;
             });
 
             ['red', 'blue'].forEach(p => {
