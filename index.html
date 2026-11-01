@@ -129,7 +129,7 @@
         .score-blue { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
         .deck-info { font-size: 0.55rem; color: #64748b; margin-top: 2px; }
 
-        .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.75rem; font-weight: bold; }
+        .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.75rem; font-weight: bold; position: relative; }
         .energy-tag { 
             background: rgba(245, 158, 11, 0.15); 
             color: #fbbf24; 
@@ -137,6 +137,34 @@
             padding: 2px 8px; 
             border-radius: 12px; 
             box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        /* ANIMACIÓN Y PARTÍCULAS DE ENERGÍA */
+        @keyframes energyPulseGlow {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+            50% { transform: scale(1.18); box-shadow: 0 0 25px rgba(251, 191, 36, 0.95), inset 0 0 10px #fde047; }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+        }
+        .energy-pulse {
+            animation: energyPulseGlow 0.5s ease-out;
+        }
+
+        @keyframes energyParticleBurst {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+        }
+        .energy-particle {
+            position: absolute;
+            pointer-events: none;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, #fde047 60%, #f59e0b 100%);
+            box-shadow: 0 0 8px #fbbf24;
+            z-index: 60;
+            animation: energyParticleBurst 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
         }
 
         /* EFECTO DE IMPACTO SOBRE LA CARTA DEFENSORA */
@@ -150,7 +178,7 @@
             z-index: 30;
         }
 
-        /* PROYECTIL FLOTANTE DE ATAQUE (GPU HARDWARE FLUIDO) */
+        /* PROYECTIL FLOTANTE DE ATAQUE */
         .flying-projectile {
             position: absolute;
             width: calc(33.33% - 6px);
@@ -191,6 +219,17 @@
             animation: cardDrawAnim 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
+        /* ANIMACIÓN DE DESCARTE */
+        @keyframes cardDiscardAnim {
+            0% { transform: translateY(0) scale(1); opacity: 1; filter: brightness(1); }
+            100% { transform: translateY(35px) scale(0.6); opacity: 0; filter: brightness(0.5); }
+        }
+        .anim-card-discard {
+            animation: cardDiscardAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+            pointer-events: none;
+            z-index: 40;
+        }
+
         @keyframes selectedPulse {
             0%, 100% { transform: translateY(-2px) scale(1.06); box-shadow: 0 0 10px #fbbf24, 0 2px 6px rgba(0,0,0,0.4); border-color: #fbbf24; }
             50% { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 5px #fbbf24, 0 2px 6px rgba(0,0,0,0.4); border-color: #fde047; }
@@ -201,7 +240,7 @@
             z-index: 5; 
         }
 
-        /* ANIMACIÓN DE BRILLO ESPECÍFICO PARA LAS CARTAS DEL TRÍO (Corta y elegante) */
+        /* ANIMACIÓN DE BRILLO ESPECÍFICO PARA LAS CARTAS DEL TRÍO */
         @keyframes trioCardGlowAnim {
             0% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.4); border-color: #f59e0b; filter: brightness(1); }
             50% { box-shadow: 0 0 22px rgba(251, 191, 36, 0.95), inset 0 0 12px rgba(251, 191, 36, 0.7); border-color: #fde047; filter: brightness(1.3); }
@@ -269,7 +308,7 @@
             animation: floatingSparkle 1.8s infinite ease-in-out;
         }
 
-        /* Tablero 3x3 estrictamente rígido e indestructible */
+        /* Tablero 3x3 */
         .board { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
@@ -306,29 +345,39 @@
         }
         
         .cell.card-red { 
-            background: radial-gradient(circle at center, #2d0612 0%, #0f172a 100%); 
+            background: radial-gradient(circle at center, #3b0712 0%, #0f172a 100%); 
             border: 2px solid #f43f5e !important; 
-            box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(244, 63, 94, 0.4);
         }
         .cell.card-blue { 
-            background: radial-gradient(circle at center, #082f49 0%, #0f172a 100%); 
+            background: radial-gradient(circle at center, #075985 0%, #0f172a 100%); 
             border: 2px solid #38bdf8 !important; 
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(56, 189, 248, 0.4);
         }
-        .cell.selected-attacker { border-color: #fbbf24 !important; box-shadow: 0 0 15px #fbbf24 !important; z-index: 10; transform: scale(1.02); }
+
+        @keyframes attackerPulseAnim {
+            0%, 100% { border-color: #fde047; box-shadow: 0 0 20px #fbbf24, inset 0 0 12px rgba(251, 191, 36, 0.6); transform: scale(1.04); }
+            50% { border-color: #f59e0b; box-shadow: 0 0 32px #fde047, inset 0 0 18px rgba(253, 224, 71, 0.8); transform: scale(1.08); }
+        }
+        .cell.selected-attacker { 
+            border: 3px solid #fde047 !important; 
+            animation: attackerPulseAnim 0.9s infinite ease-in-out !important; 
+            z-index: 20; 
+            filter: brightness(1.25);
+        }
 
         .gem-pod {
-            width: 22px;
-            height: 22px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 70%, transparent 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            margin-bottom: 1px;
         }
 
-        /* Contenido interno absoluto para evitar cambios de tamaño en las celdas */
         .cell-content {
             position: absolute;
             inset: 0;
@@ -342,21 +391,81 @@
             pointer-events: none;
         }
 
-        /* Valores de cartas */
-        .card-val { position: absolute; font-size: 0.58rem; font-weight: 800; color: #f8fafc; text-shadow: 0 1px 3px rgba(0,0,0,0.9); z-index: 2; }
-        .card-val.boosted { color: #fde047 !important; text-shadow: 0 0 6px rgba(250, 204, 21, 0.8), 0 1px 3px rgba(0,0,0,0.9); transform: scale(1.1); }
+        /* CONTENEDORES Y ESTILOS DE NÚMEROS */
+        .val-wrapper {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            z-index: 2;
+        }
+        .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-left { left: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .val-right { right: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+
+        .card-val { 
+            font-size: 0.62rem; 
+            font-weight: 900; 
+            color: #ffffff; 
+            filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.95)) drop-shadow(0px 0px 3px rgba(0, 0, 0, 0.9)); 
+            line-height: 1;
+        }
         
-        .val-top { top: 2px; left: 50%; transform: translateX(-50%); }
-        .val-bottom { bottom: 2px; left: 50%; transform: translateX(-50%); }
-        .val-left { left: 4px; top: 50%; transform: translateY(-50%); }
-        .val-right { right: 4px; top: 50%; transform: translateY(-50%); }
-        
-        .val-left.boosted { transform: translateY(-50%) scale(1.1); }
-        .val-right.boosted { transform: translateY(-50%) scale(1.1); }
+        .card-val.boosted { 
+            color: #fde047 !important; 
+            font-size: 0.65rem !important; 
+            font-weight: 900 !important; 
+            font-style: italic !important; 
+            filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.9)); 
+        }
+
+        /* ESTRELLAS EN LOS VÉRTICES */
+        .card-corner-star {
+            position: absolute;
+            font-size: 8px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 3;
+            filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.9));
+            transition: opacity 0.2s;
+        }
+        .card-corner-star.lit {
+            opacity: 1;
+        }
+        .corner-top-left { top: 2px; left: 3px; }
+        .corner-top-right { top: 2px; right: 3px; }
+        .corner-bottom-left { bottom: 2px; left: 3px; }
+        .corner-bottom-right { bottom: 2px; right: 3px; }
+
+        /* LÍNEAS AUXILIARES MÁS LARGAS (ROZANDO LAS ESTRELLAS) */
+        .card-mini-line {
+            pointer-events: none;
+            background: transparent;
+            z-index: 1;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .card-mini-line.lit {
+            background: #fbbf24;
+            box-shadow: 0 0 4px #fde047;
+        }
+
+        /* Horizontales ampliadas para top/bottom */
+        .val-top .card-mini-line, .val-bottom .card-mini-line {
+            width: 18px;
+            height: 1.5px;
+        }
+        /* Verticales ampliadas para left/right */
+        .val-left .card-mini-line, .val-right .card-mini-line {
+            width: 1.5px;
+            height: 16px;
+        }
 
         .gem-svg { 
-            width: 16px; 
-            height: 16px; 
+            width: 13px; 
+            height: 13px; 
             filter: drop-shadow(0 0 4px rgba(255,255,255,0.8)); 
         }
 
@@ -412,23 +521,59 @@
         }
         .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
-        /* Manos */
         .hand-container { background: rgba(2, 6, 23, 0.6); padding: 6px; border-radius: 10px; border: 1px solid rgba(30, 41, 59, 0.8); margin-bottom: 4px; }
         .hand-title { font-size: 0.6rem; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
-        .hand-cards { display: flex; gap: 6px; overflow-x: auto; padding: 10px 4px 6px 6px; }
-        .card-item { width: 46px; height: 60px; border-radius: 8px; border: 1px solid; position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
-        .card-item.red { background: linear-gradient(135deg, rgba(136, 19, 55, 0.8), rgba(76, 5, 25, 0.9)); border-color: #9f1239; }
-        .card-item.blue { background: linear-gradient(135deg, rgba(12, 74, 110, 0.8), rgba(3, 37, 65, 0.9)); border-color: #075985; }
+        .hand-cards { display: flex; gap: 6px; overflow-x: auto; padding: 6px; }
+
+        /* CARTAS EN MANO CON COSTE FLOTANTE ABSOLUTO */
+        .card-item { 
+            width: 46px; 
+            height: 60px; 
+            border-radius: 8px; 
+            border: 1px solid; 
+            position: relative; 
+            flex-shrink: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            transition: all 0.15s; 
+        }
+        
+        .card-item.red { 
+            background: radial-gradient(circle at top, #881337 0%, #4c0519 100%); 
+            border-color: #f43f5e; 
+            box-shadow: inset 0 2px 3px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.6); 
+        }
+        .card-item.blue { 
+            background: radial-gradient(circle at top, #0369a1 0%, #082f49 100%); 
+            border-color: #38bdf8; 
+            box-shadow: inset 0 2px 3px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.6); 
+        }
         .card-item.hidden-card { background: #1e293b; border-color: #475569; }
+
+        /* Coste de energía flotante absoluto en la esquina superior derecha */
+        .card-energy-hint {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #f59e0b;
+            color: #020617;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 1px 4px;
+            border-radius: 9999px;
+            border: 1px solid #fde68a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
 
         .log-msg { text-align: center; font-size: 0.6rem; color: #fbbf24; font-style: italic; min-height: 24px; margin-bottom: 4px; line-height: 1.2; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
         .hidden { display: none !important; }
 
-        /* ==========================================
-           CONFIGURACIÓN Y SKINS
-           ========================================== */
+        /* CONFIGURACIÓN Y SKINS */
         .settings-trigger {
           position: fixed;
           top: 12px;
@@ -468,19 +613,11 @@
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
           text-align: center;
         }
-        .modal-content-settings h2 {
-          margin-top: 0; font-size: 1.2rem; margin-bottom: 16px; color: #ffffff;
-        }
-        .setting-item {
-          display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px; text-align: left;
-        }
+        .modal-content-settings h2 { margin-top: 0; font-size: 1.2rem; margin-bottom: 16px; color: #ffffff; }
+        .setting-item { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px; text-align: left; }
         .setting-item label { font-size: 0.85rem; color: #aaaaaa; }
-        .setting-item select {
-          width: 100%; padding: 8px 10px; border-radius: 8px; background: #2a2a35; color: #ffffff; border: 1px solid #444455; font-size: 0.9rem; outline: none; cursor: pointer;
-        }
-        .btn-settings-close {
-          width: 100%; padding: 10px; border-radius: 8px; border: none; background: #ffcc00; color: #121212; font-weight: bold; font-size: 0.9rem; cursor: pointer;
-        }
+        .setting-item select { width: 100%; padding: 8px 10px; border-radius: 8px; background: #2a2a35; color: #ffffff; border: 1px solid #444455; font-size: 0.9rem; outline: none; cursor: pointer; }
+        .btn-settings-close { width: 100%; padding: 10px; border-radius: 8px; border: none; background: #ffcc00; color: #121212; font-weight: bold; font-size: 0.9rem; cursor: pointer; }
 
         /* Skins */
         body.skin-classic .cell { border-radius: 6px; }
@@ -681,7 +818,7 @@
         </div>
     </div>
 
-    <!-- Modal de Victoria con Animación Épica y Partículas -->
+    <!-- Modal de Victoria -->
     <div id="game-over-modal" class="modal">
         <div class="modal-epic-box" id="epic-modal-box">
             <div style="font-size: 2rem; margin-bottom: 4px;">👑💎</div>
@@ -743,6 +880,7 @@
         let lastTurnNotified = null;
         
         let currentEnergy = 3;
+        let previousEnergy = 3;
         let maxEnergy = 3;
         
         let usedRedEnergyBonusThisTurn = false;
@@ -760,10 +898,9 @@
         let discards = { red: [], blue: [] };
 
         let newlyDrawnCardIndex = { red: null, blue: null };
+        let discardingCardInfo = { player: null, cardIndex: null };
 
-        // Almacenamos el conteo previo de combos por jugador para detectar cuándo se forma uno nuevo
         let previousComboCount = { red: 0, blue: 0 };
-        // Bandera estricta para saber si acabamos de cambiar de turno
         let justChangedTurn = true;
 
         window.onload = function() {
@@ -832,6 +969,37 @@
             }
 
             loadSavedSkin();
+        }
+
+        function spawnEnergyParticles() {
+            const energyBadge = document.getElementById('energy-badge');
+            if (!energyBadge) return;
+
+            energyBadge.classList.remove('energy-pulse');
+            void energyBadge.offsetWidth;
+            energyBadge.classList.add('energy-pulse');
+
+            const rect = energyBadge.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'energy-particle';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 25 + Math.random() * 25;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                particle.style.setProperty('--dx', `${dx}px`);
+                particle.style.setProperty('--dy', `${dy}px`);
+
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 600);
+            }
         }
 
         function switchGameMode(mode) {
@@ -948,6 +1116,7 @@
             const fullDeckBlue = generateBalancedDeck();
 
             newlyDrawnCardIndex = { red: null, blue: null };
+            discardingCardInfo = { player: null, cardIndex: null };
             newlyDeployedCellIndex = null;
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
@@ -976,7 +1145,14 @@
             revealedBoardGems = data.revealedBoardGems || Array(9).fill(false);
             gems = data.gems || [];
             turn = data.turn || 'red';
-            currentEnergy = data.currentEnergy !== undefined ? data.currentEnergy : 3;
+            
+            const newEnergy = data.currentEnergy !== undefined ? data.currentEnergy : 3;
+            if (newEnergy > currentEnergy) {
+                spawnEnergyParticles();
+            }
+            previousEnergy = currentEnergy;
+            currentEnergy = newEnergy;
+
             maxEnergy = data.maxEnergy !== undefined ? data.maxEnergy : 3;
             usedRedEnergyBonusThisTurn = data.usedRedEnergyBonusThisTurn || false;
             usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
@@ -1059,6 +1235,10 @@
         function startTurn(player) {
             turn = player;
             maxEnergy = getMaxEnergyForPlayer(player);
+            
+            if (maxEnergy > currentEnergy) {
+                spawnEnergyParticles();
+            }
             currentEnergy = maxEnergy;
             
             usedRedEnergyBonusThisTurn = false;
@@ -1070,7 +1250,6 @@
             selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
 
-            // Al cambiar de turno, activamos la bandera para que se ilumine el trío (si lo tiene) solo al arrancar
             justChangedTurn = true;
 
             const log = `Turno de ${turn === 'red' ? 'Rojo' : 'Azul'}. Energía: ${currentEnergy}⚡.`;
@@ -1192,10 +1371,13 @@
             hands.blue.splice(handIdx, 1);
             newlyDrawnCardIndex.blue = null;
             newlyDeployedCellIndex = boardIdx;
-            justChangedTurn = false; // Acción realizada, desactivamos bandera de cambio de turno
+            justChangedTurn = false;
 
             let logText = `🤖 IA jugó en ${gem.name}! (-2⚡)`;
-            if (gem.id === 'violeta') currentEnergy += 1;
+            if (gem.id === 'violeta') { 
+                currentEnergy += 1; 
+                spawnEnergyParticles(); 
+            }
             if (gem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer('blue');
             if (gem.id === 'verde') logText += triggerGreenGemDeploymentEffect('blue');
 
@@ -1297,7 +1479,8 @@
             const opponent = player === 'red' ? 'blue' : 'red';
             if (hands[opponent].length > 0) {
                 const randomIdx = Math.floor(Math.random() * hands[opponent].length);
-                discards[opponent].push(hands[opponent].splice(randomIdx, 1)[0]);
+                const discardedCard = hands[opponent].splice(randomIdx, 1)[0];
+                discards[opponent].push(discardedCard);
                 newlyDrawnCardIndex[opponent] = null;
                 details.push("1 desc. al rival");
             }
@@ -1319,10 +1502,14 @@
             hands[turn].splice(selectedHandIndex, 1);
             newlyDrawnCardIndex[turn] = null;
             newlyDeployedCellIndex = index;
-            justChangedTurn = false; // Acción realizada
+            justChangedTurn = false;
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-2⚡)`;
-            if (gem.id === 'violeta') { currentEnergy += 1; logText += ` 🟣 [+1⚡]`; }
+            if (gem.id === 'violeta') { 
+                currentEnergy += 1; 
+                spawnEnergyParticles(); 
+                logText += ` 🟣 [+1⚡]`; 
+            }
             if (gem.id === 'naranja') { maxEnergy = getMaxEnergyForPlayer(turn); logText += ` 🟠 [Máx. 4⚡]`; }
             if (gem.id === 'verde') { logText += triggerGreenGemDeploymentEffect(turn); }
 
@@ -1340,7 +1527,10 @@
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} robó 1 carta (-1⚡).`;
             const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
             if (controlledGemIds.includes('azul') && !usedBlueEnergyBonusThisTurn) {
-                usedBlueEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🔵 [+1⚡ Bonus]`;
+                usedBlueEnergyBonusThisTurn = true; 
+                currentEnergy += 1; 
+                spawnEnergyParticles(); 
+                logText += ` 🔵 [+1⚡ Bonus]`;
             }
 
             syncGameState(logText);
@@ -1357,7 +1547,10 @@
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} recuperó cartas al mazo (-1⚡).`;
             const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
             if (controlledGemIds.includes('amarillo') && !usedYellowEnergyBonusThisTurn) {
-                usedYellowEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🟡 [+1⚡ Bonus]`;
+                usedYellowEnergyBonusThisTurn = true; 
+                currentEnergy += 1; 
+                spawnEnergyParticles(); 
+                logText += ` 🟡 [+1⚡ Bonus]`;
             }
 
             syncGameState(logText);
@@ -1370,17 +1563,27 @@
 
             currentEnergy -= 1;
             const randomIdx = Math.floor(Math.random() * hands[opponent].length);
-            discards[opponent].push(hands[opponent].splice(randomIdx, 1)[0]);
-            newlyDrawnCardIndex[opponent] = null;
+            
+            discardingCardInfo = { player: opponent, cardIndex: randomIdx };
             justChangedTurn = false;
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} descartó 1 carta al rival (-1⚡).`;
             const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
             if (controlledGemIds.includes('negro') && !usedBlackEnergyBonusThisTurn) {
-                usedBlackEnergyBonusThisTurn = true; currentEnergy += 1; logText += ` 🖤 [+1⚡ Bonus]`;
+                usedBlackEnergyBonusThisTurn = true; 
+                currentEnergy += 1; 
+                spawnEnergyParticles(); 
+                logText += ` 🖤 [+1⚡ Bonus]`;
             }
 
-            syncGameState(logText);
+            render();
+
+            setTimeout(() => {
+                const discarded = hands[opponent].splice(randomIdx, 1)[0];
+                discards[opponent].push(discarded);
+                discardingCardInfo = { player: null, cardIndex: null };
+                syncGameState(logText);
+            }, 300);
         }
 
         function getEffectiveCardValues(boardIndex) {
@@ -1489,13 +1692,19 @@
                         justChangedTurn = false;
 
                         attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.name} (-1⚡).`;
-                        if (targetGem.id === 'violeta') currentEnergy += 1;
+                        if (targetGem.id === 'violeta') { 
+                            currentEnergy += 1; 
+                            spawnEnergyParticles(); 
+                        }
                         if (targetGem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer(turn);
                         if (targetGem.id === 'verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
 
                         const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
                         if (controlledGemIds.includes('rojo') && !usedRedEnergyBonusThisTurn) {
-                            usedRedEnergyBonusThisTurn = true; currentEnergy += 1; attackMsg += ` 🔴 [+1⚡ Bonus]`;
+                            usedRedEnergyBonusThisTurn = true; 
+                            currentEnergy += 1; 
+                            spawnEnergyParticles(); 
+                            attackMsg += ` 🔴 [+1⚡ Bonus]`;
                         }
                     } else {
                         attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
@@ -1542,7 +1751,6 @@
             return trioIndices;
         }
 
-        // Cuenta cuántos combos válidos tiene un jugador en total
         function countPlayerCombos(player) {
             const controlledGems = board.filter(c => c !== null && c.owner === player).map(c => c.gemRevealed.id);
             const hasAll = (arr) => arr.every(item => controlledGems.includes(item));
@@ -1609,6 +1817,7 @@
         function resetGame() {
             document.getElementById('game-over-modal').style.display = 'none';
             newlyDrawnCardIndex = { red: null, blue: null };
+            discardingCardInfo = { player: null, cardIndex: null };
             newlyDeployedCellIndex = null;
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
@@ -1643,11 +1852,9 @@
                 showTurnBanner(turn);
             }
 
-            // Conteo actual de tríos por jugador
             const redCombosCount = countPlayerCombos('red');
             const blueCombosCount = countPlayerCombos('blue');
 
-            // Detectamos si el número de tríos aumentó (se formó un trío nuevo en esta acción)
             const redNewlyFormed = redCombosCount > previousComboCount.red;
             const blueNewlyFormed = blueCombosCount > previousComboCount.blue;
 
@@ -1714,7 +1921,6 @@
                 const isSelectedAttacker = selectedBoardIndex === idx;
                 const isNewlyDeployed = newlyDeployedCellIndex === idx;
                 
-                // CONDICIÓN ESTRICTA: Solo brilla si se acaba de formar el trío (red/blueNewlyFormed) O si acaba de empezar el turno (justChangedTurn)
                 const isRedTrioCard = cell && cell.owner === 'red' && redTrioIndices.includes(idx) && (redNewlyFormed || (justChangedTurn && turn === 'red'));
                 const isBlueTrioCard = cell && cell.owner === 'blue' && blueTrioIndices.includes(idx) && (blueNewlyFormed || (justChangedTurn && turn === 'blue'));
                 const applyTrioAnim = isRedTrioCard || isBlueTrioCard;
@@ -1724,18 +1930,58 @@
 
                 if (cell) {
                     const eff = getEffectiveCardValues(idx);
+                    
+                    const owner = cell.owner;
+                    const hasMarron = board.some(c => c !== null && c.owner === owner && c.gemRevealed.id === 'marron');
+                    
+                    let litTop = false, litBottom = false, litLeft = false, litRight = false;
+                    if (hasMarron) {
+                        if (eff.boosted.top) { litTop = true; }
+                        if (eff.boosted.bottom) { litBottom = true; }
+                        if (eff.boosted.left) { litLeft = true; }
+                        if (eff.boosted.right) { litRight = true; }
+                    }
+
                     const gemDisplay = isClassic 
-                        ? `<span style="font-size: 0.9rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
+                        ? `<span style="font-size: 0.8rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
                         : (GEM_SVGS[cell.gemRevealed.id] || '');
                     
                     div.innerHTML = `
-                        <div class="card-val val-top ${eff.boosted.top ? 'boosted' : ''}">${eff.top} ${eff.boosted.top ? '⭐' : ''}</div>
-                        <div class="card-val val-bottom ${eff.boosted.bottom ? 'boosted' : ''}">${eff.bottom} ${eff.boosted.bottom ? '⭐' : ''}</div>
-                        <div class="card-val val-left ${eff.boosted.left ? 'boosted' : ''}">${eff.left} ${eff.boosted.left ? '⭐' : ''}</div>
-                        <div class="card-val val-right ${eff.boosted.right ? 'boosted' : ''}">${eff.right} ${eff.boosted.right ? '⭐' : ''}</div>
+                        <!-- Estrellas en vértices -->
+                        <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}">⭐</span>
+                        <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}">⭐</span>
+                        <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}">⭐</span>
+                        <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}">⭐</span>
+
+                        <!-- Contenedores con líneas ampliadas rozando las estrellas -->
+                        <div class="val-wrapper val-top">
+                            <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
+                            <div class="card-val ${eff.boosted.top ? 'boosted' : ''}">${eff.top}</div>
+                            <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
+                        </div>
+
+                        <div class="val-wrapper val-bottom">
+                            <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
+                            <div class="card-val ${eff.boosted.bottom ? 'boosted' : ''}">${eff.bottom}</div>
+                            <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
+                        </div>
+
+                        <div class="val-wrapper val-left">
+                            <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
+                            <div class="card-val ${eff.boosted.left ? 'boosted' : ''}">${eff.left}</div>
+                            <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
+                        </div>
+
+                        <div class="val-wrapper val-right">
+                            <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
+                            <div class="card-val ${eff.boosted.right ? 'boosted' : ''}">${eff.right}</div>
+                            <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
+                        </div>
+                        
                         <div class="cell-content">
                             <div class="gem-pod">${gemDisplay}</div>
-                            <span style="font-size:0.42rem; color:#94a3b8; line-height:1; margin-top:2px; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
+                            <span style="font-size:0.5rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
+                            <span style="font-size:0.4rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
                         </div>
                         ${cell.isProtected ? '<div style="position:absolute; top:2px; right:3px; font-size:9px; z-index:3;">🛡️</div>' : ''}
                     `;
@@ -1746,8 +1992,8 @@
                     div.innerHTML = `
                         <div class="cell-content">
                             <div class="gem-pod">${gemDisplay}</div>
-                            <span style="font-size:0.48rem; margin-top:1px; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gems[idx].name}</span>
-                            <span style="font-size:0.38rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${gems[idx].desc}</span>
+                            <span style="font-size:0.5rem; margin-top:1px; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gems[idx].name}</span>
+                            <span style="font-size:0.4rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${gems[idx].desc}</span>
                         </div>
                     `;
                 } else {
@@ -1760,7 +2006,7 @@
                 boardEl.appendChild(div);
             });
             newlyDeployedCellIndex = null;
-            justChangedTurn = false; // Consumimos la bandera de cambio de turno en este renderizado
+            justChangedTurn = false;
 
             ['red', 'blue'].forEach(p => {
                 const handEl = document.getElementById(`hand-${p}`);
@@ -1770,19 +2016,21 @@
                         const div = document.createElement('div');
                         const isSel = turn === p && selectedHandIndex === idx;
                         const isRivalHand = gameMode === 'online' ? (myRole && myRole !== p) : (p === 'blue');
+                        const isDiscarding = discardingCardInfo.player === p && discardingCardInfo.cardIndex === idx;
 
                         if (isRivalHand) {
-                            div.className = `card-item hidden-card`;
+                            div.className = `card-item hidden-card ${isDiscarding ? 'anim-card-discard' : ''}`;
                             div.innerHTML = `<span style="font-size:0.7rem; opacity:0.3;">💎</span>`;
                         } else {
                             const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
-                            div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''}`;
+                            div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${isDiscarding ? 'anim-card-discard' : ''}`;
                             div.onclick = () => selectHandCard(p, idx);
                             div.innerHTML = `
-                                <div class="card-val val-top">${card.top}</div>
-                                <div class="card-val val-bottom">${card.bottom}</div>
-                                <div class="card-val val-left">${card.left}</div>
-                                <div class="card-val val-right">${card.right}</div>
+                                <div class="card-energy-hint">2⚡</div>
+                                <div class="val-wrapper val-top"><div class="card-val">${card.top}</div></div>
+                                <div class="val-wrapper val-bottom"><div class="card-val">${card.bottom}</div></div>
+                                <div class="val-wrapper val-left"><div class="card-val">${card.left}</div></div>
+                                <div class="val-wrapper val-right"><div class="card-val">${card.right}</div></div>
                             `;
                         }
                         handEl.appendChild(div);
