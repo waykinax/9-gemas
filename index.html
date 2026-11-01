@@ -386,7 +386,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 4px;
+            padding: 3px;
             overflow: hidden;
             pointer-events: none;
         }
@@ -520,6 +520,20 @@
             box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
         }
         .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+        /* Botón Reclamar Victoria (Aparece cuando el tablero está bloqueado) */
+        .btn-claim-win {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: #ffffff;
+            font-weight: 900;
+            border: 1px solid #a78bfa;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.62rem;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+            animation: selectedPulse 1.2s infinite ease-in-out;
+        }
 
         .hand-container { background: rgba(2, 6, 23, 0.6); padding: 6px; border-radius: 10px; border: 1px solid rgba(30, 41, 59, 0.8); margin-bottom: 4px; }
         .hand-title { font-size: 0.6rem; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
@@ -767,7 +781,10 @@
                 <div class="score-val score-red" id="score-red">0 / 7</div>
                 <div class="deck-info">Mazo: <span id="deck-red">4</span> | Desc: <span id="discard-red">0</span></div>
             </div>
+            <!-- Botón Pasar Turno o Reclamar Victoria por Bloqueo Estricto -->
             <button id="btn-pass-turn" onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
+            <button id="btn-claim-victory" onclick="claimVictory()" class="btn-claim-win hidden">👑 Reclamar Victoria</button>
+            
             <div class="score-box">
                 <div class="score-val score-blue" id="score-blue">0 / 7</div>
                 <div class="deck-info">Mazo: <span id="deck-blue">4</span> | Desc: <span id="discard-blue">0</span></div>
@@ -1262,8 +1279,69 @@
             startTurn(nextTurn);
         }
 
+        // VALIDACIÓN ESTRICTA: Comprueba si existe al menos un ataque exitoso posible en todo el tablero
+        function checkIfAnyAttackPossible() {
+            const directions = [
+                { dir: 'top', rowOffset: -1, colOffset: 0, oppSide: 'bottom' },
+                { dir: 'bottom', rowOffset: 1, colOffset: 0, oppSide: 'top' },
+                { dir: 'left', rowOffset: 0, colOffset: -1, oppSide: 'right' },
+                { dir: 'right', rowOffset: 0, colOffset: 1, oppSide: 'left' }
+            ];
+
+            for (let idx = 0; idx < 9; idx++) {
+                const cell = board[idx];
+                if (!cell) continue;
+
+                const row = Math.floor(idx / 3);
+                const col = idx % 3;
+                const attVals = getEffectiveCardValues(idx);
+
+                for (const d of directions) {
+                    const nRow = row + d.rowOffset;
+                    const nCol = col + d.colOffset;
+
+                    if (nRow >= 0 && nRow < 3 && nCol >= 0 && nCol < 3) {
+                        const targetIdx = nRow * 3 + nCol;
+                        const defender = board[targetIdx];
+
+                        // Si hay defensor enemigo y NO está protegido, evaluamos si el ataque supera al defensor
+                        if (defender && defender.owner !== cell.owner && !defender.isProtected) {
+                            const defVals = getEffectiveCardValues(targetIdx);
+                            if (attVals[d.dir] > defVals[d.oppSide]) {
+                                return true; // ¡Existe al menos un ataque válido posible!
+                            }
+                        }
+                    }
+                }
+            }
+            return false; // Ningún jugador puede realizar un ataque exitoso
+        }
+
+        function claimVictory() {
+            let redTotal = getPlayerTotalScore('red');
+            let blueTotal = getPlayerTotalScore('blue');
+
+            let title = "👑 ¡Victoria por Bloqueo Táctico!";
+            let winnerText = redTotal > blueTotal ? "Jugador Rojo" : (blueTotal > redTotal ? "Jugador Azul" : "Empate");
+            let winningScore = Math.max(redTotal, blueTotal);
+            let detail = redTotal === blueTotal 
+                ? `¡Empate técnico!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`
+                : `¡Victoria de ${winnerText} por superioridad táctica!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`;
+            
+            document.getElementById('winner-text').innerText = title;
+            document.getElementById('winner-detail').innerText = detail;
+            document.getElementById('game-over-modal').style.display = 'flex';
+        }
+
         function executeAITurn() {
             if (turn !== 'blue' || gameMode !== 'ai') return;
+
+            // Validación estricta para IA también: si el tablero está lleno y no hay ataques posibles, reclama victoria
+            const isBoardFull = board.every(c => c !== null);
+            if (isBoardFull && !checkIfAnyAttackPossible()) {
+                claimVictory();
+                return;
+            }
 
             if (aiDifficulty === 'easy') {
                 if (currentEnergy >= 2 && hands.blue.length > 0) {
@@ -1878,6 +1956,22 @@
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
+            // Validación estricta: Tablero lleno Y sin ataques exitosos posibles en todo el tablero
+            const isBoardFull = board.every(c => c !== null);
+            const anyAttackPossible = checkIfAnyAttackPossible();
+            const isBoardDeadlocked = isBoardFull && !anyAttackPossible;
+
+            const btnPass = document.getElementById('btn-pass-turn');
+            const btnClaimWin = document.getElementById('btn-claim-victory');
+            if (isBoardDeadlocked) {
+                btnPass.classList.add('hidden');
+                btnClaimWin.classList.remove('hidden');
+                document.getElementById('log-message').innerText = "⚠️ ¡Bloqueo Táctico! Tablero lleno sin ataques posibles. Podés Reclamar la Victoria.";
+            } else {
+                btnPass.classList.remove('hidden');
+                btnClaimWin.classList.add('hidden');
+            }
+
             const myPlayerRole = myRole || 'red';
             if (myPlayerRole === 'blue') {
                 document.getElementById('label-hand-red').innerText = 'Mano Jugador Rojo';
@@ -1980,8 +2074,8 @@
                         
                         <div class="cell-content">
                             <div class="gem-pod">${gemDisplay}</div>
-                            <span style="font-size:0.5rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
-                            <span style="font-size:0.4rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
+                            <span style="font-size:0.58rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
+                            <span style="font-size:0.46rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
                         </div>
                         ${cell.isProtected ? '<div style="position:absolute; top:2px; right:3px; font-size:9px; z-index:3;">🛡️</div>' : ''}
                     `;
@@ -1992,8 +2086,8 @@
                     div.innerHTML = `
                         <div class="cell-content">
                             <div class="gem-pod">${gemDisplay}</div>
-                            <span style="font-size:0.5rem; margin-top:1px; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gems[idx].name}</span>
-                            <span style="font-size:0.4rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${gems[idx].desc}</span>
+                            <span style="font-size:0.58rem; margin-top:1px; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gems[idx].name}</span>
+                            <span style="font-size:0.46rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${gems[idx].desc}</span>
                         </div>
                     `;
                 } else {
