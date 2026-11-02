@@ -31,7 +31,7 @@
         }
         .container { 
             width: 100%; 
-            max-width: 380px; 
+            max-width: 420px; 
             background: rgba(15, 23, 42, 0.85); 
             backdrop-filter: blur(12px); 
             border-radius: 20px; 
@@ -308,7 +308,12 @@
             animation: floatingSparkle 1.8s infinite ease-in-out;
         }
 
-        /* Tablero 3x3 */
+        /* TABLERO CONTENEDOR DE 5x5 PARA MAPAMUNDI / ESPEJO ENERGÉTICO */
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 6px;
+        }
         .board { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
@@ -319,9 +324,65 @@
             border-radius: 14px; 
             border: 1px solid rgba(51, 65, 85, 0.5); 
             aspect-ratio: 1; 
-            margin-bottom: 6px; 
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        /* GRID 5x5 DE ESPEJOS ENERGÉTICOS */
+        .board-mapamundi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 4px;
+            position: absolute;
+            inset: -45px;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .board-wrapper.mapamundi-active .board-mapamundi-grid {
+            opacity: 1;
+        }
+        .board-wrapper.mapamundi-active .board {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.5), inset 0 0 15px rgba(168, 85, 247, 0.3);
+            border-color: #38bdf8;
+        }
+
+        /* ESTILO CELDA ESPEJO ENERGÉTICO */
+        @keyframes mirrorPulse {
+            0%, 100% { border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 8px rgba(6, 182, 212, 0.2); }
+            50% { border-color: rgba(168, 85, 247, 0.7); box-shadow: 0 0 15px rgba(168, 85, 247, 0.5); }
+        }
+        .mirror-cell {
+            background: rgba(15, 23, 42, 0.35);
+            border: 1px dashed rgba(56, 189, 248, 0.5);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.65;
+            filter: grayscale(0.2) opacity(0.7);
+            backdrop-filter: blur(2px);
+            animation: mirrorPulse 2s infinite ease-in-out;
+            overflow: hidden;
             position: relative;
         }
+        .mirror-cell.empty-mirror {
+            border: none;
+            background: transparent;
+            animation: none;
+        }
+        .mirror-cell.card-red {
+            border: 1px dashed #f43f5e;
+            background: rgba(136, 19, 55, 0.25);
+        }
+        .mirror-cell.card-blue {
+            border: 1px dashed #38bdf8;
+            background: rgba(3, 105, 161, 0.25);
+        }
+
         .cell { 
             background: rgba(15, 23, 42, 0.7); 
             border: 1px solid rgba(51, 65, 85, 0.4); 
@@ -439,7 +500,7 @@
         .corner-bottom-left { bottom: 2px; left: 3px; }
         .corner-bottom-right { bottom: 2px; right: 3px; }
 
-        /* LÍNEAS AUXILIARES MÁS LARGAS (ROZANDO LAS ESTRELLAS) */
+        /* LÍNEAS AUXILIARES MÁS LARGAS */
         .card-mini-line {
             pointer-events: none;
             background: transparent;
@@ -452,12 +513,10 @@
             box-shadow: 0 0 4px #fde047;
         }
 
-        /* Horizontales ampliadas para top/bottom */
         .val-top .card-mini-line, .val-bottom .card-mini-line {
             width: 18px;
             height: 1.5px;
         }
-        /* Verticales ampliadas para left/right */
         .val-left .card-mini-line, .val-right .card-mini-line {
             width: 1.5px;
             height: 16px;
@@ -486,6 +545,11 @@
             transition: all 0.2s;
         }
         .btn-action:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-action.mapamundi-btn-active {
+            background: linear-gradient(135deg, #0284c7, #7c3aed) !important;
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+        }
 
         @keyframes pulse-fast {
             0%, 100% { opacity: 1; transform: scale(1); }
@@ -521,7 +585,7 @@
         }
         .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
-        /* Botón Reclamar Victoria (Aparece cuando el tablero está bloqueado) */
+        /* Botón Reclamar Victoria */
         .btn-claim-win {
             background: linear-gradient(135deg, #8b5cf6, #6d28d9);
             color: #ffffff;
@@ -539,7 +603,6 @@
         .hand-title { font-size: 0.6rem; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
         .hand-cards { display: flex; gap: 6px; overflow-x: auto; padding: 6px; }
 
-        /* CARTAS EN MANO CON COSTE FLOTANTE ABSOLUTO */
         .card-item { 
             width: 46px; 
             height: 60px; 
@@ -566,7 +629,6 @@
         }
         .card-item.hidden-card { background: #1e293b; border-color: #475569; }
 
-        /* Coste de energía flotante absoluto en la esquina superior derecha */
         .card-energy-hint {
             position: absolute;
             top: -5px;
@@ -791,7 +853,11 @@
             </div>
         </div>
 
-        <div id="board" class="board"></div>
+        <!-- CONTENEDOR CON CAPA DE ESPEJOS ENERGÉTICOS -->
+        <div id="board-wrapper" class="board-wrapper">
+            <div id="board" class="board"></div>
+            <div id="board-mapamundi-grid" class="board-mapamundi-grid"></div>
+        </div>
 
         <div id="attack-panel" class="attack-panel hidden">
             <span id="indicator-attack" class="energy-indicator hidden">⚡ +1</span>
@@ -819,6 +885,10 @@
             <button id="btn-action-inspect" onclick="toggleInspectMode()" class="btn-action">
                 👁️ Ver Gema <span id="inspect-cost-label">(1⚡)</span>
                 <span id="indicator-inspect" class="energy-indicator hidden">🟣 0⚡</span>
+            </button>
+            <!-- BOTÓN DE ACTIVACIÓN MAPAMUNDI -->
+            <button id="btn-action-mapamundi" onclick="actionActivateMapamundi()" class="btn-action" style="min-width: 95%;">
+                🌐 Mapamundi / Espejo Energético (1⚡)
             </button>
         </div>
 
@@ -899,6 +969,9 @@
         let currentEnergy = 3;
         let previousEnergy = 3;
         let maxEnergy = 3;
+
+        // ESTADO DE MAPAMUNDI POR TURNO
+        let isMapamundiActive = false;
         
         let usedRedEnergyBonusThisTurn = false;
         let usedBlueEnergyBonusThisTurn = false;
@@ -1128,9 +1201,12 @@
         }
 
         function createInitialGameState() {
-            const shuffledGems = shuffle(GEM_TYPES);
+            const shuffledGemTypes = shuffle(GEM_TYPES);
             const fullDeckRed = generateBalancedDeck();
             const fullDeckBlue = generateBalancedDeck();
+
+            const handRed = fullDeckRed.splice(0, 5);
+            const handBlue = fullDeckBlue.splice(0, 5);
 
             newlyDrawnCardIndex = { red: null, blue: null };
             discardingCardInfo = { player: null, cardIndex: null };
@@ -1138,19 +1214,21 @@
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            isMapamundiActive = false;
 
             return {
                 board: Array(9).fill(false),
                 revealedBoardGems: Array(9).fill(false),
-                gems: shuffledGems,
+                gems: shuffledGemTypes,
                 turn: 'red',
                 currentEnergy: 3,
                 maxEnergy: 3,
+                isMapamundiActive: false,
                 usedRedEnergyBonusThisTurn: false,
                 usedBlueEnergyBonusThisTurn: false,
                 usedYellowEnergyBonusThisTurn: false,
                 usedBlackEnergyBonusThisTurn: false,
-                hands: { red: fullDeckRed.splice(0, 5), blue: fullDeckBlue.splice(0, 5) },
+                hands: { red: handRed, blue: handBlue },
                 decks: { red: fullDeckRed, blue: fullDeckBlue },
                 discards: { red: [], blue: [] },
                 lastLog: "Partida iniciada. Turno del Jugador Rojo."
@@ -1171,6 +1249,7 @@
             currentEnergy = newEnergy;
 
             maxEnergy = data.maxEnergy !== undefined ? data.maxEnergy : 3;
+            isMapamundiActive = data.isMapamundiActive || false;
             usedRedEnergyBonusThisTurn = data.usedRedEnergyBonusThisTurn || false;
             usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
             usedYellowEnergyBonusThisTurn = data.usedYellowEnergyBonusThisTurn || false;
@@ -1220,6 +1299,7 @@
                 turn: turn,
                 currentEnergy: currentEnergy,
                 maxEnergy: maxEnergy,
+                isMapamundiActive: isMapamundiActive,
                 usedRedEnergyBonusThisTurn: usedRedEnergyBonusThisTurn,
                 usedBlueEnergyBonusThisTurn: usedBlueEnergyBonusThisTurn,
                 usedYellowEnergyBonusThisTurn: usedYellowEnergyBonusThisTurn,
@@ -1258,6 +1338,7 @@
             }
             currentEnergy = maxEnergy;
             
+            isMapamundiActive = false;
             usedRedEnergyBonusThisTurn = false;
             usedBlueEnergyBonusThisTurn = false;
             usedYellowEnergyBonusThisTurn = false;
@@ -1279,42 +1360,103 @@
             startTurn(nextTurn);
         }
 
-        // VALIDACIÓN ESTRICTA: Comprueba si existe al menos un ataque exitoso posible en todo el tablero
+        function actionActivateMapamundi() {
+            if (!isMyTurn()) return;
+            if (isMapamundiActive) {
+                document.getElementById('log-message').innerText = "🌐 El Mapamundi ya está activo este turno.";
+                return;
+            }
+            if (currentEnergy < 1) {
+                document.getElementById('log-message').innerText = "⚠️ Necesitás al menos 1⚡ para activar el Mapamundi.";
+                return;
+            }
+
+            currentEnergy -= 1;
+            isMapamundiActive = true;
+            spawnEnergyParticles();
+            justChangedTurn = false;
+
+            syncGameState(`🌐 ¡Mapamundi Activado! Los ataques atraviesan los bordes (-1⚡).`);
+        }
+
+        // CÁLCULO DE OBJETIVO ADYACENTE O MAPAMUNDI (TOROIDAL)
+        function getAttackTarget(idx, dir) {
+            const row = Math.floor(idx / 3);
+            const col = idx % 3;
+
+            let targetRow = row;
+            let targetCol = col;
+            let oppSide = '';
+
+            if (dir === 'top') {
+                targetRow = row - 1;
+                oppSide = 'bottom';
+                if (targetRow < 0) {
+                    if (!isMapamundiActive) return null;
+                    targetRow = 2; // Cruza por arriba hacia la fila inferior
+                }
+            } else if (dir === 'bottom') {
+                targetRow = row + 1;
+                oppSide = 'top';
+                if (targetRow > 2) {
+                    if (!isMapamundiActive) return null;
+                    targetRow = 0; // Cruza por abajo hacia la fila superior
+                }
+            } else if (dir === 'left') {
+                targetCol = col - 1;
+                oppSide = 'right';
+                if (targetCol < 0) {
+                    if (!isMapamundiActive) return null;
+                    targetCol = 2; // Cruza por la izquierda a la derecha
+                }
+            } else if (dir === 'right') {
+                targetCol = col + 1;
+                oppSide = 'left';
+                if (targetCol > 2) {
+                    if (!isMapamundiActive) return null;
+                    targetCol = 0; // Cruza por la derecha a la izquierda
+                }
+            }
+
+            const targetIdx = targetRow * 3 + targetCol;
+            return { targetIdx, oppSide };
+        }
+
+        // VALIDACIÓN ESTRICTA ACTUALIZADA: Siempre comprueba evaluando el Mapamundi como recurso disponible
         function checkIfAnyAttackPossible() {
-            const directions = [
-                { dir: 'top', rowOffset: -1, colOffset: 0, oppSide: 'bottom' },
-                { dir: 'bottom', rowOffset: 1, colOffset: 0, oppSide: 'top' },
-                { dir: 'left', rowOffset: 0, colOffset: -1, oppSide: 'right' },
-                { dir: 'right', rowOffset: 0, colOffset: 1, oppSide: 'left' }
-            ];
+            const directions = ['top', 'bottom', 'left', 'right'];
+            
+            const realMapamundiState = isMapamundiActive;
+            isMapamundiActive = true; // Simula que el recurso siempre se puede activar para destrabar
+
+            let attackFound = false;
 
             for (let idx = 0; idx < 9; idx++) {
                 const cell = board[idx];
                 if (!cell) continue;
 
-                const row = Math.floor(idx / 3);
-                const col = idx % 3;
                 const attVals = getEffectiveCardValues(idx);
 
-                for (const d of directions) {
-                    const nRow = row + d.rowOffset;
-                    const nCol = col + d.colOffset;
-
-                    if (nRow >= 0 && nRow < 3 && nCol >= 0 && nCol < 3) {
-                        const targetIdx = nRow * 3 + nCol;
+                for (const dir of directions) {
+                    const targetInfo = getAttackTarget(idx, dir);
+                    if (targetInfo && targetInfo.targetIdx !== null) {
+                        const targetIdx = targetInfo.targetIdx;
                         const defender = board[targetIdx];
 
-                        // Si hay defensor enemigo y NO está protegido, evaluamos si el ataque supera al defensor
                         if (defender && defender.owner !== cell.owner && !defender.isProtected) {
                             const defVals = getEffectiveCardValues(targetIdx);
-                            if (attVals[d.dir] > defVals[d.oppSide]) {
-                                return true; // ¡Existe al menos un ataque válido posible!
+                            if (attVals[dir] > defVals[targetInfo.oppSide]) {
+                                attackFound = true;
+                                break;
                             }
                         }
                     }
                 }
+                if (attackFound) break;
             }
-            return false; // Ningún jugador puede realizar un ataque exitoso
+
+            isMapamundiActive = realMapamundiState;
+            return attackFound;
         }
 
         function claimVictory() {
@@ -1323,7 +1465,6 @@
 
             let title = "👑 ¡Victoria por Bloqueo Táctico!";
             let winnerText = redTotal > blueTotal ? "Jugador Rojo" : (blueTotal > redTotal ? "Jugador Azul" : "Empate");
-            let winningScore = Math.max(redTotal, blueTotal);
             let detail = redTotal === blueTotal 
                 ? `¡Empate técnico!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`
                 : `¡Victoria de ${winnerText} por superioridad táctica!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`;
@@ -1336,7 +1477,6 @@
         function executeAITurn() {
             if (turn !== 'blue' || gameMode !== 'ai') return;
 
-            // Validación estricta para IA también: si el tablero está lleno y no hay ataques posibles, reclama victoria
             const isBoardFull = board.every(c => c !== null);
             if (isBoardFull && !checkIfAnyAttackPossible()) {
                 claimVictory();
@@ -1360,6 +1500,15 @@
             let bestAttack = findBestAIAttack();
             if (bestAttack) { aiExecuteAttack(bestAttack); return; }
 
+            if (aiDifficulty === 'hard' && !isMapamundiActive && currentEnergy >= 2) {
+                isMapamundiActive = true;
+                currentEnergy -= 1;
+                bestAttack = findBestAIAttack();
+                if (bestAttack) { aiExecuteAttack(bestAttack); return; }
+                currentEnergy += 1;
+                isMapamundiActive = false;
+            }
+
             if (currentEnergy >= 2 && hands.blue.length > 0) {
                 let bestPlacement = findBestAICardPlacement();
                 if (bestPlacement) { aiPlayCard(bestPlacement.handIndex, bestPlacement.boardIndex); return; }
@@ -1380,28 +1529,23 @@
 
             board.forEach((cell, idx) => {
                 if (cell && cell.owner === 'blue') {
-                    const row = Math.floor(idx / 3);
-                    const col = idx % 3;
-
                     directions.forEach(dir => {
-                        let targetIdx = null; let oppSide = '';
-                        if (dir === 'top' && row > 0) { targetIdx = idx - 3; oppSide = 'bottom'; }
-                        if (dir === 'bottom' && row < 2) { targetIdx = idx + 3; oppSide = 'top'; }
-                        if (dir === 'left' && col > 0) { targetIdx = idx - 1; oppSide = 'right'; }
-                        if (dir === 'right' && col < 2) { targetIdx = idx + 1; oppSide = 'left'; }
+                        const targetInfo = getAttackTarget(idx, dir);
+                        if (targetInfo) {
+                            const targetIdx = targetInfo.targetIdx;
+                            if (targetIdx !== null && board[targetIdx] && board[targetIdx].owner === 'red' && !board[targetIdx].isProtected) {
+                                const attVals = getEffectiveCardValues(idx);
+                                const defVals = getEffectiveCardValues(targetIdx);
 
-                        if (targetIdx !== null && board[targetIdx] && board[targetIdx].owner === 'red' && !board[targetIdx].isProtected) {
-                            const attVals = getEffectiveCardValues(idx);
-                            const defVals = getEffectiveCardValues(targetIdx);
-
-                            if (attVals[dir] > defVals[oppSide]) {
-                                let priority = 10;
-                                const gemTarget = gems[targetIdx];
-                                if (aiDifficulty === 'hard') {
-                                    if (gemTarget.id === 'violeta' || gemTarget.id === 'naranja') priority += 20;
-                                    if (gemTarget.pts >= 2) priority += 15;
+                                if (attVals[dir] > defVals[targetInfo.oppSide]) {
+                                    let priority = 10;
+                                    const gemTarget = gems[targetIdx];
+                                    if (aiDifficulty === 'hard') {
+                                        if (gemTarget.id === 'violeta' || gemTarget.id === 'naranja') priority += 20;
+                                        if (gemTarget.pts >= 2) priority += 15;
+                                    }
+                                    possibleAttacks.push({ from: idx, dir: dir, priority: priority });
                                 }
-                                possibleAttacks.push({ from: idx, dir: dir, priority: priority });
                             }
                         }
                     });
@@ -1529,7 +1673,9 @@
                 selectedBoardIndex = index;
                 selectedCard = null; selectedHandIndex = null;
                 document.getElementById('attack-panel').classList.remove('hidden');
-                document.getElementById('log-message').innerText = "Elegí dirección para ATACAR (1⚡).";
+                document.getElementById('log-message').innerText = isMapamundiActive 
+                    ? "Elegí dirección para ATACAR (1⚡). ¡Mapamundi activo!" 
+                    : "Elegí dirección para ATACAR (1⚡).";
                 render();
             }
         }
@@ -1695,16 +1841,13 @@
             if (selectedBoardIndex === null || currentEnergy < 1) return;
 
             const idx = selectedBoardIndex;
-            const row = Math.floor(idx / 3);
-            const col = idx % 3;
+            const targetInfo = getAttackTarget(idx, dir);
 
-            let targetIdx = null; let oppSide = '';
-            if (dir === 'top' && row > 0) { targetIdx = idx - 3; oppSide = 'bottom'; }
-            if (dir === 'bottom' && row < 2) { targetIdx = idx + 3; oppSide = 'top'; }
-            if (dir === 'left' && col > 0) { targetIdx = idx - 1; oppSide = 'right'; }
-            if (dir === 'right' && col < 2) { targetIdx = idx + 1; oppSide = 'left'; }
+            if (!targetInfo || targetInfo.targetIdx === null) return;
+            const targetIdx = targetInfo.targetIdx;
+            const oppSide = targetInfo.oppSide;
 
-            if (targetIdx === null || board[targetIdx] === null) return;
+            if (board[targetIdx] === null) return;
             const defender = board[targetIdx];
             if (defender.owner === turn || defender.isProtected) return;
 
@@ -1900,6 +2043,7 @@
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            isMapamundiActive = false;
             if (gameMode === 'ai') {
                 startAIGame();
             } else if (roomRef) {
@@ -1924,11 +2068,52 @@
             setTimeout(() => { if (banner) banner.remove(); }, 1200);
         }
 
+        // RENDERIZADO DEL ESPEJO ENERGÉTICO EN LA CAPA MAPAMUNDI (GRID 5x5)
+        function renderMapamundiGrid() {
+            const gridEl = document.getElementById('board-mapamundi-grid');
+            if (!gridEl) return;
+            gridEl.innerHTML = '';
+
+            const grid5x5Map = [
+                [8, 6, 7, 8, 6],
+                [2, 0, 1, 2, 0],
+                [5, 3, 4, 5, 3],
+                [8, 6, 7, 8, 6],
+                [2, 0, 1, 2, 0]
+            ];
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const div = document.createElement('div');
+                    if (r >= 1 && r <= 3 && c >= 1 && c <= 3) {
+                        div.className = 'mirror-cell empty-mirror';
+                    } else {
+                        const originalIdx = grid5x5Map[r][c];
+                        const cell = board[originalIdx];
+                        if (cell) {
+                            div.className = `mirror-cell ${cell.owner === 'red' ? 'card-red' : 'card-blue'}`;
+                            div.innerHTML = `<span style="font-size:0.5rem; font-weight:900; color:#ffffff; opacity:0.8;">${cell.gemRevealed.name}</span>`;
+                        } else {
+                            div.className = 'mirror-cell';
+                            div.innerHTML = `<span style="font-size:0.5rem; opacity:0.3;">✨</span>`;
+                        }
+                    }
+                    gridEl.appendChild(div);
+                }
+            }
+        }
+
         function render() {
             if (turn !== lastTurnNotified) {
                 lastTurnNotified = turn;
                 showTurnBanner(turn);
             }
+
+            const boardWrapper = document.getElementById('board-wrapper');
+            if (boardWrapper) {
+                boardWrapper.classList.toggle('mapamundi-active', isMapamundiActive);
+            }
+            renderMapamundiGrid();
 
             const redCombosCount = countPlayerCombos('red');
             const blueCombosCount = countPlayerCombos('blue');
@@ -1956,7 +2141,6 @@
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
-            // Validación estricta: Tablero lleno Y sin ataques exitosos posibles en todo el tablero
             const isBoardFull = board.every(c => c !== null);
             const anyAttackPossible = checkIfAnyAttackPossible();
             const isBoardDeadlocked = isBoardFull && !anyAttackPossible;
@@ -1999,6 +2183,13 @@
             document.getElementById('inspect-cost-label').innerText = `(${inspectCost}⚡)`;
 
             const isMyTurnActive = gameMode === 'ai' ? turn === 'red' : turn === myRole;
+
+            const btnMapamundi = document.getElementById('btn-action-mapamundi');
+            if (btnMapamundi) {
+                btnMapamundi.classList.toggle('mapamundi-btn-active', isMapamundiActive);
+                btnMapamundi.disabled = !isMyTurnActive || isMapamundiActive || currentEnergy < 1;
+            }
+
             document.getElementById('btn-pass-turn').disabled = !isMyTurnActive;
             document.getElementById('btn-action-draw').disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
             document.getElementById('btn-action-recover').disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
@@ -2047,7 +2238,7 @@
                         <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}">⭐</span>
                         <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}">⭐</span>
 
-                        <!-- Contenedores con líneas ampliadas rozando las estrellas -->
+                        <!-- Contenedores con líneas ampliadas -->
                         <div class="val-wrapper val-top">
                             <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
                             <div class="card-val ${eff.boosted.top ? 'boosted' : ''}">${eff.top}</div>
