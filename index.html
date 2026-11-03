@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>9 Gemas - Duelo de Cristales</title>
     
-    <!-- Enlaces para PWA / PWABuilder -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <script>
@@ -14,7 +13,6 @@
       }
     </script>
 
-    <!-- Firebase para tiempo real online -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
@@ -27,61 +25,61 @@
             justify-content: center; 
             align-items: center; 
             min-height: 100vh; 
-            padding: 8px; 
+            padding: 6px; 
+            overflow-x: hidden;
+            transition: background 0.3s ease;
         }
         .container { 
             width: 100%; 
-            max-width: 420px; 
+            max-width: 430px; 
             background: rgba(15, 23, 42, 0.85); 
             backdrop-filter: blur(12px); 
-            border-radius: 20px; 
-            padding: 12px; 
+            border-radius: 18px; 
+            padding: 10px; 
             border: 1px solid rgba(255, 255, 255, 0.1); 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 0 15px rgba(255,255,255,0.03); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7); 
             position: relative;
-            overflow: hidden;
+            overflow: visible !important;
+            transition: all 0.3s ease;
         }
-        .header { text-align: center; margin-bottom: 8px; }
+        .header { text-align: center; margin-bottom: 6px; }
         .title { 
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
-            font-size: 1.3rem; 
+            font-size: 1.2rem; 
             font-weight: 900; 
             letter-spacing: 0.5px;
             filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.3));
         }
-        .subtitle { font-size: 0.65rem; color: #94a3b8; font-weight: 600; }
+        .subtitle { font-size: 0.6rem; color: #94a3b8; font-weight: 600; }
         
-        /* Panel de Lobby */
         .lobby-panel { 
             background: rgba(2, 6, 23, 0.7); 
             border: 1px solid rgba(51, 65, 85, 0.6); 
-            border-radius: 14px; 
-            padding: 10px; 
+            border-radius: 12px; 
+            padding: 8px; 
             text-align: center; 
-            margin-bottom: 8px; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            margin-bottom: 6px; 
         }
-        .lobby-title { font-size: 0.7rem; font-weight: 800; color: #fbbf24; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .mode-selector { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
+        .lobby-title { font-size: 0.65rem; font-weight: 800; color: #fbbf24; margin-bottom: 4px; }
+        .mode-selector { display: flex; gap: 6px; justify-content: center; margin-bottom: 4px; }
         .btn-mode { 
             background: rgba(30, 41, 59, 0.8); 
             color: #94a3b8; 
             border: 1px solid rgba(51, 65, 85, 0.8); 
-            padding: 5px 10px; 
-            border-radius: 8px; 
-            font-size: 0.65rem; 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 0.6rem; 
             font-weight: 700; 
             cursor: pointer; 
             flex: 1; 
-            transition: all 0.2s;
         }
         .btn-mode.active { 
             background: linear-gradient(135deg, #2563eb, #1d4ed8); 
             color: #ffffff; 
             border-color: #60a5fa; 
-            box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
         }
         
         .lobby-inputs { display: flex; gap: 4px; justify-content: center; align-items: center; }
@@ -89,168 +87,114 @@
             background: #0f172a; 
             border: 1px solid #334155; 
             color: #fbbf24; 
-            padding: 4px 8px; 
+            padding: 4px; 
             border-radius: 6px; 
-            font-size: 0.75rem; 
+            font-size: 0.7rem; 
             font-weight: bold; 
             text-transform: uppercase; 
-            width: 80px; 
+            width: 75px; 
             text-align: center; 
         }
         .btn-lobby { 
             background: #0284c7; 
             color: white; 
             border: none; 
-            padding: 5px 10px; 
+            padding: 4px 8px; 
             border-radius: 6px; 
-            font-size: 0.65rem; 
+            font-size: 0.6rem; 
             font-weight: bold; 
             cursor: pointer; 
         }
         .btn-lobby.create { background: linear-gradient(135deg, #16a34a, #15803d); }
-        .ai-select { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; }
+        .ai-select { background: #0f172a; border: 1px solid #334155; color: #fbbf24; padding: 4px; border-radius: 6px; font-size: 0.6rem; font-weight: bold; }
         
-        .room-status { font-size: 0.6rem; color: #38bdf8; margin-top: 6px; font-weight: bold; word-break: break-all; }
-        .btn-share { background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: bold; cursor: pointer; margin-top: 6px; display: inline-block; }
+        .room-status { font-size: 0.58rem; color: #38bdf8; margin-top: 4px; font-weight: bold; }
+        .btn-share { background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.58rem; font-weight: bold; cursor: pointer; margin-top: 4px; }
 
         .scoreboard { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
             background: rgba(2, 6, 23, 0.8); 
-            padding: 8px 12px; 
-            border-radius: 12px; 
+            padding: 6px 10px; 
+            border-radius: 10px; 
             border: 1px solid rgba(255,255,255,0.05); 
             margin-bottom: 6px; 
         }
         .score-box { text-align: center; }
-        .score-val { font-size: 1.1rem; font-weight: 900; }
-        .score-red { color: #f43f5e; text-shadow: 0 0 8px rgba(244, 63, 94, 0.4); }
-        .score-blue { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
-        .deck-info { font-size: 0.55rem; color: #64748b; margin-top: 2px; }
+        .score-val { font-size: 1rem; font-weight: 900; }
+        .score-red { color: #f43f5e; text-shadow: 0 0 6px rgba(244, 63, 94, 0.4); }
+        .score-blue { color: #38bdf8; text-shadow: 0 0 6px rgba(56, 189, 248, 0.4); }
+        .deck-info { font-size: 0.5rem; color: #64748b; }
 
-        .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.75rem; font-weight: bold; position: relative; }
+        .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: bold; position: relative; }
         .energy-tag { 
             background: rgba(245, 158, 11, 0.15); 
             color: #fbbf24; 
             border: 1px solid rgba(245, 158, 11, 0.3); 
-            padding: 2px 8px; 
-            border-radius: 12px; 
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
-            position: relative;
+            padding: 2px 6px; 
+            border-radius: 10px; 
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        /* ANIMACIÓN Y PARTÍCULAS DE ENERGÍA */
         @keyframes energyPulseGlow {
-            0% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
-            50% { transform: scale(1.18); box-shadow: 0 0 25px rgba(251, 191, 36, 0.95), inset 0 0 10px #fde047; }
-            100% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+            0% { transform: scale(1); box-shadow: 0 0 8px rgba(245, 158, 11, 0.2); }
+            50% { transform: scale(1.15); box-shadow: 0 0 20px rgba(251, 191, 36, 0.9); }
+            100% { transform: scale(1); box-shadow: 0 0 8px rgba(245, 158, 11, 0.2); }
         }
-        .energy-pulse {
-            animation: energyPulseGlow 0.5s ease-out;
-        }
+        .energy-pulse { animation: energyPulseGlow 0.5s ease-out; }
 
         @keyframes energyParticleBurst {
             0% { transform: translate(0, 0) scale(1); opacity: 1; }
             100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
         }
         .energy-particle {
-            position: absolute;
-            pointer-events: none;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
+            position: absolute; pointer-events: none; width: 8px; height: 8px; border-radius: 50%;
             background: radial-gradient(circle, #fff 0%, #fde047 60%, #f59e0b 100%);
-            box-shadow: 0 0 8px #fbbf24;
-            z-index: 60;
+            box-shadow: 0 0 6px #fbbf24; z-index: 60;
             animation: energyParticleBurst 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
         }
 
-        /* EFECTO DE IMPACTO SOBRE LA CARTA DEFENSORA */
         @keyframes targetHitFlash {
-            0% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); }
-            50% { transform: scale(1.12); filter: brightness(1.6); background: #ef4444; box-shadow: 0 0 25px #ef4444; }
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.12); filter: brightness(1.6); background: #ef4444; box-shadow: 0 0 20px #ef4444; }
             100% { transform: scale(1); filter: brightness(1); }
         }
-        .anim-target-hit {
-            animation: targetHitFlash 0.35s cubic-bezier(0.25, 1, 0.5, 1) both !important;
-            z-index: 30;
-        }
+        .anim-target-hit { animation: targetHitFlash 0.35s cubic-bezier(0.25, 1, 0.5, 1) both !important; z-index: 30; }
 
-        /* PROYECTIL FLOTANTE DE ATAQUE */
         .flying-projectile {
             position: absolute;
-            width: calc(33.33% - 6px);
-            height: calc(33.33% - 6px);
-            border-radius: 10px;
+            width: calc(20% - 4px);
+            height: calc(20% - 4px);
+            border-radius: 8px;
             z-index: 100;
             pointer-events: none;
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-in;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.8);
         }
-        .flying-projectile.card-red { 
-            background: radial-gradient(circle at center, #2d0612 0%, #0f172a 100%); 
-            border: 2px solid #f43f5e; 
-        }
-        .flying-projectile.card-blue { 
-            background: radial-gradient(circle at center, #082f49 0%, #0f172a 100%); 
-            border: 2px solid #38bdf8; 
-        }
+        .flying-projectile.card-red { background: radial-gradient(circle at center, #680d22 0%, #29020b 100%); border: 2px solid #f43f5e; }
+        .flying-projectile.card-blue { background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%); border: 2px solid #38bdf8; }
 
         @keyframes cardDeployAnim {
-            0% { transform: scale(0.3) translateY(40px); opacity: 0; filter: brightness(1.8); }
-            60% { transform: scale(1.12) translateY(-6px); opacity: 1; }
+            0% { transform: scale(0.3) translateY(30px); opacity: 0; filter: brightness(1.8); }
+            60% { transform: scale(1.1) translateY(-4px); opacity: 1; }
             100% { transform: scale(1) translateY(0); opacity: 1; filter: brightness(1); }
         }
-        .anim-card-deploy {
-            animation: cardDeployAnim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
+        .anim-card-deploy { animation: cardDeployAnim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
         @keyframes cardDrawAnim {
-            0% { transform: translateY(-25px) scale(0.7); opacity: 0; }
+            0% { transform: translateY(-20px) scale(0.7); opacity: 0; }
             100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        .anim-card-draw {
-            animation: cardDrawAnim 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        /* ANIMACIÓN DE DESCARTE */
-        @keyframes cardDiscardAnim {
-            0% { transform: translateY(0) scale(1); opacity: 1; filter: brightness(1); }
-            100% { transform: translateY(35px) scale(0.6); opacity: 0; filter: brightness(0.5); }
-        }
-        .anim-card-discard {
-            animation: cardDiscardAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
-            pointer-events: none;
-            z-index: 40;
-        }
+        .anim-card-draw { animation: cardDrawAnim 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
         @keyframes selectedPulse {
-            0%, 100% { transform: translateY(-2px) scale(1.06); box-shadow: 0 0 10px #fbbf24, 0 2px 6px rgba(0,0,0,0.4); border-color: #fbbf24; }
-            50% { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 5px #fbbf24, 0 2px 6px rgba(0,0,0,0.4); border-color: #fde047; }
+            0%, 100% { transform: translateY(-2px) scale(1.05); box-shadow: 0 0 10px #fbbf24; border-color: #fbbf24; }
+            50% { transform: translateY(-2px) scale(1.01); box-shadow: 0 0 4px #fbbf24; border-color: #fde047; }
         }
-        .card-item.selected { 
-            border-color: #fbbf24 !important; 
-            animation: selectedPulse 1.2s infinite ease-in-out; 
-            z-index: 5; 
-        }
+        .card-item.selected { border-color: #fbbf24 !important; animation: selectedPulse 1.2s infinite ease-in-out; z-index: 5; }
 
-        /* ANIMACIÓN DE BRILLO ESPECÍFICO PARA LAS CARTAS DEL TRÍO */
-        @keyframes trioCardGlowAnim {
-            0% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.4); border-color: #f59e0b; filter: brightness(1); }
-            50% { box-shadow: 0 0 22px rgba(251, 191, 36, 0.95), inset 0 0 12px rgba(251, 191, 36, 0.7); border-color: #fde047; filter: brightness(1.3); }
-            100% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.4); border-color: #f59e0b; filter: brightness(1); }
-        }
-        .anim-trio-card {
-            animation: trioCardGlowAnim 1s ease-in-out 2;
-        }
-
-        /* Banner Flotante de Cambio de Turno */
         @keyframes turnBannerAnim {
             0% { transform: scale(0.5) translateY(-20px); opacity: 0; }
             20% { transform: scale(1.05) translateY(0); opacity: 1; }
@@ -258,186 +202,158 @@
             100% { transform: scale(0.9) translateY(20px); opacity: 0; }
         }
         .turn-banner {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(15, 23, 42, 0.92);
-            border: 2px solid;
-            padding: 10px 24px;
-            border-radius: 14px;
-            font-size: 1.1rem;
-            font-weight: 900;
-            letter-spacing: 1px;
-            z-index: 45;
-            pointer-events: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.92); border: 2px solid; padding: 10px 22px;
+            border-radius: 12px; font-size: 1rem; font-weight: 900; letter-spacing: 1px;
+            z-index: 45; pointer-events: none; box-shadow: 0 10px 25px rgba(0,0,0,0.8);
             animation: turnBannerAnim 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        @keyframes victoryEpicIn {
-            0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
-            60% { transform: scale(1.06) rotate(2deg); opacity: 1; }
-            80% { transform: scale(0.96) rotate(-1deg); }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-        @keyframes victoryGlow {
-            0%, 100% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.6), inset 0 0 20px rgba(245, 158, 11, 0.3); border-color: #fbbf24; }
-            50% { box-shadow: 0 0 60px rgba(251, 191, 36, 0.95), inset 0 0 35px rgba(251, 191, 36, 0.6); border-color: #fde047; }
-        }
-        @keyframes floatingSparkle {
-            0% { transform: translateY(0) scale(0.8); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
-        }
-        .modal-epic-box {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            border: 2px solid #fbbf24;
-            padding: 24px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 300px;
-            width: 100%;
-            position: relative;
-            animation: victoryEpicIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, victoryGlow 2.2s infinite ease-in-out;
-        }
-        .sparkle {
-            position: absolute;
-            font-size: 14px;
-            pointer-events: none;
-            animation: floatingSparkle 1.8s infinite ease-in-out;
-        }
-
-        /* TABLERO CONTENEDOR DE 5x5 PARA MAPAMUNDI / ESPEJO ENERGÉTICO */
+        /* TABLERO DINÁMICO */
         .board-wrapper {
-            position: relative;
             width: 100%;
-            margin-bottom: 6px;
-        }
-        .board { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            grid-template-rows: repeat(3, 1fr);
-            gap: 6px; 
-            background: rgba(2, 6, 23, 0.9); 
-            padding: 8px; 
-            border-radius: 14px; 
-            border: 1px solid rgba(51, 65, 85, 0.5); 
-            aspect-ratio: 1; 
+            background: rgba(2, 6, 23, 0.95);
+            border-radius: 14px;
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            padding: 6px;
+            margin-bottom: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            z-index: 2;
-            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .board-wrapper.mapamundi-active {
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+            padding: 4px;
         }
 
-        /* GRID 5x5 DE ESPEJOS ENERGÉTICOS */
-        .board-mapamundi-grid {
+        .dynamic-grid {
             display: grid;
+            gap: 4px;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dynamic-grid.mode-3x3 {
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            aspect-ratio: 3 / 3.8;
+        }
+
+        .dynamic-grid.mode-5x5 {
             grid-template-columns: repeat(5, 1fr);
             grid-template-rows: repeat(5, 1fr);
-            gap: 4px;
-            position: absolute;
-            inset: -45px;
-            pointer-events: none;
-            z-index: 1;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-        .board-wrapper.mapamundi-active .board-mapamundi-grid {
-            opacity: 1;
-        }
-        .board-wrapper.mapamundi-active .board {
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.5), inset 0 0 15px rgba(168, 85, 247, 0.3);
-            border-color: #38bdf8;
+            aspect-ratio: 5 / 5;
         }
 
-        /* ESTILO CELDA ESPEJO ENERGÉTICO */
-        @keyframes mirrorPulse {
-            0%, 100% { border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 8px rgba(6, 182, 212, 0.2); }
-            50% { border-color: rgba(168, 85, 247, 0.7); box-shadow: 0 0 15px rgba(168, 85, 247, 0.5); }
-        }
-        .mirror-cell {
-            background: rgba(15, 23, 42, 0.35);
-            border: 1px dashed rgba(56, 189, 248, 0.5);
+        .cell-dynamic {
             border-radius: 8px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            opacity: 0.65;
-            filter: grayscale(0.2) opacity(0.7);
-            backdrop-filter: blur(2px);
-            animation: mirrorPulse 2s infinite ease-in-out;
-            overflow: hidden;
             position: relative;
-        }
-        .mirror-cell.empty-mirror {
-            border: none;
-            background: transparent;
-            animation: none;
-        }
-        .mirror-cell.card-red {
-            border: 1px dashed #f43f5e;
-            background: rgba(136, 19, 55, 0.25);
-        }
-        .mirror-cell.card-blue {
-            border: 1px dashed #38bdf8;
-            background: rgba(3, 105, 161, 0.25);
+            overflow: hidden;
+            transition: all 0.2s;
         }
 
-        .cell { 
-            background: rgba(15, 23, 42, 0.7); 
-            border: 1px solid rgba(51, 65, 85, 0.4); 
-            border-radius: 10px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            position: relative; 
-            cursor: pointer; 
-            transition: all 0.2s;
-            padding: 2px;
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
+        .mode-3x3 .cell-dynamic { border-radius: 10px; }
+        .mode-5x5 .cell-dynamic { border-radius: 6px; }
+
+        .cell-dynamic.core-cell {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            cursor: pointer;
         }
-        .cell.inspectable { 
-            border: 2px dashed #eab308 !important; 
-            background: rgba(234, 179, 8, 0.25) !important; 
-            box-shadow: 0 0 12px rgba(234, 179, 8, 0.6) !important;
+        .cell-dynamic.core-cell.inspectable {
+            border: 2px dashed #eab308 !important;
+            background: rgba(234, 179, 8, 0.2) !important;
         }
         
-        .cell.card-red { 
-            background: radial-gradient(circle at center, #3b0712 0%, #0f172a 100%); 
-            border: 2px solid #f43f5e !important; 
-            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(244, 63, 94, 0.4);
+        /* ESTILOS SÓLIDOS Y FIJOS PARA CARTAS JUGADAS (ROJO VS AZUL GARANTIZADO EN TODOS LOS TEMAS) */
+        .cell-dynamic.core-cell.card-red, .cell-dynamic.mirror-edge-cell.card-red {
+            background: radial-gradient(circle at center, #680d22 0%, #29020b 100%) !important;
+            border: 2px solid #f43f5e !important;
+            box-shadow: inset 0 0 12px rgba(244, 63, 94, 0.35), 0 0 10px rgba(244, 63, 94, 0.4) !important;
         }
-        .cell.card-blue { 
-            background: radial-gradient(circle at center, #075985 0%, #0f172a 100%); 
-            border: 2px solid #38bdf8 !important; 
-            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(56, 189, 248, 0.4);
+        .cell-dynamic.core-cell.card-blue, .cell-dynamic.mirror-edge-cell.card-blue {
+            background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%) !important;
+            border: 2px solid #38bdf8 !important;
+            box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.35), 0 0 10px rgba(56, 189, 248, 0.4) !important;
+        }
+
+        .cell-dynamic.mirror-edge-cell {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1.5px dashed rgba(56, 189, 248, 0.7);
+            opacity: 0.78;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25) inset;
         }
 
         @keyframes attackerPulseAnim {
-            0%, 100% { border-color: #fde047; box-shadow: 0 0 20px #fbbf24, inset 0 0 12px rgba(251, 191, 36, 0.6); transform: scale(1.04); }
-            50% { border-color: #f59e0b; box-shadow: 0 0 32px #fde047, inset 0 0 18px rgba(253, 224, 71, 0.8); transform: scale(1.08); }
+            0%, 100% { border-color: #fde047; box-shadow: 0 0 14px #fbbf24; transform: scale(1.02); }
+            50% { border-color: #f59e0b; box-shadow: 0 0 22px #fde047; transform: scale(1.04); }
         }
-        .cell.selected-attacker { 
-            border: 3px solid #fde047 !important; 
+        .cell-dynamic.selected-attacker { 
+            border: 2.5px solid #fde047 !important; 
             animation: attackerPulseAnim 0.9s infinite ease-in-out !important; 
             z-index: 20; 
-            filter: brightness(1.25);
         }
 
+        .val-wrapper {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            z-index: 3;
+        }
+        .val-top { top: 2px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-bottom { bottom: 2px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-left { left: 3px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .val-right { right: 3px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+
+        .mode-3x3 .card-val { font-size: 0.75rem; font-weight: 900; }
+        .mode-5x5 .card-val { font-size: 0.52rem; font-weight: 900; }
+
+        .card-val { color: #ffffff; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.95)); line-height: 1; }
+        .card-val.boosted { color: #fde047 !important; font-style: italic !important; }
+
+        .card-corner-star {
+            position: absolute;
+            font-size: 7px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 4;
+            transition: opacity 0.2s;
+        }
+        .card-corner-star.lit { opacity: 1; }
+        .corner-top-left { top: 6px; left: 6px; }
+        .corner-top-right { top: 6px; right: 6px; }
+        .corner-bottom-left { bottom: 6px; left: 6px; }
+        .corner-bottom-right { bottom: 6px; right: 6px; }
+
+        .card-mini-line { pointer-events: none; background: transparent; z-index: 1; }
+        .card-mini-line.lit { background: #fbbf24; box-shadow: 0 0 3px #fde047; }
+        .mode-3x3 .val-top .card-mini-line, .mode-3x3 .val-bottom .card-mini-line { width: 14px; height: 1.5px; }
+        .mode-3x3 .val-left .card-mini-line, .mode-3x3 .val-right .card-mini-line { width: 1.5px; height: 14px; }
+        .mode-5x5 .val-top .card-mini-line, .mode-5x5 .val-bottom .card-mini-line { width: 6px; height: 1px; }
+        .mode-5x5 .val-left .card-mini-line, .mode-5x5 .val-right .card-mini-line { width: 1px; height: 6px; }
+
         .gem-pod {
-            width: 16px;
-            height: 16px;
             border-radius: 50%;
-            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 70%, transparent 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }
+        .mode-3x3 .gem-pod { width: 16px; height: 16px; }
+        .mode-5x5 .gem-pod { width: 10px; height: 10px; }
+
+        .mode-3x3 .gem-svg { width: 13px; height: 13px; }
+        .mode-5x5 .gem-svg { width: 8px; height: 8px; }
 
         .cell-content {
             position: absolute;
@@ -447,189 +363,33 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 3px;
+            padding: 2px;
             overflow: hidden;
             pointer-events: none;
         }
 
-        /* CONTENEDORES Y ESTILOS DE NÚMEROS */
-        .val-wrapper {
-            position: absolute;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            z-index: 2;
-        }
-        .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-left { left: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
-        .val-right { right: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
-
-        .card-val { 
-            font-size: 0.62rem; 
-            font-weight: 900; 
-            color: #ffffff; 
-            filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.95)) drop-shadow(0px 0px 3px rgba(0, 0, 0, 0.9)); 
-            line-height: 1;
-        }
-        
-        .card-val.boosted { 
-            color: #fde047 !important; 
-            font-size: 0.65rem !important; 
-            font-weight: 900 !important; 
-            font-style: italic !important; 
-            filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.9)); 
-        }
-
-        /* ESTRELLAS EN LOS VÉRTICES */
-        .card-corner-star {
-            position: absolute;
-            font-size: 8px;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 3;
-            filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.9));
-            transition: opacity 0.2s;
-        }
-        .card-corner-star.lit {
-            opacity: 1;
-        }
-        .corner-top-left { top: 2px; left: 3px; }
-        .corner-top-right { top: 2px; right: 3px; }
-        .corner-bottom-left { bottom: 2px; left: 3px; }
-        .corner-bottom-right { bottom: 2px; right: 3px; }
-
-        /* LÍNEAS AUXILIARES MÁS LARGAS */
-        .card-mini-line {
-            pointer-events: none;
-            background: transparent;
-            z-index: 1;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-        .card-mini-line.lit {
-            background: #fbbf24;
-            box-shadow: 0 0 4px #fde047;
-        }
-
-        .val-top .card-mini-line, .val-bottom .card-mini-line {
-            width: 18px;
-            height: 1.5px;
-        }
-        .val-left .card-mini-line, .val-right .card-mini-line {
-            width: 1.5px;
-            height: 16px;
-        }
-
-        .gem-svg { 
-            width: 13px; 
-            height: 13px; 
-            filter: drop-shadow(0 0 4px rgba(255,255,255,0.8)); 
-        }
-
-        /* Paneles de Acciones */
-        .actions-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 6px; }
+        .actions-grid { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-bottom: 6px; }
         .btn-action { 
             background: rgba(30, 41, 59, 0.7); 
             color: white; 
             border: 1px solid rgba(51, 65, 85, 0.8); 
-            padding: 6px; 
-            border-radius: 8px; 
-            font-size: 0.6rem; 
+            padding: 5px; 
+            border-radius: 6px; 
+            font-size: 0.58rem; 
             font-weight: bold; 
             flex: 1; 
             min-width: 45%; 
             cursor: pointer; 
             position: relative; 
-            transition: all 0.2s;
         }
         .btn-action:disabled { opacity: 0.35; cursor: not-allowed; }
         .btn-action.mapamundi-btn-active {
             background: linear-gradient(135deg, #0284c7, #7c3aed) !important;
             border-color: #38bdf8 !important;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
         }
 
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.08); }
-        }
         .energy-indicator {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: #f59e0b;
-            color: #020617;
-            font-size: 9px;
-            font-weight: 900;
-            padding: 1px 4px;
-            border-radius: 9999px;
-            border: 1px solid #fde68a;
-            animation: pulse-fast 1.5s infinite;
-        }
-
-        .attack-panel { display: flex; justify-content: center; gap: 4px; background: rgba(2, 6, 23, 0.95); border: 1px solid rgba(245, 158, 11, 0.5); padding: 6px; border-radius: 8px; margin-bottom: 6px; position: relative; }
-        .btn-attack { background: #1e293b; border: 1px solid #334155; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
-
-        .btn-pass { 
-            background: linear-gradient(135deg, #f59e0b, #d97706); 
-            color: #020617; 
-            font-weight: 900; 
-            border: none; 
-            padding: 5px 10px; 
-            border-radius: 8px; 
-            font-size: 0.65rem; 
-            cursor: pointer; 
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-        }
-        .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-
-        /* Botón Reclamar Victoria */
-        .btn-claim-win {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-            color: #ffffff;
-            font-weight: 900;
-            border: 1px solid #a78bfa;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 0.62rem;
-            cursor: pointer;
-            box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
-            animation: selectedPulse 1.2s infinite ease-in-out;
-        }
-
-        .hand-container { background: rgba(2, 6, 23, 0.6); padding: 6px; border-radius: 10px; border: 1px solid rgba(30, 41, 59, 0.8); margin-bottom: 4px; }
-        .hand-title { font-size: 0.6rem; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
-        .hand-cards { display: flex; gap: 6px; overflow-x: auto; padding: 6px; }
-
-        .card-item { 
-            width: 46px; 
-            height: 60px; 
-            border-radius: 8px; 
-            border: 1px solid; 
-            position: relative; 
-            flex-shrink: 0; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            transition: all 0.15s; 
-        }
-        
-        .card-item.red { 
-            background: radial-gradient(circle at top, #881337 0%, #4c0519 100%); 
-            border-color: #f43f5e; 
-            box-shadow: inset 0 2px 3px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.6); 
-        }
-        .card-item.blue { 
-            background: radial-gradient(circle at top, #0369a1 0%, #082f49 100%); 
-            border-color: #38bdf8; 
-            box-shadow: inset 0 2px 3px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.6); 
-        }
-        .card-item.hidden-card { background: #1e293b; border-color: #475569; }
-
-        .card-energy-hint {
             position: absolute;
             top: -5px;
             right: -5px;
@@ -637,147 +397,234 @@
             color: #020617;
             font-size: 8px;
             font-weight: 900;
-            padding: 1px 4px;
+            padding: 1px 3px;
             border-radius: 9999px;
-            border: 1px solid #fde68a;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            z-index: 10;
         }
 
-        .log-msg { text-align: center; font-size: 0.6rem; color: #fbbf24; font-style: italic; min-height: 24px; margin-bottom: 4px; line-height: 1.2; }
+        .attack-panel { 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            background: rgba(2, 6, 23, 0.95); 
+            border: 1px solid rgba(245, 158, 11, 0.5); 
+            padding: 8px; 
+            border-radius: 10px; 
+            margin-bottom: 6px; 
+            position: relative; 
+        }
+        .attack-grid-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 36px);
+            grid-template-rows: repeat(3, 36px);
+            gap: 4px;
+            justify-content: center;
+        }
+        .btn-attack { 
+            background: #1e293b; 
+            border: 1px solid #334155; 
+            color: white; 
+            font-size: 0.95rem; 
+            font-weight: bold; 
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-attack:hover { background: #334155; border-color: #fbbf24; }
+        .btn-attack:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
+        .btn-attack.diagonal-hidden {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .btn-pass { 
+            background: linear-gradient(135deg, #f59e0b, #d97706); 
+            color: #020617; 
+            font-weight: 900; 
+            border: none; 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 0.6rem; 
+            cursor: pointer; 
+        }
+        .btn-claim-win {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: #ffffff;
+            font-weight: 900;
+            border: 1px solid #a78bfa;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.6rem;
+            cursor: pointer;
+        }
+
+        .hand-container { background: rgba(2, 6, 23, 0.6); padding: 4px; border-radius: 8px; border: 1px solid rgba(30, 41, 59, 0.8); margin-bottom: 4px; }
+        .hand-title { font-size: 0.58rem; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; }
+        .hand-cards { display: flex; gap: 4px; overflow-x: auto; padding: 4px; }
+
+        .card-item { 
+            width: 42px; 
+            height: 60px; 
+            border-radius: 6px; 
+            border: 1px solid; 
+            position: relative; 
+            flex-shrink: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+        }
+        .card-item.red { background: radial-gradient(circle at top, #881337 0%, #4c0519 100%); border-color: #f43f5e; }
+        .card-item.blue { background: radial-gradient(circle at top, #0369a1 0%, #082f49 100%); border-color: #38bdf8; }
+        .card-item.hidden-card { background: #1e293b; border-color: #475569; }
+
+        .card-energy-hint {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #f59e0b;
+            color: #020617;
+            font-size: 7px;
+            font-weight: 900;
+            padding: 1px 3px;
+            border-radius: 9999px;
+        }
+
+        .log-msg { text-align: center; font-size: 0.58rem; color: #fbbf24; font-style: italic; min-height: 20px; margin-bottom: 4px; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
         .hidden { display: none !important; }
 
-        /* CONFIGURACIÓN Y SKINS */
+        @keyframes victoryPopAnim {
+            0% { transform: scale(0.5) translateY(20px); opacity: 0; filter: brightness(1.6); }
+            70% { transform: scale(1.05) translateY(-5px); opacity: 1; filter: brightness(1.2); }
+            100% { transform: scale(1) translateY(0); opacity: 1; filter: brightness(1); }
+        }
+        @keyframes modalGlowPulse {
+            0%, 100% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.4), inset 0 0 15px rgba(251, 191, 36, 0.2); border-color: #fbbf24; }
+            50% { box-shadow: 0 0 45px rgba(251, 191, 36, 0.85), inset 0 0 25px rgba(253, 224, 71, 0.5); border-color: #fde047; }
+        }
+        .modal-content-victory {
+            background: radial-gradient(circle at center, #1e1e2d 0%, #0f172a 100%);
+            border: 2px solid #fbbf24;
+            border-radius: 16px;
+            padding: 20px;
+            width: 85%;
+            max-width: 310px;
+            color: #f0f0f0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: victoryPopAnim 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, modalGlowPulse 2s infinite ease-in-out;
+        }
+        .victory-particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            border-radius: 16px;
+            z-index: 1;
+        }
+        .victory-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #fde047 0%, #f59e0b 70%, transparent 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 8px #fbbf24;
+            animation: floatParticle 1.4s ease-in-out infinite;
+        }
+        @keyframes floatParticle {
+            0% { transform: translateY(20px) scale(0.4); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-90px) scale(1.3); opacity: 0; }
+        }
+        .victory-inner-content {
+            position: relative;
+            z-index: 2;
+        }
+
         .settings-trigger {
           position: fixed;
-          top: 12px;
-          right: 12px;
-          width: 40px;
-          height: 40px;
+          top: 10px; right: 10px;
+          width: 36px; height: 36px;
           border-radius: 50%;
           border: 1px solid rgba(255, 255, 255, 0.2);
           background: rgba(30, 30, 30, 0.85);
           color: #ffffff;
-          font-size: 1.2rem;
+          font-size: 1.1rem;
           cursor: pointer;
           z-index: 999;
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          display: flex; align-items: center; justify-content: center;
         }
-        .settings-trigger:active { transform: scale(0.92); }
 
         .modal-overlay {
-          position: fixed;
-          top: 0; left: 0; width: 100vw; height: 100vh;
+          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
           background: rgba(0, 0, 0, 0.75);
           display: flex; justify-content: center; align-items: center;
-          z-index: 1000; backdrop-filter: blur(3px);
+          z-index: 1000;
         }
         .modal-content-settings {
-          background: #1e1e24;
-          border: 1px solid #33333f;
-          border-radius: 16px;
-          padding: 20px;
-          width: 85%;
-          max-width: 300px;
-          color: #f0f0f0;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-          text-align: center;
+          background: #1e1e24; border: 1px solid #33333f; border-radius: 14px;
+          padding: 16px; width: 85%; max-width: 290px; color: #f0f0f0; text-align: center;
         }
-        .modal-content-settings h2 { margin-top: 0; font-size: 1.2rem; margin-bottom: 16px; color: #ffffff; }
-        .setting-item { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px; text-align: left; }
-        .setting-item label { font-size: 0.85rem; color: #aaaaaa; }
-        .setting-item select { width: 100%; padding: 8px 10px; border-radius: 8px; background: #2a2a35; color: #ffffff; border: 1px solid #444455; font-size: 0.9rem; outline: none; cursor: pointer; }
-        .btn-settings-close { width: 100%; padding: 10px; border-radius: 8px; border: none; background: #ffcc00; color: #121212; font-weight: bold; font-size: 0.9rem; cursor: pointer; }
+        .modal-content-settings h2 { font-size: 1.1rem; margin-bottom: 12px; }
+        .setting-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 16px; text-align: left; }
+        .setting-item label { font-size: 0.8rem; color: #aaaaaa; }
+        .setting-item select { width: 100%; padding: 6px; border-radius: 6px; background: #2a2a35; color: #ffffff; border: 1px solid #444455; font-size: 0.85rem; }
+        .btn-settings-close { width: 100%; padding: 8px; border-radius: 6px; border: none; background: #ffcc00; color: #121212; font-weight: bold; font-size: 0.85rem; cursor: pointer; }
 
-        /* Skins */
-        body.skin-classic .cell { border-radius: 6px; }
+        /* SKINS */
+        body.skin-classic .cell-dynamic { border-radius: 6px; }
         body.skin-classic .card-item { border-radius: 6px; }
+        
+        body.skin-medieval-neon { background: radial-gradient(circle at center, #260d3d 0%, #080214 100%); }
+        body.skin-medieval-neon .container { border: 2px solid #a855f7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); background: rgba(24, 8, 38, 0.9); }
+        body.skin-medieval-neon .board-wrapper { border: 2px solid #a855f7; background: rgba(30, 10, 48, 0.92); box-shadow: 0 0 15px rgba(168, 85, 247, 0.25); }
+        body.skin-medieval-neon .cell-dynamic.core-cell { background: rgba(45, 12, 70, 0.85); border: 1.5px solid rgba(168, 85, 247, 0.5); }
 
-        body.skin-medieval-neon { background: radial-gradient(circle at center, #180826 0%, #05020a 100%); }
-        body.skin-medieval-neon .container { background: rgba(20, 10, 35, 0.9); border: 2px solid #a855f7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(236, 72, 153, 0.15); }
-        body.skin-medieval-neon .title { background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.6)); }
-        body.skin-medieval-neon .board { background: rgba(10, 5, 20, 0.95); border: 2px solid #3b82f6; box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.3); }
-        body.skin-medieval-neon .cell { background: rgba(30, 15, 50, 0.8); border: 1px solid #7c3aed; border-radius: 4px; }
-        body.skin-medieval-neon .cell.card-red { background: radial-gradient(circle at center, #4c0519 0%, #180826 100%); border: 2px solid #f43f5e !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
-        body.skin-medieval-neon .cell.card-blue { background: radial-gradient(circle at center, #082f49 0%, #180826 100%); border: 2px solid #06b6d4 !important; box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); }
-        body.skin-medieval-neon .cell.inspectable { border: 2px dashed #facc15 !important; background: rgba(250, 204, 21, 0.25) !important; box-shadow: 0 0 14px rgba(250, 204, 21, 0.7) !important; }
+        body.skin-medieval-pure { background: radial-gradient(circle at center, #292524 0%, #0c0a09 100%); }
+        body.skin-medieval-pure .container { border: 2px solid #d97706; background: rgba(28, 25, 23, 0.92); }
+        body.skin-medieval-pure .board-wrapper { border: 2px solid #d97706; background: rgba(41, 37, 36, 0.92); box-shadow: 0 0 15px rgba(217, 119, 6, 0.25); }
+        body.skin-medieval-pure .cell-dynamic.core-cell { background: rgba(68, 60, 56, 0.85); border: 1.5px solid rgba(217, 119, 6, 0.5); }
 
-        body.skin-medieval-pure { background: radial-gradient(circle at center, #1c1917 0%, #0c0a09 100%); }
-        body.skin-medieval-pure .container { background: rgba(28, 25, 23, 0.92); border: 2px solid #b45309; box-shadow: 0 15px 35px rgba(0,0,0,0.9), inset 0 0 20px rgba(120, 53, 15, 0.3); }
-        body.skin-medieval-pure .title { background: linear-gradient(135deg, #fde047 0%, #ca8a04 50%, #854d0e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
-        body.skin-medieval-pure .board { background: #1c1917; border: 3px solid #78350f; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
-        body.skin-medieval-pure .cell { background: #292524; border: 2px solid #44403c; border-radius: 4px; }
-        body.skin-medieval-pure .cell.card-red { background: #450a0a; border: 2px solid #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
-        body.skin-medieval-pure .cell.card-blue { background: #082f49; border: 2px solid #38bdf8 !important; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
-        body.skin-medieval-pure .cell.inspectable { border: 2px dashed #fde047 !important; background: rgba(253, 224, 71, 0.25) !important; box-shadow: 0 0 12px rgba(253, 224, 71, 0.6) !important; }
+        body.skin-futuristic { background: radial-gradient(circle at center, #0284c7 0%, #020617 100%); }
+        body.skin-futuristic .container { border: 2px solid #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.4); background: rgba(3, 7, 18, 0.9); }
+        body.skin-futuristic .board-wrapper { border: 2px solid #38bdf8; background: rgba(8, 47, 73, 0.85); box-shadow: 0 0 20px rgba(56, 189, 248, 0.35); }
+        body.skin-futuristic .cell-dynamic.core-cell { background: rgba(12, 74, 110, 0.85); border: 1.5px solid rgba(56, 189, 248, 0.6); }
 
-        body.skin-futuristic { background: radial-gradient(circle at center, #030712 0%, #000000 100%); }
-        body.skin-futuristic .container { background: rgba(3, 7, 18, 0.92); border: 2px solid #06b6d4; box-shadow: 0 0 30px rgba(6, 182, 212, 0.35), inset 0 0 20px rgba(6, 182, 212, 0.1); }
-        body.skin-futuristic .title { background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 50%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.6)); }
-        body.skin-futuristic .board { background: rgba(2, 6, 23, 0.95); border: 2px solid #0284c7; box-shadow: inset 0 0 15px rgba(2, 132, 199, 0.4); }
-        body.skin-futuristic .cell { background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 2px; }
-        body.skin-futuristic .cell.card-red { background: radial-gradient(circle at center, #881337 0%, #030712 100%); border: 2px solid #f43f5e !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
-        body.skin-futuristic .cell.card-blue { background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%); border: 2px solid #38bdf8 !important; box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
-        body.skin-futuristic .cell.inspectable { border: 2px dashed #22d3ee !important; background: rgba(34, 211, 238, 0.3) !important; box-shadow: 0 0 15px rgba(34, 211, 238, 0.7) !important; }
+        body.skin-jrasic { background: radial-gradient(circle at center, #166534 0%, #052e16 100%); }
+        body.skin-jrasic .container { border: 2px solid #22c55e; background: rgba(20, 33, 13, 0.92); }
+        body.skin-jrasic .board-wrapper { border: 2px solid #22c55e; background: rgba(22, 101, 52, 0.85); box-shadow: 0 0 15px rgba(34, 197, 94, 0.25); }
+        body.skin-jrasic .cell-dynamic.core-cell { background: rgba(20, 83, 45, 0.85); border: 1.5px solid rgba(34, 197, 94, 0.6); }
 
-        body.skin-jrasic { background: radial-gradient(circle at center, #14210d 0%, #060a04 100%); }
-        body.skin-jrasic .container { background: rgba(18, 30, 15, 0.92); border: 2px solid #ca8a04; box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 20px rgba(202, 138, 4, 0.2); }
-        body.skin-jrasic .title { background: linear-gradient(135deg, #fde047 0%, #eab308 50%, #854d0e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 6px rgba(202, 138, 4, 0.5)); }
-        body.skin-jrasic .board { background: #0f1c0a; border: 3px solid #854d0e; box-shadow: inset 0 0 15px rgba(0,0,0,0.9); }
-        body.skin-jrasic .cell { background: #1a2e13; border: 2px solid #422006; border-radius: 8px; }
-        body.skin-jrasic .cell.card-red { background: radial-gradient(circle at center, #7f1d1d 0%, #1a2e13 100%) !important; border: 2px solid #ef4444 !important; box-shadow: 0 0 14px rgba(239, 68, 68, 0.7) !important; }
-        body.skin-jrasic .cell.card-blue { background: radial-gradient(circle at center, #0c4a6e 0%, #1a2e13 100%) !important; border: 2px solid #38bdf8 !important; box-shadow: 0 0 14px rgba(56, 189, 248, 0.7) !important; }
-        body.skin-jrasic .cell.inspectable { border: 2px dashed #facc15 !important; background: rgba(250, 204, 21, 0.3) !important; box-shadow: 0 0 14px rgba(250, 204, 21, 0.7) !important; }
+        body.skin-cosmic { background: radial-gradient(circle at center, #581c87 0%, #030712 100%); }
+        body.skin-cosmic .container { border: 2px solid #c084fc; box-shadow: 0 0 30px rgba(192, 132, 252, 0.4); background: rgba(46, 16, 101, 0.85); }
+        body.skin-cosmic .board-wrapper { border: 2px solid #c084fc; background: rgba(88, 28, 135, 0.85); box-shadow: 0 0 20px rgba(192, 132, 252, 0.35); }
+        body.skin-cosmic .cell-dynamic.core-cell { background: rgba(107, 33, 168, 0.85); border: 1.5px solid rgba(192, 132, 252, 0.6); }
 
-        body.skin-cosmic { background: radial-gradient(circle at center, #2e1065 0%, #030712 100%); }
-        body.skin-cosmic .container { background: rgba(30, 27, 75, 0.88); border: 2px solid #c084fc; box-shadow: 0 0 30px rgba(192, 132, 252, 0.3), inset 0 0 20px rgba(236, 72, 153, 0.2); }
-        body.skin-cosmic .title { background: linear-gradient(135deg, #f472b6 0%, #c084fc 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.6)); }
-        body.skin-cosmic .board { background: rgba(15, 12, 41, 0.95); border: 2px solid #8b5cf6; box-shadow: inset 0 0 15px rgba(139, 92, 246, 0.4); }
-        body.skin-cosmic .cell { background: rgba(45, 27, 105, 0.65); border: 1px solid #a78bfa; border-radius: 10px; }
-        body.skin-cosmic .cell.card-red { background: radial-gradient(circle at center, #831843 0%, #1e1b4b 100%); border: 2px solid #fb7185 !important; box-shadow: 0 0 15px rgba(251, 113, 133, 0.6); }
-        body.skin-cosmic .cell.card-blue { background: radial-gradient(circle at center, #1e3a8a 0%, #1e1b4b 100%); border: 2px solid #38bdf8 !important; box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
-        body.skin-cosmic .cell.inspectable { border: 2px dashed #f472b6 !important; background: rgba(244, 114, 182, 0.3) !important; box-shadow: 0 0 15px rgba(244, 114, 182, 0.7) !important; }
+        body.skin-cyberpunk { background: radial-gradient(circle at center, #831843 0%, #09090b 100%); }
+        body.skin-cyberpunk .container { border: 2px solid #ec4899; box-shadow: 0 0 25px rgba(236, 72, 153, 0.4); background: rgba(15, 23, 42, 0.92); }
+        body.skin-cyberpunk .board-wrapper { border: 2px solid #ec4899; background: rgba(131, 24, 67, 0.85); box-shadow: 0 0 20px rgba(236, 72, 153, 0.35); }
+        body.skin-cyberpunk .cell-dynamic.core-cell { background: rgba(157, 23, 77, 0.85); border: 1.5px solid rgba(236, 72, 153, 0.6); }
 
-        body.skin-cyberpunk { background: radial-gradient(circle at center, #0f172a 0%, #09090b 100%); }
-        body.skin-cyberpunk .container { background: rgba(9, 9, 11, 0.95); border: 2px solid #f43f5e; box-shadow: 0 0 25px rgba(244, 63, 94, 0.4), inset 0 0 15px rgba(6, 182, 212, 0.2); }
-        body.skin-cyberpunk .title { background: linear-gradient(135deg, #f43f5e 0%, #facc15 50%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.7)); }
-        body.skin-cyberpunk .board { background: #050507; border: 2px solid #06b6d4; box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.4); }
-        body.skin-cyberpunk .cell { background: #18181b; border: 1px solid #f43f5e; border-radius: 6px; }
-        body.skin-cyberpunk .cell.card-red { background: radial-gradient(circle at center, #581c87 0%, #09090b 100%); border: 2px solid #f43f5e !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.7); }
-        body.skin-cyberpunk .cell.card-blue { background: radial-gradient(circle at center, #164e63 0%, #09090b 100%); border: 2px solid #06b6d4 !important; box-shadow: 0 0 15px rgba(6, 182, 212, 0.7); }
-        body.skin-cyberpunk .cell.inspectable { border: 2px dashed #facc15 !important; background: rgba(250, 204, 21, 0.3) !important; box-shadow: 0 0 15px rgba(250, 204, 21, 0.7) !important; }
+        body.skin-glacial { background: radial-gradient(circle at center, #0369a1 0%, #020617 100%); }
+        body.skin-glacial .container { border: 2px solid #7dd3fc; box-shadow: 0 0 25px rgba(125, 211, 252, 0.4); background: rgba(8, 47, 73, 0.88); }
+        body.skin-glacial .board-wrapper { border: 2px solid #7dd3fc; background: rgba(3, 105, 161, 0.85); box-shadow: 0 0 20px rgba(125, 211, 252, 0.35); }
+        body.skin-glacial .cell-dynamic.core-cell { background: rgba(2, 132, 199, 0.85); border: 1.5px solid rgba(125, 211, 252, 0.6); }
 
-        body.skin-glacial { background: radial-gradient(circle at center, #082f49 0%, #020617 100%); }
-        body.skin-glacial .container { background: rgba(8, 47, 73, 0.85); border: 2px solid #7dd3fc; box-shadow: 0 0 25px rgba(125, 211, 252, 0.35), inset 0 0 20px rgba(255, 255, 255, 0.15); }
-        body.skin-glacial .title { background: linear-gradient(135deg, #ffffff 0%, #bae6fd 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(186, 230, 253, 0.7)); }
-        body.skin-glacial .board { background: rgba(3, 37, 65, 0.95); border: 2px solid #38bdf8; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.4); }
-        body.skin-glacial .cell { background: rgba(12, 74, 110, 0.75); border: 1px solid #7dd3fc; border-radius: 10px; }
-        body.skin-glacial .cell.card-red { background: radial-gradient(circle at center, #881337 0%, #082f49 100%); border: 2px solid #fb7185 !important; box-shadow: 0 0 15px rgba(251, 113, 133, 0.6); }
-        body.skin-glacial .cell.card-blue { background: radial-gradient(circle at center, #0369a1 0%, #082f49 100%); border: 2px solid #38bdf8 !important; box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
-        body.skin-glacial .cell.inspectable { border: 2px dashed #ffffff !important; background: rgba(255, 255, 255, 0.3) !important; box-shadow: 0 0 15px rgba(255, 255, 255, 0.7) !important; }
-
-        body.skin-gothic { background: radial-gradient(circle at center, #18181b 0%, #09090b 100%); }
-        body.skin-gothic .container { background: rgba(24, 24, 27, 0.92); border: 2px solid #71717a; box-shadow: 0 15px 35px rgba(0,0,0,0.9), inset 0 0 20px rgba(0, 0, 0, 0.8); }
-        body.skin-gothic .title { background: linear-gradient(135deg, #f43f5e 0%, #a1a1aa 50%, #52525b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); }
-        body.skin-gothic .board { background: #09090b; border: 3px solid #3f3f46; box-shadow: inset 0 0 20px rgba(0,0,0,0.9); }
-        body.skin-gothic .cell { background: #121215; border: 2px solid #27272a; border-radius: 8px; }
-        body.skin-gothic .cell.card-red { background: radial-gradient(circle at center, #450a0a 0%, #121215 100%); border: 2px solid #ef4444 !important; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
-        body.skin-gothic .cell.card-blue { background: radial-gradient(circle at center, #082f49 0%, #121215 100%); border: 2px solid #38bdf8 !important; box-shadow: 0 0 12px rgba(56, 189, 248, 0.6); }
-        body.skin-gothic .cell.inspectable { border: 2px dashed #f43f5e !important; background: rgba(244, 63, 94, 0.25) !important; box-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important; }
+        body.skin-gothic { background: radial-gradient(circle at center, #27272a 0%, #09090b 100%); }
+        body.skin-gothic .container { border: 2px solid #71717a; background: rgba(24, 24, 27, 0.92); }
+        body.skin-gothic .board-wrapper { border: 2px solid #71717a; background: rgba(39, 39, 42, 0.85); box-shadow: 0 0 15px rgba(113, 113, 122, 0.3); }
+        body.skin-gothic .cell-dynamic.core-cell { background: rgba(63, 63, 70, 0.85); border: 1.5px solid rgba(113, 113, 122, 0.5); }
     </style>
 </head>
 <body>
 
-    <!-- Botón Flotante de Configuración -->
     <button id="btn-settings" class="settings-trigger" aria-label="Configuración" title="Configuración">⚙️</button>
 
-    <!-- Modal de Configuración -->
     <div id="modal-settings" class="modal-overlay" style="display: none;">
       <div class="modal-content-settings">
         <h2>Configuración</h2>
@@ -787,12 +634,12 @@
             <option value="modern">Moderno (Actual)</option>
             <option value="classic">Clásico (Iconos)</option>
             <option value="medieval-neon">🛡️⚡ Medieval Neón</option>
-            <option value="medieval-pure">⚔️ Medieval Clásico (Piedra y Hierro)</option>
-            <option value="futuristic">🚀 Futurista / Sci-Fi Holográfico</option>
-            <option value="jrasic">🦖 Jurásico (Ámbar y Selva)</option>
-            <option value="cosmic">🌌 Cósmico / Galaxia</option>
-            <option value="cyberpunk">⛩️ Cyberpunk / Tokio Neón</option>
-            <option value="glacial">🧊 Glacial / Reino de Hielo</option>
+            <option value="medieval-pure">⚔️ Medieval Clásico</option>
+            <option value="futuristic">🚀 Futurista / Sci-Fi</option>
+            <option value="jrasic">🦖 Jurásico</option>
+            <option value="cosmic">🌌 Cósmico</option>
+            <option value="cyberpunk">⛩️ Cyberpunk</option>
+            <option value="glacial">🧊 Glacial</option>
             <option value="gothic">🎃 Oscuro / Gótico</option>
           </select>
         </div>
@@ -830,7 +677,7 @@
             </div>
 
             <div id="room-status" class="room-status">Elige un modo para comenzar.</div>
-            <button id="btn-share-link" onclick="shareRoomLink()" class="btn-share hidden">🔗 Copiar Enlace de Invitación</button>
+            <button id="btn-share-link" onclick="shareRoomLink()" class="btn-share hidden">🔗 Copiar Enlace</button>
         </div>
 
         <div class="turn-bar">
@@ -843,30 +690,39 @@
                 <div class="score-val score-red" id="score-red">0 / 7</div>
                 <div class="deck-info">Mazo: <span id="deck-red">4</span> | Desc: <span id="discard-red">0</span></div>
             </div>
-            <!-- Botón Pasar Turno o Reclamar Victoria por Bloqueo Estricto -->
             <button id="btn-pass-turn" onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
             <button id="btn-claim-victory" onclick="claimVictory()" class="btn-claim-win hidden">👑 Reclamar Victoria</button>
             
             <div class="score-box">
                 <div class="score-val score-blue" id="score-blue">0 / 7</div>
-                <div class="deck-info">Mazo: <span id="deck-blue">4</span> | Desc: <span id="discard-blue">0</span></div>
+                <div class="deck-info">Mazo: <span id="deck-blue">4</span> | Desc: <span id="discard-blue">1</span></div>
             </div>
         </div>
 
-        <!-- CONTENEDOR CON CAPA DE ESPEJOS ENERGÉTICOS -->
+        <!-- TABLERO DINÁMICO -->
         <div id="board-wrapper" class="board-wrapper">
-            <div id="board" class="board"></div>
-            <div id="board-mapamundi-grid" class="board-mapamundi-grid"></div>
+            <div id="dynamic-grid" class="dynamic-grid mode-3x3"></div>
         </div>
 
+        <!-- PANEL DE ATAQUE 3x3 EN 8 DIRECCIONES -->
         <div id="attack-panel" class="attack-panel hidden">
-            <span id="indicator-attack" class="energy-indicator hidden">⚡ +1</span>
-            <span style="font-size: 0.65rem; color: #fbbf24; align-self: center;">Atacar (1⚡):</span>
-            <button onclick="executeAttack('top')" class="btn-attack">⬆️</button>
-            <button onclick="executeAttack('bottom')" class="btn-attack">⬇️</button>
-            <button onclick="executeAttack('left')" class="btn-attack">⬅️</button>
-            <button onclick="executeAttack('right')" class="btn-attack">➡️</button>
-            <button onclick="cancelAttack()" class="btn-attack" style="background: #881337;">❌</button>
+            <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 4px; align-items: center;">
+                <span style="font-size: 0.65rem; color: #fbbf24; font-weight: bold;">Atacar (1⚡ - 8 Direcciones):</span>
+                <span id="indicator-attack" class="energy-indicator hidden">⚡+1</span>
+            </div>
+            <div class="attack-grid-pad">
+                <button id="btn-atk-tl" onclick="executeAttack('top-left')" class="btn-attack" title="Arriba-Izquierda">↖️</button>
+                <button onclick="executeAttack('top')" class="btn-attack" title="Arriba">⬆️</button>
+                <button id="btn-atk-tr" onclick="executeAttack('top-right')" class="btn-attack" title="Arriba-Derecha">↗️</button>
+                
+                <button onclick="executeAttack('left')" class="btn-attack" title="Izquierda">⬅️</button>
+                <button onclick="cancelAttack()" class="btn-attack" style="background: #881337; font-size: 0.7rem;" title="Cancelar">❌</button>
+                <button onclick="executeAttack('right')" class="btn-attack" title="Derecha">➡️</button>
+                
+                <button id="btn-atk-bl" onclick="executeAttack('bottom-left')" class="btn-attack" title="Abajo-Izquierda">↙️</button>
+                <button onclick="executeAttack('bottom')" class="btn-attack" title="Abajo">⬇️</button>
+                <button id="btn-atk-br" onclick="executeAttack('bottom-right')" class="btn-attack" title="Abajo-Derecha">↘️</button>
+            </div>
         </div>
 
         <div class="actions-grid">
@@ -886,9 +742,11 @@
                 👁️ Ver Gema <span id="inspect-cost-label">(1⚡)</span>
                 <span id="indicator-inspect" class="energy-indicator hidden">🟣 0⚡</span>
             </button>
-            <!-- BOTÓN DE ACTIVACIÓN MAPAMUNDI -->
-            <button id="btn-action-mapamundi" onclick="actionActivateMapamundi()" class="btn-action" style="min-width: 95%;">
-                🌐 Mapamundi / Espejo Energético (1⚡)
+            <button id="btn-action-mapamundi" onclick="actionActivateMapamundi()" class="btn-action" style="min-width: 48%;">
+                🌐 Mapamundi (1⚡)
+            </button>
+            <button id="btn-action-diagonal" onclick="toggleDiagonal()" class="btn-action" style="min-width: 48%;">
+                ❖ Atq. Diagonal (1⚡)
             </button>
         </div>
 
@@ -905,13 +763,16 @@
         </div>
     </div>
 
-    <!-- Modal de Victoria -->
+    <!-- MODAL DE VICTORIA -->
     <div id="game-over-modal" class="modal">
-        <div class="modal-epic-box" id="epic-modal-box">
-            <div style="font-size: 2rem; margin-bottom: 4px;">👑💎</div>
-            <h2 id="winner-text" style="color: #fbbf24; margin-bottom: 8px; font-size: 1.2rem; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);">¡Victoria Épica!</h2>
-            <p id="winner-detail" style="font-size: 0.8rem; margin-bottom: 16px; color: #e2e8f0; line-height: 1.4;">Ganaste la partida.</p>
-            <button onclick="resetGame()" class="btn-pass" style="width: 100%; padding: 10px; font-size: 0.75rem;">Reiniciar Partida</button>
+        <div class="modal-content-victory">
+            <div class="victory-particles" id="victory-particles-container"></div>
+            <div class="victory-inner-content">
+                <div style="font-size: 2.2rem; margin-bottom: 4px; filter: drop-shadow(0 0 10px #fbbf24);">👑💎</div>
+                <h2 id="winner-text" style="color: #fbbf24; margin-bottom: 8px; font-size: 1.2rem; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);">¡Victoria Épica!</h2>
+                <p id="winner-detail" style="font-size: 0.75rem; margin-bottom: 16px; color: #e2e8f0; line-height: 1.4;">Ganaste la partida.</p>
+                <button onclick="resetGame()" class="btn-pass" style="width: 100%; padding: 9px; font-size: 0.78rem;">Reiniciar Partida</button>
+            </div>
         </div>
     </div>
 
@@ -952,6 +813,14 @@
             { id: 'marron', name: 'Cuarzo', pts: 1, type: 'special', desc: 'Iguala al mayor' }      
         ];
 
+        const MATRIX_5X5_MAPPING = [
+            [8, 6, 7, 8, 6],
+            [2, 0, 1, 2, 0],
+            [5, 3, 4, 5, 3],
+            [8, 6, 7, 8, 6],
+            [2, 0, 1, 2, 0]
+        ];
+
         let gameMode = 'online';
         let aiDifficulty = 'normal';
         let myRole = null;
@@ -970,8 +839,8 @@
         let previousEnergy = 3;
         let maxEnergy = 3;
 
-        // ESTADO DE MAPAMUNDI POR TURNO
         let isMapamundiActive = false;
+        let isDiagonalActive = false;
         
         let usedRedEnergyBonusThisTurn = false;
         let usedBlueEnergyBonusThisTurn = false;
@@ -1017,9 +886,7 @@
             function applySkin(skinName) {
                 const classesToRemove = [];
                 document.body.classList.forEach(className => {
-                    if (className.startsWith('skin-')) {
-                        classesToRemove.push(className);
-                    }
+                    if (className.startsWith('skin-')) classesToRemove.push(className);
                 });
                 classesToRemove.forEach(cls => document.body.classList.remove(cls));
                 document.body.classList.add(`skin-${skinName}`);
@@ -1041,55 +908,18 @@
             }
 
             if (btnSettings && modalSettings) {
-                btnSettings.addEventListener('click', () => {
-                    modalSettings.style.display = 'flex';
-                });
+                btnSettings.addEventListener('click', () => { modalSettings.style.display = 'flex'; });
             }
-
             if (btnCloseSettings) {
                 btnCloseSettings.addEventListener('click', saveSkinPreference);
             }
-
             if (modalSettings) {
                 modalSettings.addEventListener('click', (e) => {
-                    if (e.target === modalSettings) {
-                        modalSettings.style.display = 'none';
-                    }
+                    if (e.target === modalSettings) modalSettings.style.display = 'none';
                 });
             }
 
             loadSavedSkin();
-        }
-
-        function spawnEnergyParticles() {
-            const energyBadge = document.getElementById('energy-badge');
-            if (!energyBadge) return;
-
-            energyBadge.classList.remove('energy-pulse');
-            void energyBadge.offsetWidth;
-            energyBadge.classList.add('energy-pulse');
-
-            const rect = energyBadge.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-
-            for (let i = 0; i < 10; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'energy-particle';
-                
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 25 + Math.random() * 25;
-                const dx = Math.cos(angle) * distance;
-                const dy = Math.sin(angle) * distance;
-
-                particle.style.left = `${centerX}px`;
-                particle.style.top = `${centerY}px`;
-                particle.style.setProperty('--dx', `${dx}px`);
-                particle.style.setProperty('--dy', `${dy}px`);
-
-                document.body.appendChild(particle);
-                setTimeout(() => particle.remove(), 600);
-            }
         }
 
         function switchGameMode(mode) {
@@ -1193,9 +1023,7 @@
             
             roomRef.once('value').then((snapshot) => {
                 const data = snapshot.val();
-                if (data) {
-                    applyGameState(data);
-                }
+                if (data) applyGameState(data);
                 listenRoomState();
             });
         }
@@ -1215,6 +1043,7 @@
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
             isMapamundiActive = false;
+            isDiagonalActive = false;
 
             return {
                 board: Array(9).fill(false),
@@ -1224,6 +1053,7 @@
                 currentEnergy: 3,
                 maxEnergy: 3,
                 isMapamundiActive: false,
+                isDiagonalActive: false,
                 usedRedEnergyBonusThisTurn: false,
                 usedBlueEnergyBonusThisTurn: false,
                 usedYellowEnergyBonusThisTurn: false,
@@ -1242,14 +1072,13 @@
             turn = data.turn || 'red';
             
             const newEnergy = data.currentEnergy !== undefined ? data.currentEnergy : 3;
-            if (newEnergy > currentEnergy) {
-                spawnEnergyParticles();
-            }
+            if (newEnergy > currentEnergy) spawnEnergyParticles();
             previousEnergy = currentEnergy;
             currentEnergy = newEnergy;
 
             maxEnergy = data.maxEnergy !== undefined ? data.maxEnergy : 3;
             isMapamundiActive = data.isMapamundiActive || false;
+            isDiagonalActive = data.isDiagonalActive || false;
             usedRedEnergyBonusThisTurn = data.usedRedEnergyBonusThisTurn || false;
             usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
             usedYellowEnergyBonusThisTurn = data.usedYellowEnergyBonusThisTurn || false;
@@ -1284,7 +1113,7 @@
             checkGameOver();
 
             if (gameMode === 'ai') {
-                if (turn === 'blue') { setTimeout(executeAITurn, 700); }
+                if (turn === 'blue') setTimeout(executeAITurn, 700);
                 return;
             }
 
@@ -1300,6 +1129,7 @@
                 currentEnergy: currentEnergy,
                 maxEnergy: maxEnergy,
                 isMapamundiActive: isMapamundiActive,
+                isDiagonalActive: isDiagonalActive,
                 usedRedEnergyBonusThisTurn: usedRedEnergyBonusThisTurn,
                 usedBlueEnergyBonusThisTurn: usedBlueEnergyBonusThisTurn,
                 usedYellowEnergyBonusThisTurn: usedYellowEnergyBonusThisTurn,
@@ -1329,16 +1159,39 @@
             return board.some(c => c !== null && c.owner === player && c.gemRevealed.id === gemId);
         }
 
+        function spawnEnergyParticles() {
+            const energyBadge = document.getElementById('energy-badge');
+            if (!energyBadge) return;
+            energyBadge.classList.remove('energy-pulse');
+            void energyBadge.offsetWidth;
+            energyBadge.classList.add('energy-pulse');
+
+            const rect = energyBadge.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'energy-particle';
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 20 + Math.random() * 20;
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                particle.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+                particle.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 600);
+            }
+        }
+
         function startTurn(player) {
             turn = player;
             maxEnergy = getMaxEnergyForPlayer(player);
-            
-            if (maxEnergy > currentEnergy) {
-                spawnEnergyParticles();
-            }
+            if (maxEnergy > currentEnergy) spawnEnergyParticles();
             currentEnergy = maxEnergy;
             
             isMapamundiActive = false;
+            isDiagonalActive = false;
             usedRedEnergyBonusThisTurn = false;
             usedBlueEnergyBonusThisTurn = false;
             usedYellowEnergyBonusThisTurn = false;
@@ -1362,14 +1215,8 @@
 
         function actionActivateMapamundi() {
             if (!isMyTurn()) return;
-            if (isMapamundiActive) {
-                document.getElementById('log-message').innerText = "🌐 El Mapamundi ya está activo este turno.";
-                return;
-            }
-            if (currentEnergy < 1) {
-                document.getElementById('log-message').innerText = "⚠️ Necesitás al menos 1⚡ para activar el Mapamundi.";
-                return;
-            }
+            if (isMapamundiActive) return;
+            if (currentEnergy < 1) return;
 
             currentEnergy -= 1;
             isMapamundiActive = true;
@@ -1379,7 +1226,19 @@
             syncGameState(`🌐 ¡Mapamundi Activado! Los ataques atraviesan los bordes (-1⚡).`);
         }
 
-        // CÁLCULO DE OBJETIVO ADYACENTE O MAPAMUNDI (TOROIDAL)
+        function toggleDiagonal() {
+            if (!isMyTurn()) return;
+            if (isDiagonalActive) return;
+            if (currentEnergy < 1) return;
+
+            currentEnergy -= 1;
+            isDiagonalActive = true;
+            spawnEnergyParticles();
+            justChangedTurn = false;
+
+            syncGameState(`❖ ¡Ataque Diagonal Activado! Esquinas visibles (-1⚡).`);
+        }
+
         function getAttackTarget(idx, dir) {
             const row = Math.floor(idx / 3);
             const col = idx % 3;
@@ -1389,32 +1248,49 @@
             let oppSide = '';
 
             if (dir === 'top') {
-                targetRow = row - 1;
-                oppSide = 'bottom';
-                if (targetRow < 0) {
-                    if (!isMapamundiActive) return null;
-                    targetRow = 2; // Cruza por arriba hacia la fila inferior
-                }
+                targetRow = row - 1; oppSide = 'bottom';
+                if (targetRow < 0) { if (!isMapamundiActive) return null; targetRow = 2; }
             } else if (dir === 'bottom') {
-                targetRow = row + 1;
-                oppSide = 'top';
-                if (targetRow > 2) {
-                    if (!isMapamundiActive) return null;
-                    targetRow = 0; // Cruza por abajo hacia la fila superior
-                }
+                targetRow = row + 1; oppSide = 'top';
+                if (targetRow > 2) { if (!isMapamundiActive) return null; targetRow = 0; }
             } else if (dir === 'left') {
-                targetCol = col - 1;
-                oppSide = 'right';
-                if (targetCol < 0) {
-                    if (!isMapamundiActive) return null;
-                    targetCol = 2; // Cruza por la izquierda a la derecha
-                }
+                targetCol = col - 1; oppSide = 'right';
+                if (targetCol < 0) { if (!isMapamundiActive) return null; targetCol = 2; }
             } else if (dir === 'right') {
-                targetCol = col + 1;
-                oppSide = 'left';
-                if (targetCol > 2) {
+                targetCol = col + 1; oppSide = 'left';
+                if (targetCol > 2) { if (!isMapamundiActive) return null; targetCol = 0; }
+            }
+            else if (dir === 'top-left') {
+                if (!isDiagonalActive) return null;
+                targetRow = row - 1; targetCol = col - 1; oppSide = 'bottom-right';
+                if (targetRow < 0 || targetCol < 0) {
                     if (!isMapamundiActive) return null;
-                    targetCol = 0; // Cruza por la derecha a la izquierda
+                    if (targetRow < 0) targetRow = 2;
+                    if (targetCol < 0) targetCol = 2;
+                }
+            } else if (dir === 'top-right') {
+                if (!isDiagonalActive) return null;
+                targetRow = row - 1; targetCol = col + 1; oppSide = 'bottom-left';
+                if (targetRow < 0 || targetCol > 2) {
+                    if (!isMapamundiActive) return null;
+                    if (targetRow < 0) targetRow = 2;
+                    if (targetCol > 2) targetCol = 0;
+                }
+            } else if (dir === 'bottom-left') {
+                if (!isDiagonalActive) return null;
+                targetRow = row + 1; targetCol = col - 1; oppSide = 'top-right';
+                if (targetRow > 2 || targetCol < 0) {
+                    if (!isMapamundiActive) return null;
+                    if (targetRow > 2) targetRow = 0;
+                    if (targetCol < 0) targetCol = 2;
+                }
+            } else if (dir === 'bottom-right') {
+                if (!isDiagonalActive) return null;
+                targetRow = row + 1; targetCol = col + 1; oppSide = 'top-left';
+                if (targetRow > 2 || targetCol > 2) {
+                    if (!isMapamundiActive) return null;
+                    if (targetRow > 2) targetRow = 0;
+                    if (targetCol > 2) targetCol = 0;
                 }
             }
 
@@ -1422,12 +1298,13 @@
             return { targetIdx, oppSide };
         }
 
-        // VALIDACIÓN ESTRICTA ACTUALIZADA: Siempre comprueba evaluando el Mapamundi como recurso disponible
         function checkIfAnyAttackPossible() {
-            const directions = ['top', 'bottom', 'left', 'right'];
-            
+            const directions = ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
             const realMapamundiState = isMapamundiActive;
-            isMapamundiActive = true; // Simula que el recurso siempre se puede activar para destrabar
+            const realDiagonalState = isDiagonalActive;
+            
+            isMapamundiActive = true; 
+            isDiagonalActive = true;
 
             let attackFound = false;
 
@@ -1456,7 +1333,28 @@
             }
 
             isMapamundiActive = realMapamundiState;
+            isDiagonalActive = realDiagonalState;
             return attackFound;
+        }
+
+        function triggerVictoryModal(title, detail) {
+            document.getElementById('winner-text').innerText = title;
+            document.getElementById('winner-detail').innerText = detail;
+            document.getElementById('game-over-modal').style.display = 'flex';
+
+            const particlesContainer = document.getElementById('victory-particles-container');
+            if (particlesContainer) {
+                particlesContainer.innerHTML = '';
+                for (let i = 0; i < 22; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'victory-particle';
+                    p.style.left = `${Math.random() * 100}%`;
+                    p.style.top = `${50 + Math.random() * 50}%`;
+                    p.style.animationDelay = `${Math.random() * 1.5}s`;
+                    p.style.animationDuration = `${0.9 + Math.random() * 1.1}s`;
+                    particlesContainer.appendChild(p);
+                }
+            }
         }
 
         function claimVictory() {
@@ -1469,9 +1367,7 @@
                 ? `¡Empate técnico!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`
                 : `¡Victoria de ${winnerText} por superioridad táctica!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`;
             
-            document.getElementById('winner-text').innerText = title;
-            document.getElementById('winner-detail').innerText = detail;
-            document.getElementById('game-over-modal').style.display = 'flex';
+            triggerVictoryModal(title, detail);
         }
 
         function executeAITurn() {
@@ -1525,7 +1421,7 @@
         function findBestAIAttack() {
             if (currentEnergy < 1) return null;
             let possibleAttacks = [];
-            const directions = ['top', 'bottom', 'left', 'right'];
+            const directions = ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
 
             board.forEach((cell, idx) => {
                 if (cell && cell.owner === 'blue') {
@@ -1596,10 +1492,7 @@
             justChangedTurn = false;
 
             let logText = `🤖 IA jugó en ${gem.name}! (-2⚡)`;
-            if (gem.id === 'violeta') { 
-                currentEnergy += 1; 
-                spawnEnergyParticles(); 
-            }
+            if (gem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); }
             if (gem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer('blue');
             if (gem.id === 'verde') logText += triggerGreenGemDeploymentEffect('blue');
 
@@ -1613,10 +1506,7 @@
 
         function selectHandCard(player, index) {
             if (!isMyTurn()) return;
-            if (currentEnergy < 2) {
-                document.getElementById('log-message').innerText = "⚠️ Necesitás al menos 2⚡ para jugar una carta.";
-                return;
-            }
+            if (currentEnergy < 2) return;
             isInspectMode = false;
             selectedCard = hands[player][index];
             selectedHandIndex = index;
@@ -1631,10 +1521,7 @@
             const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
             const inspectCost = controlsViolet ? 0 : 1;
 
-            if (currentEnergy < inspectCost) {
-                document.getElementById('log-message').innerText = "⚠️ Sin energía suficiente para inspeccionar.";
-                return;
-            }
+            if (currentEnergy < inspectCost) return;
             isInspectMode = !isInspectMode;
             selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
@@ -1673,9 +1560,7 @@
                 selectedBoardIndex = index;
                 selectedCard = null; selectedHandIndex = null;
                 document.getElementById('attack-panel').classList.remove('hidden');
-                document.getElementById('log-message').innerText = isMapamundiActive 
-                    ? "Elegí dirección para ATACAR (1⚡). ¡Mapamundi activo!" 
-                    : "Elegí dirección para ATACAR (1⚡).";
+                document.getElementById('log-message').innerText = "Elegí dirección para ATACAR (1⚡).";
                 render();
             }
         }
@@ -1729,11 +1614,7 @@
             justChangedTurn = false;
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-2⚡)`;
-            if (gem.id === 'violeta') { 
-                currentEnergy += 1; 
-                spawnEnergyParticles(); 
-                logText += ` 🟣 [+1⚡]`; 
-            }
+            if (gem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); logText += ` 🟣 [+1⚡]`; }
             if (gem.id === 'naranja') { maxEnergy = getMaxEnergyForPlayer(turn); logText += ` 🟠 [Máx. 4⚡]`; }
             if (gem.id === 'verde') { logText += triggerGreenGemDeploymentEffect(turn); }
 
@@ -1819,20 +1700,31 @@
             const hasMarron = ownerGemIds.includes('marron');
             const cardGemId = card.gemRevealed.id;
 
-            let values = { top: card.top, right: card.right, bottom: card.bottom, left: card.left };
+            let values = { 
+                top: card.top, right: card.right, bottom: card.bottom, left: card.left,
+                'top-left': (card.top + card.left) / 2,
+                'top-right': (card.top + card.right) / 2,
+                'bottom-left': (card.bottom + card.left) / 2,
+                'bottom-right': (card.bottom + card.right) / 2
+            };
             let boosted = { top: false, right: false, bottom: false, left: false };
 
             if (hasMarron) {
-                const currentMax = Math.max(values.top, values.right, values.bottom, values.left);
+                const currentMax = Math.max(card.top, card.right, card.bottom, card.left);
                 ['top', 'right', 'bottom', 'left'].forEach(dir => {
-                    if (values[dir] < currentMax) {
-                        boosted[dir] = true;
-                    }
+                    if (card[dir] < currentMax) boosted[dir] = true;
                     values[dir] = currentMax;
                 });
+                values['top-left'] = (values.top + values.left) / 2;
+                values['top-right'] = (values.top + values.right) / 2;
+                values['bottom-left'] = (values.bottom + values.left) / 2;
+                values['bottom-right'] = (values.bottom + values.right) / 2;
             }
+
             if (cardGemId === 'blanco') {
-                values.top *= 2; values.right *= 2; values.bottom *= 2; values.left *= 2;
+                ['top', 'right', 'bottom', 'left', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(dir => {
+                    values[dir] *= 2;
+                });
             }
             return { ...values, boosted };
         }
@@ -1853,19 +1745,43 @@
 
             document.getElementById('attack-panel').classList.add('hidden');
 
-            const boardEl = document.getElementById('board');
-            const boardElNodes = boardEl.children;
-            const attackerNode = boardElNodes[idx];
-            const targetNode = boardElNodes[targetIdx];
+            const gridEl = document.getElementById('dynamic-grid');
+            const gridNodes = gridEl.children;
+            
+            let attackerVisualIdx = idx;
+            let targetVisualIdx = targetIdx;
+            if (isMapamundiActive) {
+                const rFrom = Math.floor(idx / 3) + 1;
+                const cFrom = (idx % 3) + 1;
+                attackerVisualIdx = rFrom * 5 + cFrom;
 
-            if (!attackerNode || !targetNode) return;
+                const rTo = Math.floor(targetIdx / 3) + 1;
+                const cTo = (targetIdx % 3) + 1;
+                targetVisualIdx = rTo * 5 + cTo;
+            }
+
+            const attackerNode = gridNodes[attackerVisualIdx];
+            const targetNode = gridNodes[targetVisualIdx];
+
+            if (!attackerNode || !targetNode) {
+                processAttackLogic(idx, targetIdx, dir, oppSide);
+                return;
+            }
 
             const sourceRect = attackerNode.getBoundingClientRect();
             const targetRect = targetNode.getBoundingClientRect();
-            const boardRect = boardEl.getBoundingClientRect();
+            const boardRect = gridEl.getBoundingClientRect();
 
-            const deltaX = targetRect.left - sourceRect.left;
-            const deltaY = targetRect.top - sourceRect.top;
+            let deltaX = targetRect.left - sourceRect.left;
+            let deltaY = targetRect.top - sourceRect.top;
+
+            const isToroidalWrap = isMapamundiActive && (
+                (dir === 'top' && Math.floor(idx / 3) === 0) ||
+                (dir === 'bottom' && Math.floor(idx / 3) === 2) ||
+                (dir === 'left' && (idx % 3) === 0) ||
+                (dir === 'right' && (idx % 3) === 2) ||
+                dir.includes('top-left') || dir.includes('top-right') || dir.includes('bottom-left') || dir.includes('bottom-right')
+            );
 
             const flyer = document.createElement('div');
             flyer.className = `flying-projectile ${board[idx].owner === 'red' ? 'card-red' : 'card-blue'}`;
@@ -1875,12 +1791,37 @@
             flyer.style.height = `${sourceRect.height}px`;
             
             flyer.innerHTML = attackerNode.innerHTML;
-            boardEl.appendChild(flyer);
+            document.getElementById('board-wrapper').appendChild(flyer);
 
             attackerNode.style.opacity = '0';
 
             requestAnimationFrame(() => {
-                flyer.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1.05)`;
+                if (isToroidalWrap) {
+                    let outX = 0, outY = 0;
+                    if (dir.includes('top')) outY = -sourceRect.height * 1.5;
+                    if (dir.includes('bottom')) outY = sourceRect.height * 1.5;
+                    if (dir.includes('left')) outX = -sourceRect.width * 1.5;
+                    if (dir.includes('right')) outX = sourceRect.width * 1.5;
+
+                    flyer.style.transform = `translate3d(${outX}px, ${outY}px, 0) scale(0.6)`;
+                    flyer.style.opacity = '0.2';
+
+                    setTimeout(() => {
+                        flyer.style.transition = 'none';
+                        let inX = outX * -1;
+                        let inY = outY * -1;
+                        flyer.style.transform = `translate3d(${deltaX + inX}px, ${deltaY + inY}px, 0) scale(0.6)`;
+                        flyer.style.opacity = '0.2';
+
+                        requestAnimationFrame(() => {
+                            flyer.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease-out';
+                            flyer.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1.05)`;
+                            flyer.style.opacity = '1';
+                        });
+                    }, 200);
+                } else {
+                    flyer.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1.05)`;
+                }
             });
 
             setTimeout(() => {
@@ -1889,87 +1830,58 @@
                 setTimeout(() => {
                     flyer.remove();
                     attackerNode.style.opacity = '1';
-
-                    currentEnergy -= 1;
-                    const attVals = getEffectiveCardValues(idx);
-                    const defVals = getEffectiveCardValues(targetIdx);
-
-                    let attackVal = attVals[dir];
-                    let defenseVal = defVals[oppSide];
-                    let attackMsg = "";
-
-                    if (attackVal > defenseVal) {
-                        discards[defender.owner].push(defender);
-                        let attackerCard = board[idx];
-                        const targetGem = gems[targetIdx];
-                        revealedBoardGems[targetIdx] = true;
-                        
-                        attackerCard.gemRevealed = targetGem;
-                        attackerCard.isProtected = targetGem.protected || false;
-
-                        board[targetIdx] = attackerCard;
-                        board[idx] = null;
-                        newlyDeployedCellIndex = null;
-                        justChangedTurn = false;
-
-                        attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.name} (-1⚡).`;
-                        if (targetGem.id === 'violeta') { 
-                            currentEnergy += 1; 
-                            spawnEnergyParticles(); 
-                        }
-                        if (targetGem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer(turn);
-                        if (targetGem.id === 'verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
-
-                        const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
-                        if (controlledGemIds.includes('rojo') && !usedRedEnergyBonusThisTurn) {
-                            usedRedEnergyBonusThisTurn = true; 
-                            currentEnergy += 1; 
-                            spawnEnergyParticles(); 
-                            attackMsg += ` 🔴 [+1⚡ Bonus]`;
-                        }
-                    } else {
-                        attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
-                        justChangedTurn = false;
-                    }
-
-                    selectedBoardIndex = null;
-                    selectedCard = null;
-                    selectedHandIndex = null;
-                    isInspectMode = false;
-
-                    syncGameState(attackMsg);
+                    processAttackLogic(idx, targetIdx, dir, oppSide);
                 }, 200);
-            }, 300);
+            }, isToroidalWrap ? 550 : 350);
         }
 
-        function getActiveComboIndices(player) {
-            const playerCells = [];
-            board.forEach((c, i) => {
-                if (c !== null && c.owner === player) {
-                    playerCells.push({ id: c.gemRevealed.id, index: i });
+        function processAttackLogic(idx, targetIdx, dir, oppSide) {
+            currentEnergy -= 1;
+            const attVals = getEffectiveCardValues(idx);
+            const defVals = getEffectiveCardValues(targetIdx);
+
+            let attackVal = attVals[dir];
+            let defenseVal = defVals[oppSide];
+            let attackMsg = "";
+
+            if (attackVal > defenseVal) {
+                const defender = board[targetIdx];
+                discards[defender.owner].push(defender);
+                let attackerCard = board[idx];
+                const targetGem = gems[targetIdx];
+                revealedBoardGems[targetIdx] = true;
+                
+                attackerCard.gemRevealed = targetGem;
+                attackerCard.isProtected = targetGem.protected || false;
+
+                board[targetIdx] = attackerCard;
+                board[idx] = null;
+                newlyDeployedCellIndex = null;
+                justChangedTurn = false;
+
+                attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.name} (-1⚡).`;
+                if (targetGem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); }
+                if (targetGem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer(turn);
+                if (targetGem.id === 'verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
+
+                const controlledGemIds = board.filter(c => c !== null && c.owner === turn).map(c => c.gemRevealed.id);
+                if (controlledGemIds.includes('rojo') && !usedRedEnergyBonusThisTurn) {
+                    usedRedEnergyBonusThisTurn = true; 
+                    currentEnergy += 1; 
+                    spawnEnergyParticles(); 
+                    attackMsg += ` 🔴 [+1⚡ Bonus]`;
                 }
-            });
-            const gemIds = playerCells.map(p => p.id);
-            const hasAll = (arr) => arr.every(item => gemIds.includes(item));
+            } else {
+                attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
+                justChangedTurn = false;
+            }
 
-            let trioIndices = [];
-            const checkAndAdd = (arr) => {
-                if (hasAll(arr)) {
-                    playerCells.forEach(p => {
-                        if (arr.includes(p.id) && !trioIndices.includes(p.index)) {
-                            trioIndices.push(p.index);
-                        }
-                    });
-                }
-            };
+            selectedBoardIndex = null;
+            selectedCard = null;
+            selectedHandIndex = null;
+            isInspectMode = false;
 
-            checkAndAdd(['azul', 'verde', 'violeta']);
-            checkAndAdd(['rojo', 'amarillo', 'naranja']);
-            checkAndAdd(['rojo', 'azul', 'amarillo']);
-            checkAndAdd(['verde', 'naranja', 'violeta']);
-            checkAndAdd(['blanco', 'negro', 'marron']);
-
-            return trioIndices;
+            syncGameState(attackMsg);
         }
 
         function countPlayerCombos(player) {
@@ -2014,22 +1926,7 @@
                 let winningScore = redTotal >= TARGET_SCORE ? redTotal : blueTotal;
                 let detail = `¡Victoria de ${winnerText} con ${winningScore} puntos!\n(Rojo: ${redTotal} - Azul: ${blueTotal})`;
                 
-                document.getElementById('winner-text').innerText = title;
-                document.getElementById('winner-detail').innerText = detail;
-                
-                const epicBox = document.getElementById('epic-modal-box');
-                epicBox.querySelectorAll('.sparkle').forEach(s => s.remove());
-                for (let i = 0; i < 6; i++) {
-                    const sparkle = document.createElement('div');
-                    sparkle.className = 'sparkle';
-                    sparkle.innerText = i % 2 === 0 ? '✨' : '💎';
-                    sparkle.style.left = `${15 + Math.random() * 70}%`;
-                    sparkle.style.top = `${20 + Math.random() * 60}%`;
-                    sparkle.style.animationDelay = `${i * 0.3}s`;
-                    epicBox.appendChild(sparkle);
-                }
-
-                document.getElementById('game-over-modal').style.display = 'flex';
+                triggerVictoryModal(title, detail);
             } else {
                 document.getElementById('game-over-modal').style.display = 'none';
             }
@@ -2044,9 +1941,9 @@
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
             isMapamundiActive = false;
-            if (gameMode === 'ai') {
-                startAIGame();
-            } else if (roomRef) {
+            isDiagonalActive = false;
+            if (gameMode === 'ai') startAIGame();
+            else if (roomRef) {
                 const initialState = createInitialGameState();
                 roomRef.set(initialState);
             }
@@ -2068,39 +1965,259 @@
             setTimeout(() => { if (banner) banner.remove(); }, 1200);
         }
 
-        // RENDERIZADO DEL ESPEJO ENERGÉTICO EN LA CAPA MAPAMUNDI (GRID 5x5)
-        function renderMapamundiGrid() {
-            const gridEl = document.getElementById('board-mapamundi-grid');
+        function renderDynamicGrid() {
+            const gridEl = document.getElementById('dynamic-grid');
             if (!gridEl) return;
             gridEl.innerHTML = '';
 
-            const grid5x5Map = [
-                [8, 6, 7, 8, 6],
-                [2, 0, 1, 2, 0],
-                [5, 3, 4, 5, 3],
-                [8, 6, 7, 8, 6],
-                [2, 0, 1, 2, 0]
-            ];
+            const isClassic = document.body.classList.contains('skin-classic');
 
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
+            if (!isMapamundiActive) {
+                gridEl.className = "dynamic-grid mode-3x3";
+
+                for (let idx = 0; idx < 9; idx++) {
+                    const cell = board[idx];
+                    const isSelectedAttacker = selectedBoardIndex === idx;
+                    const isNewlyDeployed = newlyDeployedCellIndex === idx;
+
                     const div = document.createElement('div');
-                    if (r >= 1 && r <= 3 && c >= 1 && c <= 3) {
-                        div.className = 'mirror-cell empty-mirror';
-                    } else {
-                        const originalIdx = grid5x5Map[r][c];
-                        const cell = board[originalIdx];
-                        if (cell) {
-                            div.className = `mirror-cell ${cell.owner === 'red' ? 'card-red' : 'card-blue'}`;
-                            div.innerHTML = `<span style="font-size:0.5rem; font-weight:900; color:#ffffff; opacity:0.8;">${cell.gemRevealed.name}</span>`;
-                        } else {
-                            div.className = 'mirror-cell';
-                            div.innerHTML = `<span style="font-size:0.5rem; opacity:0.3;">✨</span>`;
+                    div.className = `cell-dynamic core-cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''} ${isNewlyDeployed ? 'anim-card-deploy' : ''}`;
+                    div.onclick = () => handleBoardClick(idx);
+
+                    if (cell) {
+                        const eff = getEffectiveCardValues(idx);
+                        const owner = cell.owner;
+                        const hasMarron = board.some(c => c !== null && c.owner === owner && c.gemRevealed.id === 'marron');
+
+                        let litTop = false, litBottom = false, litLeft = false, litRight = false;
+                        if (hasMarron) {
+                            if (eff.boosted.top) litTop = true;
+                            if (eff.boosted.bottom) litBottom = true;
+                            if (eff.boosted.left) litLeft = true;
+                            if (eff.boosted.right) litRight = true;
                         }
+
+                        const gemDisplay = isClassic 
+                            ? `<span style="font-size: 0.8rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
+                            : (GEM_SVGS[cell.gemRevealed.id] || '');
+
+                        let diagonalHTML = '';
+                        if (isDiagonalActive) {
+                            const diagTL = eff['top-left'].toFixed(1).replace('.0', '');
+                            const diagTR = eff['top-right'].toFixed(1).replace('.0', '');
+                            const diagBR = eff['bottom-right'].toFixed(1).replace('.0', '');
+                            const diagBL = eff['bottom-left'].toFixed(1).replace('.0', '');
+
+                            diagonalHTML = `
+                                <div style="position: absolute; top: 2px; left: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                <div style="position: absolute; top: 2px; right: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                <div style="position: absolute; bottom: 2px; right: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                <div style="position: absolute; bottom: 2px; left: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                            `;
+                        }
+
+                        div.innerHTML = `
+                            ${diagonalHTML}
+                            ${isDiagonalActive ? `
+                                <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}">⭐</span>
+                                <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}">⭐</span>
+                                <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}">⭐</span>
+                                <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}">⭐</span>
+                            ` : ''}
+
+                            <div class="val-wrapper val-top">
+                                <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
+                                <div class="card-val ${eff.boosted.top ? 'boosted' : ''}">${eff.top}</div>
+                                <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
+                            </div>
+                            <div class="val-wrapper val-bottom">
+                                <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
+                                <div class="card-val ${eff.boosted.bottom ? 'boosted' : ''}">${eff.bottom}</div>
+                                <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
+                            </div>
+                            <div class="val-wrapper val-left">
+                                <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
+                                <div class="card-val ${eff.boosted.left ? 'boosted' : ''}">${eff.left}</div>
+                                <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
+                            </div>
+                            <div class="val-wrapper val-right">
+                                <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
+                                <div class="card-val ${eff.boosted.right ? 'boosted' : ''}">${eff.right}</div>
+                                <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
+                            </div>
+                            
+                            <div class="cell-content">
+                                <div class="gem-pod">${gemDisplay}</div>
+                                <span style="font-size:0.58rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
+                                <span style="font-size:0.46rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
+                            </div>
+                        `;
+                    } else if (revealedBoardGems[idx]) {
+                        const gemDisplay = isClassic 
+                            ? `<span style="font-size: 0.8rem;">${GEM_CLASSIC_ICONS[gems[idx].id] || '💎'}</span>`
+                            : (GEM_SVGS[gems[idx].id] || '');
+                        div.innerHTML = `
+                            <div class="cell-content">
+                                <div class="gem-pod">${gemDisplay}</div>
+                                <span style="font-size:0.58rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gems[idx].name}</span>
+                                <span style="font-size:0.46rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${gems[idx].desc}</span>
+                            </div>
+                        `;
+                    } else {
+                        div.innerHTML = `<div class="cell-content"><span style="font-size:0.8rem; opacity:0.25;">💎</span></div>`;
                     }
                     gridEl.appendChild(div);
                 }
+
+            } else {
+                gridEl.className = "dynamic-grid mode-5x5";
+
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 5; c++) {
+                        const isCore = (r >= 1 && r <= 3 && c >= 1 && c <= 3);
+                        const originalCoreIdx = MATRIX_5X5_MAPPING[r][c];
+
+                        const div = document.createElement('div');
+                        const cell = board[originalCoreIdx];
+
+                        if (isCore) {
+                            const coreIdx = (r - 1) * 3 + (c - 1);
+                            const coreCell = board[coreIdx];
+                            const isCoreSel = selectedBoardIndex === coreIdx;
+                            const isCoreNew = newlyDeployedCellIndex === coreIdx;
+
+                            div.className = `cell-dynamic core-cell ${coreCell ? (coreCell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[coreIdx] ? 'inspectable' : ''} ${isCoreSel ? 'selected-attacker' : ''} ${isCoreNew ? 'anim-card-deploy' : ''}`;
+                            div.onclick = () => handleBoardClick(coreIdx);
+
+                            if (coreCell) {
+                                const eff = getEffectiveCardValues(coreIdx);
+                                const owner = coreCell.owner;
+                                const hasMarron = board.some(ch => ch !== null && ch.owner === owner && ch.gemRevealed.id === 'marron');
+
+                                let litTop = false, litBottom = false, litLeft = false, litRight = false;
+                                if (hasMarron) {
+                                    if (eff.boosted.top) litTop = true;
+                                    if (eff.boosted.bottom) litBottom = true;
+                                    if (eff.boosted.left) litLeft = true;
+                                    if (eff.boosted.right) litRight = true;
+                                }
+
+                                const gemDisplay = isClassic 
+                                    ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[coreCell.gemRevealed.id] || '💎'}</span>`
+                                    : (GEM_SVGS[coreCell.gemRevealed.id] || '');
+
+                                let diagonalHTML = '';
+                                if (isDiagonalActive) {
+                                    const diagTL = eff['top-left'].toFixed(1).replace('.0', '');
+                                    const diagTR = eff['top-right'].toFixed(1).replace('.0', '');
+                                    const diagBR = eff['bottom-right'].toFixed(1).replace('.0', '');
+                                    const diagBL = eff['bottom-left'].toFixed(1).replace('.0', '');
+
+                                    diagonalHTML = `
+                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                    `;
+                                }
+
+                                div.innerHTML = `
+                                    ${diagonalHTML}
+                                    ${isDiagonalActive ? `
+                                        <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}" style="top:3px;left:3px;font-size:5px;">⭐</span>
+                                        <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}" style="top:3px;right:3px;font-size:5px;">⭐</span>
+                                        <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}" style="bottom:3px;left:3px;font-size:5px;">⭐</span>
+                                        <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}" style="bottom:3px;right:3px;font-size:5px;">⭐</span>
+                                    ` : ''}
+
+                                    <div class="val-wrapper val-top"><div class="card-val ${eff.boosted.top ? 'boosted' : ''}">${eff.top}</div></div>
+                                    <div class="val-wrapper val-bottom"><div class="card-val ${eff.boosted.bottom ? 'boosted' : ''}">${eff.bottom}</div></div>
+                                    <div class="val-wrapper val-left"><div class="card-val ${eff.boosted.left ? 'boosted' : ''}">${eff.left}</div></div>
+                                    <div class="val-wrapper val-right"><div class="card-val ${eff.boosted.right ? 'boosted' : ''}">${eff.right}</div></div>
+                                    
+                                    <div class="cell-content">
+                                        <div class="gem-pod">${gemDisplay}</div>
+                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreCell.gemRevealed.name}</span>
+                                    </div>
+                                `;
+                            } else if (revealedBoardGems[coreIdx]) {
+                                const gemDisplay = isClassic 
+                                    ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[gems[coreIdx].id] || '💎'}</span>`
+                                    : (GEM_SVGS[gems[coreIdx].id] || '');
+                                div.innerHTML = `
+                                    <div class="cell-content">
+                                        <div class="gem-pod">${gemDisplay}</div>
+                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gems[coreIdx].name}</span>
+                                    </div>
+                                `;
+                            } else {
+                                div.innerHTML = `<div class="cell-content"><span style="font-size:0.6rem; opacity:0.25;">💎</span></div>`;
+                            }
+                        } else {
+                            div.className = `cell-dynamic mirror-edge-cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''}`;
+
+                            if (cell) {
+                                const effMirror = getEffectiveCardValues(originalCoreIdx);
+                                const owner = cell.owner;
+                                const hasMarron = board.some(ch => ch !== null && ch.owner === owner && ch.gemRevealed.id === 'marron');
+
+                                let litTop = false, litBottom = false, litLeft = false, litRight = false;
+                                if (hasMarron) {
+                                    if (effMirror.boosted.top) litTop = true;
+                                    if (effMirror.boosted.bottom) litBottom = true;
+                                    if (effMirror.boosted.left) litLeft = true;
+                                    if (effMirror.boosted.right) litRight = true;
+                                }
+
+                                const gemDisplay = isClassic 
+                                    ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
+                                    : (GEM_SVGS[cell.gemRevealed.id] || '');
+
+                                let diagonalHTML = '';
+                                if (isDiagonalActive) {
+                                    const diagTL = effMirror['top-left'].toFixed(1).replace('.0', '');
+                                    const diagTR = effMirror['top-right'].toFixed(1).replace('.0', '');
+                                    const diagBR = effMirror['bottom-right'].toFixed(1).replace('.0', '');
+                                    const diagBL = effMirror['bottom-left'].toFixed(1).replace('.0', '');
+
+                                    diagonalHTML = `
+                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                    `;
+                                }
+
+                                div.innerHTML = `
+                                    ${diagonalHTML}
+                                    ${isDiagonalActive ? `
+                                        <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}" style="top:3px;left:3px;font-size:5px;">⭐</span>
+                                        <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}" style="top:3px;right:3px;font-size:5px;">⭐</span>
+                                        <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}" style="bottom:3px;left:3px;font-size:5px;">⭐</span>
+                                        <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}" style="bottom:3px;right:3px;font-size:5px;">⭐</span>
+                                    ` : ''}
+
+                                    <div class="val-wrapper val-top"><div class="card-val ${effMirror.boosted.top ? 'boosted' : ''}">${effMirror.top}</div></div>
+                                    <div class="val-wrapper val-bottom"><div class="card-val ${effMirror.boosted.bottom ? 'boosted' : ''}">${effMirror.bottom}</div></div>
+                                    <div class="val-wrapper val-left"><div class="card-val ${effMirror.boosted.left ? 'boosted' : ''}">${effMirror.left}</div></div>
+                                    <div class="val-wrapper val-right"><div class="card-val ${effMirror.boosted.right ? 'boosted' : ''}">${effMirror.right}</div></div>
+
+                                    <div class="cell-content">
+                                        <div class="gem-pod">${gemDisplay}</div>
+                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
+                                    </div>
+                                `;
+                            } else {
+                                div.innerHTML = `<span style="font-size:0.5rem; opacity:0.2;">✨</span>`;
+                            }
+                        }
+
+                        gridEl.appendChild(div);
+                    }
+                }
             }
+            newlyDeployedCellIndex = null;
+            justChangedTurn = false;
         }
 
         function render() {
@@ -2110,22 +2227,15 @@
             }
 
             const boardWrapper = document.getElementById('board-wrapper');
-            if (boardWrapper) {
-                boardWrapper.classList.toggle('mapamundi-active', isMapamundiActive);
-            }
-            renderMapamundiGrid();
+            if (boardWrapper) boardWrapper.classList.toggle('mapamundi-active', isMapamundiActive);
+            
+            renderDynamicGrid();
 
             const redCombosCount = countPlayerCombos('red');
             const blueCombosCount = countPlayerCombos('blue');
 
-            const redNewlyFormed = redCombosCount > previousComboCount.red;
-            const blueNewlyFormed = blueCombosCount > previousComboCount.blue;
-
             previousComboCount.red = redCombosCount;
             previousComboCount.blue = blueCombosCount;
-
-            const redTrioIndices = getActiveComboIndices('red');
-            const blueTrioIndices = getActiveComboIndices('blue');
 
             let redTotal = getPlayerTotalScore('red');
             let blueTotal = getPlayerTotalScore('blue');
@@ -2150,7 +2260,7 @@
             if (isBoardDeadlocked) {
                 btnPass.classList.add('hidden');
                 btnClaimWin.classList.remove('hidden');
-                document.getElementById('log-message').innerText = "⚠️ ¡Bloqueo Táctico! Tablero lleno sin ataques posibles. Podés Reclamar la Victoria.";
+                document.getElementById('log-message').innerText = "⚠️ ¡Bloqueo Táctico! Podés Reclamar la Victoria.";
             } else {
                 btnPass.classList.remove('hidden');
                 btnClaimWin.classList.add('hidden');
@@ -2190,108 +2300,31 @@
                 btnMapamundi.disabled = !isMyTurnActive || isMapamundiActive || currentEnergy < 1;
             }
 
+            const btnDiagonal = document.getElementById('btn-action-diagonal');
+            if (btnDiagonal) {
+                btnDiagonal.classList.toggle('mapamundi-btn-active', isDiagonalActive);
+                btnDiagonal.disabled = !isMyTurnActive || isDiagonalActive || currentEnergy < 1;
+            }
+
+            ['tl', 'tr', 'bl', 'br'].forEach(corner => {
+                const btn = document.getElementById(`btn-atk-${corner}`);
+                if (btn) {
+                    if (isDiagonalActive) {
+                        btn.classList.remove('diagonal-hidden');
+                        btn.disabled = false;
+                    } else {
+                        btn.classList.add('diagonal-hidden');
+                        btn.disabled = true;
+                    }
+                }
+            });
+
             document.getElementById('btn-pass-turn').disabled = !isMyTurnActive;
             document.getElementById('btn-action-draw').disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
             document.getElementById('btn-action-recover').disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
             const opp = turn === 'red' ? 'blue' : 'red';
             document.getElementById('btn-action-discard-opp').disabled = !isMyTurnActive || currentEnergy < 1 || !hands[opp] || hands[opp].length === 0;
             document.getElementById('btn-action-inspect').disabled = !isMyTurnActive || currentEnergy < inspectCost;
-
-            const isClassic = document.body.classList.contains('skin-classic');
-
-            const boardEl = document.getElementById('board');
-            boardEl.innerHTML = '';
-            board.forEach((cell, idx) => {
-                const div = document.createElement('div');
-                const isSelectedAttacker = selectedBoardIndex === idx;
-                const isNewlyDeployed = newlyDeployedCellIndex === idx;
-                
-                const isRedTrioCard = cell && cell.owner === 'red' && redTrioIndices.includes(idx) && (redNewlyFormed || (justChangedTurn && turn === 'red'));
-                const isBlueTrioCard = cell && cell.owner === 'blue' && blueTrioIndices.includes(idx) && (blueNewlyFormed || (justChangedTurn && turn === 'blue'));
-                const applyTrioAnim = isRedTrioCard || isBlueTrioCard;
-
-                div.className = `cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''} ${isNewlyDeployed ? 'anim-card-deploy' : ''} ${applyTrioAnim ? 'anim-trio-card' : ''}`;
-                div.onclick = () => handleBoardClick(idx);
-
-                if (cell) {
-                    const eff = getEffectiveCardValues(idx);
-                    
-                    const owner = cell.owner;
-                    const hasMarron = board.some(c => c !== null && c.owner === owner && c.gemRevealed.id === 'marron');
-                    
-                    let litTop = false, litBottom = false, litLeft = false, litRight = false;
-                    if (hasMarron) {
-                        if (eff.boosted.top) { litTop = true; }
-                        if (eff.boosted.bottom) { litBottom = true; }
-                        if (eff.boosted.left) { litLeft = true; }
-                        if (eff.boosted.right) { litRight = true; }
-                    }
-
-                    const gemDisplay = isClassic 
-                        ? `<span style="font-size: 0.8rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
-                        : (GEM_SVGS[cell.gemRevealed.id] || '');
-                    
-                    div.innerHTML = `
-                        <!-- Estrellas en vértices -->
-                        <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}">⭐</span>
-                        <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}">⭐</span>
-                        <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}">⭐</span>
-                        <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}">⭐</span>
-
-                        <!-- Contenedores con líneas ampliadas -->
-                        <div class="val-wrapper val-top">
-                            <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
-                            <div class="card-val ${eff.boosted.top ? 'boosted' : ''}">${eff.top}</div>
-                            <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
-                        </div>
-
-                        <div class="val-wrapper val-bottom">
-                            <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
-                            <div class="card-val ${eff.boosted.bottom ? 'boosted' : ''}">${eff.bottom}</div>
-                            <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
-                        </div>
-
-                        <div class="val-wrapper val-left">
-                            <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
-                            <div class="card-val ${eff.boosted.left ? 'boosted' : ''}">${eff.left}</div>
-                            <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
-                        </div>
-
-                        <div class="val-wrapper val-right">
-                            <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
-                            <div class="card-val ${eff.boosted.right ? 'boosted' : ''}">${eff.right}</div>
-                            <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
-                        </div>
-                        
-                        <div class="cell-content">
-                            <div class="gem-pod">${gemDisplay}</div>
-                            <span style="font-size:0.58rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
-                            <span style="font-size:0.46rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
-                        </div>
-                        ${cell.isProtected ? '<div style="position:absolute; top:2px; right:3px; font-size:9px; z-index:3;">🛡️</div>' : ''}
-                    `;
-                } else if (revealedBoardGems[idx]) {
-                    const gemDisplay = isClassic 
-                        ? `<span style="font-size: 0.8rem;">${GEM_CLASSIC_ICONS[gems[idx].id] || '💎'}</span>`
-                        : (GEM_SVGS[gems[idx].id] || '');
-                    div.innerHTML = `
-                        <div class="cell-content">
-                            <div class="gem-pod">${gemDisplay}</div>
-                            <span style="font-size:0.58rem; margin-top:1px; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gems[idx].name}</span>
-                            <span style="font-size:0.46rem; color:#38bdf8; text-align:center; line-height:1; margin-top:1px; padding:0 2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${gems[idx].desc}</span>
-                        </div>
-                    `;
-                } else {
-                    div.innerHTML = `
-                        <div class="cell-content">
-                            <span style="font-size:0.75rem; opacity:0.25;">💎</span>
-                        </div>
-                    `;
-                }
-                boardEl.appendChild(div);
-            });
-            newlyDeployedCellIndex = null;
-            justChangedTurn = false;
 
             ['red', 'blue'].forEach(p => {
                 const handEl = document.getElementById(`hand-${p}`);
@@ -2301,14 +2334,13 @@
                         const div = document.createElement('div');
                         const isSel = turn === p && selectedHandIndex === idx;
                         const isRivalHand = gameMode === 'online' ? (myRole && myRole !== p) : (p === 'blue');
-                        const isDiscarding = discardingCardInfo.player === p && discardingCardInfo.cardIndex === idx;
 
                         if (isRivalHand) {
-                            div.className = `card-item hidden-card ${isDiscarding ? 'anim-card-discard' : ''}`;
-                            div.innerHTML = `<span style="font-size:0.7rem; opacity:0.3;">💎</span>`;
+                            div.className = 'card-item hidden-card';
+                            div.innerHTML = `<span style="font-size:0.6rem; opacity:0.3;">💎</span>`;
                         } else {
                             const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
-                            div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${isDiscarding ? 'anim-card-discard' : ''}`;
+                            div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''}`;
                             div.onclick = () => selectHandCard(p, idx);
                             div.innerHTML = `
                                 <div class="card-energy-hint">2⚡</div>
