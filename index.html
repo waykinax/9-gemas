@@ -1300,7 +1300,7 @@
                 if (targetRow > 2 || targetCol < 0) {
                     if (!isMapamundiActive) return null;
                     if (targetRow > 2) targetRow = 0;
-                    if (targetCol < 0) targetCol = 2;
+                    if (targetCol < 0) targetCol = 0;
                 }
             } else if (dir === 'bottom-right') {
                 if (!isDiagonalActive) return null;
@@ -1883,6 +1883,10 @@
             let defenseVal = defVals[oppSide];
             let attackMsg = "";
 
+            // REGLA CLAVE: Verificar si el atacante controlaba el Rubí ANTES del ataque
+            const controlledBeforeAttack = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
+            const hadRedBeforeAttack = controlledBeforeAttack.includes('rojo');
+
             if (attackVal > defenseVal) {
                 const defender = board[targetIdx];
                 discards[defender.owner].push(defender);
@@ -1903,12 +1907,12 @@
                 if (targetGem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer(turn);
                 if (targetGem.id === 'verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
 
-                const controlledGemIds = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
-                if (controlledGemIds.includes('rojo') && !usedRedEnergyBonusThisTurn) {
+                // Aplicar bonus solo si poseía el Rubí PREVIAMENTE al ataque
+                if (hadRedBeforeAttack && !usedRedEnergyBonusThisTurn) {
                     usedRedEnergyBonusThisTurn = true; 
                     currentEnergy += 1; 
                     spawnEnergyParticles(); 
-                    attackMsg += ` 🔴 [+1⚡ Bonus]`;
+                    attackMsg += ` 🔴 [+1⚡ Bonus Rubí]`;
                 }
             } else {
                 attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
