@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>9 Gemas - Duelo de Cristales</title>
     
+    <!-- Configuración PWA y Enlaces de Iconos -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js');
@@ -1883,7 +1887,6 @@
             let defenseVal = defVals[oppSide];
             let attackMsg = "";
 
-            // REGLA CLAVE: Verificar si el atacante controlaba el Rubí ANTES del ataque
             const controlledBeforeAttack = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
             const hadRedBeforeAttack = controlledBeforeAttack.includes('rojo');
 
@@ -1907,7 +1910,6 @@
                 if (targetGem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer(turn);
                 if (targetGem.id === 'verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
 
-                // Aplicar bonus solo si poseía el Rubí PREVIAMENTE al ataque
                 if (hadRedBeforeAttack && !usedRedEnergyBonusThisTurn) {
                     usedRedEnergyBonusThisTurn = true; 
                     currentEnergy += 1; 
