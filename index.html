@@ -72,12 +72,16 @@
             background: rgba(30, 41, 59, 0.8); 
             color: #94a3b8; 
             border: 1px solid rgba(51, 65, 85, 0.8); 
-            padding: 4px 8px; 
+            padding: 5px 8px; 
             border-radius: 6px; 
             font-size: 0.6rem; 
             font-weight: 700; 
             cursor: pointer; 
             flex: 1; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
         .btn-mode.active { 
             background: linear-gradient(135deg, #2563eb, #1d4ed8); 
@@ -303,26 +307,32 @@
             z-index: 20; 
         }
 
+        /* ESPACIO GARANTIZADO Y MÁRGENES DE RESGUARDO PARA NÚMEROS */
         .val-wrapper {
             position: absolute;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 2px;
-            z-index: 3;
+            z-index: 5;
         }
-        .val-top { top: 2px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-bottom { bottom: 2px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-left { left: 3px; top: 50%; transform: translateY(-50%); flex-direction: column; }
-        .val-right { right: 3px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .val-top { top: 4px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-bottom { bottom: 4px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-left { left: 5px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .val-right { right: 5px; top: 50%; transform: translateY(-50%); flex-direction: column; }
 
-        .mode-3x3 .card-val { font-size: 0.75rem; font-weight: 900; }
+        .mode-3x3 .card-val { font-size: 0.8rem; font-weight: 900; }
         .mode-5x5 .card-val { font-size: 0.52rem; font-weight: 900; }
 
-        .card-val { color: #ffffff; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.95)); line-height: 1; }
+        .card-val { 
+            color: #ffffff; 
+            filter: drop-shadow(0px 1px 3px rgba(0,0,0,0.99)) drop-shadow(0 0 3px rgba(255,255,255,0.3)); 
+            line-height: 1; 
+        }
         .card-val.boosted { color: #fde047 !important; font-style: italic !important; }
 
-        .card-corner-star {
+        /* Estrellas dobles al final de las líneas (sin líneas laterales) */
+        .card-line-star {
             position: absolute;
             font-size: 7px;
             opacity: 0;
@@ -330,18 +340,15 @@
             z-index: 4;
             transition: opacity 0.2s;
         }
-        .card-corner-star.lit { opacity: 1; }
-        .corner-top-left { top: 6px; left: 6px; }
-        .corner-top-right { top: 6px; right: 6px; }
-        .corner-bottom-left { bottom: 6px; left: 6px; }
-        .corner-bottom-right { bottom: 6px; right: 6px; }
-
-        .card-mini-line { pointer-events: none; background: transparent; z-index: 1; }
-        .card-mini-line.lit { background: #fbbf24; box-shadow: 0 0 3px #fde047; }
-        .mode-3x3 .val-top .card-mini-line, .mode-3x3 .val-bottom .card-mini-line { width: 14px; height: 1.5px; }
-        .mode-3x3 .val-left .card-mini-line, .mode-3x3 .val-right .card-mini-line { width: 1.5px; height: 14px; }
-        .mode-5x5 .val-top .card-mini-line, .mode-5x5 .val-bottom .card-mini-line { width: 6px; height: 1px; }
-        .mode-5x5 .val-left .card-mini-line, .mode-5x5 .val-right .card-mini-line { width: 1px; height: 6px; }
+        .card-line-star.lit { opacity: 1; }
+        .star-top-1 { top: 3px; left: 35%; transform: translateX(-50%); }
+        .star-top-2 { top: 3px; left: 65%; transform: translateX(-50%); }
+        .star-bottom-1 { bottom: 3px; left: 35%; transform: translateX(-50%); }
+        .star-bottom-2 { bottom: 3px; left: 65%; transform: translateX(-50%); }
+        .star-left-1 { left: 3px; top: 35%; transform: translateY(-50%); }
+        .star-left-2 { left: 3px; top: 65%; transform: translateY(-50%); }
+        .star-right-1 { right: 3px; top: 35%; transform: translateY(-50%); }
+        .star-right-2 { right: 3px; top: 65%; transform: translateY(-50%); }
 
         .gem-pod {
             border-radius: 50%;
@@ -351,10 +358,16 @@
             flex-shrink: 0;
             margin-bottom: 2px;
         }
-        .mode-3x3 .gem-pod { width: 28px; height: 28px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); }
+        .mode-3x3 .gem-pod { 
+            width: 42px; 
+            height: 42px; 
+            background: rgba(0, 0, 0, 0.3); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
         .mode-5x5 .gem-pod { width: 10px; height: 10px; }
 
-        .mode-3x3 .gem-svg { width: 22px; height: 22px; }
+        .mode-3x3 .gem-svg { width: 34px; height: 34px; }
         .mode-5x5 .gem-svg { width: 8px; height: 8px; }
 
         .cell-content {
@@ -365,7 +378,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 2px;
+            padding: 14px 6px 6px 6px;
             overflow: hidden;
             pointer-events: none;
         }
@@ -383,6 +396,10 @@
             min-width: 45%; 
             cursor: pointer; 
             position: relative; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
         .btn-action:disabled { opacity: 0.35; cursor: not-allowed; }
         .btn-action.mapamundi-btn-active {
@@ -671,8 +688,14 @@
         <div class="lobby-panel">
             <div class="lobby-title">MODO DE JUEGO</div>
             <div class="mode-selector">
-                <button id="btn-mode-online" onclick="switchGameMode('online')" class="btn-mode active">🌐 Online</button>
-                <button id="btn-mode-ai" onclick="switchGameMode('ai')" class="btn-mode">🤖 vs IA</button>
+                <button id="btn-mode-online" onclick="switchGameMode('online')" class="btn-mode active">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    Online
+                </button>
+                <button id="btn-mode-ai" onclick="switchGameMode('ai')" class="btn-mode">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="9" cy="16" r="1"/><circle cx="15" cy="16" r="1"/><path d="M12 11V7M8 7h8"/></svg>
+                    vs IA
+                </button>
             </div>
 
             <div id="online-controls" class="lobby-inputs">
@@ -786,7 +809,9 @@
         <div class="modal-content-victory">
             <div class="victory-particles" id="victory-particles-container"></div>
             <div class="victory-inner-content">
-                <div style="font-size: 2.2rem; margin-bottom: 4px; filter: drop-shadow(0 0 10px #fbbf24);">👑💎</div>
+                <div style="width: 52px; height: 52px; margin: 0 auto 6px auto; filter: drop-shadow(0 0 12px #fbbf24);">
+                    <svg viewBox="0 0 24 24" fill="#fbbf24"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7l3-7z"/></svg>
+                </div>
                 <h2 id="winner-text" style="color: #fbbf24; margin-bottom: 8px; font-size: 1.2rem; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);">¡Victoria Épica!</h2>
                 <p id="winner-detail" style="font-size: 0.75rem; margin-bottom: 14px; color: #e2e8f0; line-height: 1.4;">Ganaste la partida.</p>
                 <button onclick="inspectBoardAfterVictory()" class="btn-action" style="width: 100%; padding: 7px; font-size: 0.72rem; margin-bottom: 6px; background: rgba(56, 189, 248, 0.25); border-color: #38bdf8;">👁️ Ver Tablero (Analizar)</button>
@@ -1304,7 +1329,7 @@
                 if (targetRow > 2 || targetCol < 0) {
                     if (!isMapamundiActive) return null;
                     if (targetRow > 2) targetRow = 0;
-                    if (targetCol < 0) targetCol = 0;
+                    if (targetCol < 0) targetCol = 2;
                 }
             } else if (dir === 'bottom-right') {
                 if (!isDiagonalActive) return null;
@@ -2061,46 +2086,40 @@
                             const diagBL = eff['bottom-left'].toFixed(1).replace('.0', '');
 
                             diagonalHTML = `
-                                <div style="position: absolute; top: 2px; left: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
-                                <div style="position: absolute; top: 2px; right: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
-                                <div style="position: absolute; bottom: 2px; right: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
-                                <div style="position: absolute; bottom: 2px; left: 3px; font-size: 7px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                <div style="position: absolute; top: 3px; left: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                <div style="position: absolute; top: 3px; right: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                <div style="position: absolute; bottom: 3px; right: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                <div style="position: absolute; bottom: 3px; left: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
                             `;
                         }
 
                         div.innerHTML = `
                             ${diagonalHTML}
-                            ${isDiagonalActive ? `
-                                <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}">⭐</span>
-                                <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}">⭐</span>
-                                <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}">⭐</span>
-                                <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}">⭐</span>
-                            ` : ''}
+                            <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}">⭐</span>
+                            <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}">⭐</span>
+                            <span class="card-line-star star-bottom-1 ${litBottom ? 'lit' : ''}">⭐</span>
+                            <span class="card-line-star star-bottom-2 ${litBottom ? 'lit' : ''}">⭐</span>
+                            <span class="card-line-star star-left-1 ${litLeft ? 'lit' : ''}">⭐</span>
+                            <span class="card-line-star star-left-2 ${litLeft ? 'lit' : ''}">⭐</span>
+                            <span class="card-line-star star-right-1 ${litRight ? 'lit' : ''}">⭐</span>
+                            <span class="card-line-star star-right-2 ${litRight ? 'lit' : ''}">⭐</span>
 
                             <div class="val-wrapper val-top">
-                                <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
                                 <div class="card-val ${eff && eff.boosted.top ? 'boosted' : ''}">${eff ? eff.top : cell.top}</div>
-                                <div class="card-mini-line ${litTop ? 'lit' : ''}"></div>
                             </div>
                             <div class="val-wrapper val-bottom">
-                                <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
                                 <div class="card-val ${eff && eff.boosted.bottom ? 'boosted' : ''}">${eff ? eff.bottom : cell.bottom}</div>
-                                <div class="card-mini-line ${litBottom ? 'lit' : ''}"></div>
                             </div>
                             <div class="val-wrapper val-left">
-                                <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
                                 <div class="card-val ${eff && eff.boosted.left ? 'boosted' : ''}">${eff ? eff.left : cell.left}</div>
-                                <div class="card-mini-line ${litLeft ? 'lit' : ''}"></div>
                             </div>
                             <div class="val-wrapper val-right">
-                                <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
                                 <div class="card-val ${eff && eff.boosted.right ? 'boosted' : ''}">${eff ? eff.right : cell.right}</div>
-                                <div class="card-mini-line ${litRight ? 'lit' : ''}"></div>
                             </div>
                             
                             <div class="cell-content">
                                 <div class="gem-pod">${gemDisplay}</div>
-                                <span style="font-size:0.72rem; color:#cbd5e1; font-weight:bold; line-height:1.1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
+                                <span style="font-size:0.72rem; color:#cbd5e1; font-weight:bold; line-height:1.1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.isProtected ? '🛡️ ' : ''}${cell.gemRevealed.name}</span>
                                 <span style="font-size:0.55rem; color:#38bdf8; text-align:center; line-height:1.1; margin-top:2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
                             </div>
                         `;
@@ -2110,8 +2129,8 @@
                             : (GEM_SVGS[gemData.id] || '');
                         div.innerHTML = `
                             <div class="cell-content">
-                                <div class="gem-pod" style="width:28px;height:28px;">${gemDisplay}</div>
-                                <span style="font-size:0.72rem; color:#cbd5e1; font-weight:bold; line-height:1.1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gemData.name}</span>
+                                <div class="gem-pod">${gemDisplay}</div>
+                                <span style="font-size:0.72rem; color:#cbd5e1; font-weight:bold; line-height:1.1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gemData.protected ? '🛡️ ' : ''}${gemData.name}</span>
                                 <span style="font-size:0.55rem; color:#38bdf8; text-align:center; line-height:1.1; margin-top:2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">${gemData.desc}</span>
                             </div>
                         `;
@@ -2177,12 +2196,14 @@
 
                                 div.innerHTML = `
                                     ${diagonalHTML}
-                                    ${isDiagonalActive ? `
-                                        <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}" style="top:3px;left:3px;font-size:5px;">⭐</span>
-                                        <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}" style="top:3px;right:3px;font-size:5px;">⭐</span>
-                                        <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}" style="bottom:3px;left:3px;font-size:5px;">⭐</span>
-                                        <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}" style="bottom:3px;right:3px;font-size:5px;">⭐</span>
-                                    ` : ''}
+                                    <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}" style="top:1px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}" style="top:1px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-1 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-2 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-1 ${litLeft ? 'lit' : ''}" style="left:1px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-2 ${litLeft ? 'lit' : ''}" style="left:1px;top:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-1 ${litRight ? 'lit' : ''}" style="right:1px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-2 ${litRight ? 'lit' : ''}" style="right:1px;top:65%;font-size:5px;">⭐</span>
 
                                     <div class="val-wrapper val-top"><div class="card-val ${eff && eff.boosted.top ? 'boosted' : ''}">${eff ? eff.top : coreCell.top}</div></div>
                                     <div class="val-wrapper val-bottom"><div class="card-val ${eff && eff.boosted.bottom ? 'boosted' : ''}">${eff ? eff.bottom : coreCell.bottom}</div></div>
@@ -2191,7 +2212,7 @@
                                     
                                     <div class="cell-content">
                                         <div class="gem-pod">${gemDisplay}</div>
-                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreCell.gemRevealed.name}</span>
+                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreCell.isProtected ? '🛡️ ' : ''}${coreCell.gemRevealed.name}</span>
                                     </div>
                                 `;
                             } else if (revealedBoardGems[coreIdx] && coreGemData) {
@@ -2201,7 +2222,7 @@
                                 div.innerHTML = `
                                     <div class="cell-content">
                                         <div class="gem-pod">${gemDisplay}</div>
-                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreGemData.name}</span>
+                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreGemData.protected ? '🛡️ ' : ''}${coreGemData.name}</span>
                                     </div>
                                 `;
                             } else {
@@ -2244,12 +2265,14 @@
 
                                 div.innerHTML = `
                                     ${diagonalHTML}
-                                    ${isDiagonalActive ? `
-                                        <span class="card-corner-star corner-top-left ${litTop || litLeft ? 'lit' : ''}" style="top:3px;left:3px;font-size:5px;">⭐</span>
-                                        <span class="card-corner-star corner-top-right ${litTop || litRight ? 'lit' : ''}" style="top:3px;right:3px;font-size:5px;">⭐</span>
-                                        <span class="card-corner-star corner-bottom-left ${litBottom || litLeft ? 'lit' : ''}" style="bottom:3px;left:3px;font-size:5px;">⭐</span>
-                                        <span class="card-corner-star corner-bottom-right ${litBottom || litRight ? 'lit' : ''}" style="bottom:3px;right:3px;font-size:5px;">⭐</span>
-                                    ` : ''}
+                                    <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}" style="top:1px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}" style="top:1px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-1 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-2 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-1 ${litLeft ? 'lit' : ''}" style="left:1px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-2 ${litLeft ? 'lit' : ''}" style="left:1px;top:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-1 ${litRight ? 'lit' : ''}" style="right:1px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-2 ${litRight ? 'lit' : ''}" style="right:1px;top:65%;font-size:5px;">⭐</span>
 
                                     <div class="val-wrapper val-top"><div class="card-val ${effMirror && effMirror.boosted.top ? 'boosted' : ''}">${effMirror ? effMirror.top : cell.top}</div></div>
                                     <div class="val-wrapper val-bottom"><div class="card-val ${effMirror && effMirror.boosted.bottom ? 'boosted' : ''}">${effMirror ? effMirror.bottom : cell.bottom}</div></div>
@@ -2258,7 +2281,7 @@
 
                                     <div class="cell-content">
                                         <div class="gem-pod">${gemDisplay}</div>
-                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.gemRevealed.name}</span>
+                                        <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.isProtected ? '🛡️ ' : ''}${cell.gemRevealed.name}</span>
                                     </div>
                                 `;
                             } else {
