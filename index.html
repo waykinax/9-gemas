@@ -133,7 +133,6 @@
         .score-val { font-size: 1rem; font-weight: 900; }
         .score-red { color: #f43f5e; text-shadow: 0 0 6px rgba(244, 63, 94, 0.4); }
         .score-blue { color: #38bdf8; text-shadow: 0 0 6px rgba(56, 189, 248, 0.4); }
-        .deck-info { font-size: 0.5rem; color: #64748b; }
 
         .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: bold; position: relative; }
         .energy-tag { 
@@ -252,7 +251,6 @@
             gap: 3px;
         }
 
-        /* OCULTAR EL BOTÓN DE INFO EN MODO 5X5 PARA EVITAR QUE TAPE LOS NÚMEROS */
         .mode-5x5 .gem-info-btn {
             display: none !important;
         }
@@ -312,23 +310,30 @@
             z-index: 20; 
         }
 
-        /* ESPACIO GARANTIZADO Y MÁRGENES DE RESGUARDO PARA NÚMEROS */
-        .val-wrapper {
+        /* ESPACIO GARANTIZADO Y POSICIONAMIENTO HOMOGÉNEO EN 3X3 Y 5X5 */
+        .cell-dynamic .val-wrapper {
             position: absolute;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 2px;
             z-index: 15;
             pointer-events: none;
         }
-        .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-left { left: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
-        .val-right { right: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+
+        /* Posiciones en 3x3 */
+        .mode-3x3 .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .mode-3x3 .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .mode-3x3 .val-left { left: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .mode-3x3 .val-right { right: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+
+        /* Posiciones simétricas en 5x5 (resguardo idéntico de 3px a los bordes) */
+        .mode-5x5 .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .mode-5x5 .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .mode-5x5 .val-left { left: 3px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .mode-5x5 .val-right { right: 3px; top: 50%; transform: translateY(-50%); flex-direction: column; }
 
         .mode-3x3 .card-val { font-size: 0.8rem; font-weight: 900; }
-        .mode-5x5 .card-val { font-size: 0.55rem; font-weight: 900; }
+        .mode-5x5 .card-val { font-size: 0.52rem; font-weight: 900; }
 
         .card-val { 
             color: #ffffff; 
@@ -337,7 +342,6 @@
         }
         .card-val.boosted { color: #fde047 !important; font-style: italic !important; }
 
-        /* Estrellas dobles al final de las líneas (sin líneas laterales) */
         .card-line-star {
             position: absolute;
             font-size: 7px;
@@ -526,11 +530,33 @@
 
         .hand-container { background: rgba(2, 6, 23, 0.6); padding: 4px; border-radius: 8px; border: 1px solid rgba(30, 41, 59, 0.8); margin-bottom: 4px; }
         .hand-title { font-size: 0.58rem; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; }
-        .hand-cards { display: flex; gap: 4px; overflow-x: auto; padding: 4px; }
+        
+        /* FILA DE MANO CON MAZO Y DESCARTE A LOS LADOS */
+        .hand-row-layout { display: flex; align-items: center; gap: 4px; }
+        .mini-pile-box {
+            width: 38px;
+            height: 54px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.5rem;
+            color: #94a3b8;
+            text-align: center;
+            padding: 2px;
+        }
+        .mini-pile-box span.count { font-size: 0.65rem; font-weight: 900; color: #fbbf24; }
 
+        .hand-cards { display: flex; gap: 4px; overflow-x: auto; padding: 4px; flex-grow: 1; min-width: 0; }
+
+        /* CARTAS DE LA MANO - POSICIONES DE LOS 4 NÚMEROS CORREGIDAS */
         .card-item { 
-            width: 42px; 
-            height: 60px; 
+            width: 44px; 
+            height: 62px; 
             border-radius: 6px; 
             border: 1px solid; 
             position: relative; 
@@ -544,6 +570,19 @@
         .card-item.blue { background: radial-gradient(circle at top, #0369a1 0%, #082f49 100%); border-color: #38bdf8; }
         .card-item.hidden-card { background: #1e293b; border-color: #475569; }
 
+        .card-item .card-val-pos {
+            position: absolute;
+            font-size: 0.7rem;
+            font-weight: 900;
+            color: #ffffff;
+            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.95));
+            line-height: 1;
+        }
+        .card-item .val-top { top: 4px; left: 50%; transform: translateX(-50%); }
+        .card-item .val-bottom { bottom: 4px; left: 50%; transform: translateX(-50%); }
+        .card-item .val-left { left: 4px; top: 50%; transform: translateY(-50%); }
+        .card-item .val-right { right: 4px; top: 50%; transform: translateY(-50%); }
+
         .card-energy-hint {
             position: absolute;
             top: -4px;
@@ -554,6 +593,7 @@
             font-weight: 900;
             padding: 1px 3px;
             border-radius: 9999px;
+            z-index: 10;
         }
 
         .log-msg { text-align: center; font-size: 0.58rem; color: #fbbf24; font-style: italic; min-height: 20px; margin-bottom: 4px; }
@@ -758,14 +798,12 @@
         <div class="scoreboard">
             <div class="score-box">
                 <div class="score-val score-red" id="score-red">0 / 7</div>
-                <div class="deck-info">Mazo: <span id="deck-red">4</span> | Desc: <span id="discard-red">0</span></div>
             </div>
             <button id="btn-pass-turn" onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
             <button id="btn-claim-victory" onclick="claimVictory()" class="btn-claim-win hidden">👑 Reclamar Victoria</button>
             
             <div class="score-box">
                 <div class="score-val score-blue" id="score-blue">0 / 7</div>
-                <div class="deck-info">Mazo: <span id="deck-blue">4</span> | Desc: <span id="discard-blue">1</span></div>
             </div>
         </div>
 
@@ -825,18 +863,40 @@
 
         <div id="log-message" class="log-msg">Crea una sala online o inicia vs IA.</div>
 
+        <!-- MANO JUGADOR ROJO -->
         <div class="hand-container">
             <div id="label-hand-red" class="hand-title" style="color: #f43f5e;">Mano Jugador Rojo (Vos)</div>
-            <div id="hand-red" class="hand-cards"></div>
+            <div class="hand-row-layout">
+                <div class="mini-pile-box" title="Descarte Rojo">
+                    <span>Descarte</span>
+                    <span id="discard-count-red" class="count">0</span>
+                </div>
+                <div id="hand-red" class="hand-cards"></div>
+                <div class="mini-pile-box" title="Mazo Rojo">
+                    <span>Mazo</span>
+                    <span id="deck-count-red" class="count">4</span>
+                </div>
+            </div>
         </div>
 
+        <!-- MANO JUGADOR AZUL -->
         <div class="hand-container">
             <div id="label-hand-blue" class="hand-title" style="color: #38bdf8;">Mano Jugador Azul</div>
-            <div id="hand-blue" class="hand-cards"></div>
+            <div class="hand-row-layout">
+                <div class="mini-pile-box" title="Descarte Azul">
+                    <span>Descarte</span>
+                    <span id="discard-count-blue" class="count">0</span>
+                </div>
+                <div id="hand-blue" class="hand-cards"></div>
+                <div class="mini-pile-box" title="Mazo Azul">
+                    <span>Mazo</span>
+                    <span id="deck-count-blue" class="count">4</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- MODAL DE DETALLES DE GEMA (GRANDE) -->
+    <!-- MODAL DE DETALLES DE GEMA -->
     <div id="gem-info-modal" class="modal" onclick="closeGemInfoModal()">
         <div class="modal-content-victory" style="text-align: center; max-width: 300px;" onclick="event.stopPropagation()">
             <div id="modal-gem-icon" style="width: 72px; height: 72px; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);"></div>
@@ -2260,23 +2320,23 @@
                                     const diagBL = eff['bottom-left'].toFixed(1).replace('.0', '');
 
                                     diagonalHTML = `
-                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
-                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
-                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
-                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                        <div style="position: absolute; top: 3px; left: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                        <div style="position: absolute; top: 3px; right: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                        <div style="position: absolute; bottom: 3px; right: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                        <div style="position: absolute; bottom: 3px; left: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
                                     `;
                                 }
 
                                 div.innerHTML = `
                                     ${diagonalHTML}
-                                    <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}" style="top:1px;left:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}" style="top:1px;left:65%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-bottom-1 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-bottom-2 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:65%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-left-1 ${litLeft ? 'lit' : ''}" style="left:1px;top:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-left-2 ${litLeft ? 'lit' : ''}" style="left:1px;top:65%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-right-1 ${litRight ? 'lit' : ''}" style="right:1px;top:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-right-2 ${litRight ? 'lit' : ''}" style="right:1px;top:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}" style="top:2px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}" style="top:2px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-1 ${litBottom ? 'lit' : ''}" style="bottom:2px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-2 ${litBottom ? 'lit' : ''}" style="bottom:2px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-1 ${litLeft ? 'lit' : ''}" style="left:2px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-2 ${litLeft ? 'lit' : ''}" style="left:2px;top:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-1 ${litRight ? 'lit' : ''}" style="right:2px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-2 ${litRight ? 'lit' : ''}" style="right:2px;top:65%;font-size:5px;">⭐</span>
 
                                     <div class="val-wrapper val-top"><div class="card-val ${eff && eff.boosted.top ? 'boosted' : ''}">${eff ? eff.top : coreCell.top}</div></div>
                                     <div class="val-wrapper val-bottom"><div class="card-val ${eff && eff.boosted.bottom ? 'boosted' : ''}">${eff ? eff.bottom : coreCell.bottom}</div></div>
@@ -2333,23 +2393,23 @@
                                     const diagBL = effMirror['bottom-left'].toFixed(1).replace('.0', '');
 
                                     diagonalHTML = `
-                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
-                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
-                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
-                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                        <div style="position: absolute; top: 3px; left: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                        <div style="position: absolute; top: 3px; right: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                        <div style="position: absolute; bottom: 3px; right: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                        <div style="position: absolute; bottom: 3px; left: 3px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
                                     `;
                                 }
 
                                 div.innerHTML = `
                                     ${diagonalHTML}
-                                    <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}" style="top:1px;left:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}" style="top:1px;left:65%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-bottom-1 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-bottom-2 ${litBottom ? 'lit' : ''}" style="bottom:1px;left:65%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-left-1 ${litLeft ? 'lit' : ''}" style="left:1px;top:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-left-2 ${litLeft ? 'lit' : ''}" style="left:1px;top:65%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-right-1 ${litRight ? 'lit' : ''}" style="right:1px;top:35%;font-size:5px;">⭐</span>
-                                    <span class="card-line-star star-right-2 ${litRight ? 'lit' : ''}" style="right:1px;top:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}" style="top:2px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}" style="top:2px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-1 ${litBottom ? 'lit' : ''}" style="bottom:2px;left:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-bottom-2 ${litBottom ? 'lit' : ''}" style="bottom:2px;left:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-1 ${litLeft ? 'lit' : ''}" style="left:2px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-left-2 ${litLeft ? 'lit' : ''}" style="left:2px;top:65%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-1 ${litRight ? 'lit' : ''}" style="right:2px;top:35%;font-size:5px;">⭐</span>
+                                    <span class="card-line-star star-right-2 ${litRight ? 'lit' : ''}" style="right:2px;top:65%;font-size:5px;">⭐</span>
 
                                     <div class="val-wrapper val-top"><div class="card-val ${effMirror && effMirror.boosted.top ? 'boosted' : ''}">${effMirror ? effMirror.top : cell.top}</div></div>
                                     <div class="val-wrapper val-bottom"><div class="card-val ${effMirror && effMirror.boosted.bottom ? 'boosted' : ''}">${effMirror ? effMirror.bottom : cell.bottom}</div></div>
@@ -2396,10 +2456,12 @@
 
             document.getElementById('score-red').innerText = `${redTotal} / ${TARGET_SCORE}`;
             document.getElementById('score-blue').innerText = `${blueTotal} / ${TARGET_SCORE}`;
-            document.getElementById('discard-red').innerText = discards.red ? discards.red.length : 0;
-            document.getElementById('discard-blue').innerText = discards.blue ? discards.blue.length : 0;
-            document.getElementById('deck-red').innerText = decks.red ? decks.red.length : 0;
-            document.getElementById('deck-blue').innerText = decks.blue ? decks.blue.length : 0;
+            
+            // Actualizar contadores de Mazo y Descarte en la interfaz
+            document.getElementById('discard-count-red').innerText = discards.red ? discards.red.length : 0;
+            document.getElementById('discard-count-blue').innerText = discards.blue ? discards.blue.length : 0;
+            document.getElementById('deck-count-red').innerText = decks.red ? decks.red.length : 0;
+            document.getElementById('deck-count-blue').innerText = decks.blue ? decks.blue.length : 0;
 
             document.getElementById('turn-indicator').innerText = `Turno: ${turn === 'red' ? 'Rojo' : 'Azul'}`;
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
@@ -2498,10 +2560,10 @@
                             div.onclick = () => selectHandCard(p, idx);
                             div.innerHTML = `
                                 <div class="card-energy-hint">2⚡</div>
-                                <div class="val-wrapper val-top"><div class="card-val">${card.top}</div></div>
-                                <div class="val-wrapper val-bottom"><div class="card-val">${card.bottom}</div></div>
-                                <div class="val-wrapper val-left"><div class="card-val">${card.left}</div></div>
-                                <div class="val-wrapper val-right"><div class="card-val">${card.right}</div></div>
+                                <div class="card-val-pos val-top">${card.top}</div>
+                                <div class="card-val-pos val-bottom">${card.bottom}</div>
+                                <div class="card-val-pos val-left">${card.left}</div>
+                                <div class="card-val-pos val-right">${card.right}</div>
                             `;
                         }
                         handEl.appendChild(div);
