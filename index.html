@@ -252,6 +252,11 @@
             gap: 3px;
         }
 
+        /* OCULTAR EL BOTÓN DE INFO EN MODO 5X5 PARA EVITAR QUE TAPE LOS NÚMEROS */
+        .mode-5x5 .gem-info-btn {
+            display: none !important;
+        }
+
         .cell-dynamic {
             border-radius: 8px;
             display: flex;
@@ -314,15 +319,16 @@
             align-items: center;
             justify-content: center;
             gap: 2px;
-            z-index: 5;
+            z-index: 15;
+            pointer-events: none;
         }
-        .val-top { top: 4px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-bottom { bottom: 4px; left: 50%; transform: translateX(-50%); flex-direction: row; }
-        .val-left { left: 5px; top: 50%; transform: translateY(-50%); flex-direction: column; }
-        .val-right { right: 5px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .val-left { left: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .val-right { right: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
 
         .mode-3x3 .card-val { font-size: 0.8rem; font-weight: 900; }
-        .mode-5x5 .card-val { font-size: 0.52rem; font-weight: 900; }
+        .mode-5x5 .card-val { font-size: 0.55rem; font-weight: 900; }
 
         .card-val { 
             color: #ffffff; 
@@ -357,7 +363,10 @@
             justify-content: center;
             flex-shrink: 0;
             margin-bottom: 2px;
+            position: relative;
+            pointer-events: auto !important;
         }
+
         .mode-3x3 .gem-pod { 
             width: 42px; 
             height: 42px; 
@@ -369,6 +378,29 @@
 
         .mode-3x3 .gem-svg { width: 34px; height: 34px; }
         .mode-5x5 .gem-svg { width: 8px; height: 8px; }
+
+        .gem-info-btn {
+            position: absolute;
+            bottom: -3px;
+            right: -3px;
+            background: rgba(15, 23, 42, 0.9);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 0 4px rgba(56, 189, 248, 0.6);
+            transition: transform 0.2s;
+            pointer-events: auto !important;
+        }
+        .gem-info-btn:active { transform: scale(1.2); }
 
         .cell-content {
             position: absolute;
@@ -804,6 +836,17 @@
         </div>
     </div>
 
+    <!-- MODAL DE DETALLES DE GEMA (GRANDE) -->
+    <div id="gem-info-modal" class="modal" onclick="closeGemInfoModal()">
+        <div class="modal-content-victory" style="text-align: center; max-width: 300px;" onclick="event.stopPropagation()">
+            <div id="modal-gem-icon" style="width: 72px; height: 72px; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);"></div>
+            <h3 id="modal-gem-title" style="color: #fbbf24; font-size: 1.25rem; margin-bottom: 6px; text-shadow: 0 0 10px rgba(251,191,36,0.4);"></h3>
+            <p id="modal-gem-pts" style="font-size: 0.78rem; color: #38bdf8; margin-bottom: 10px; font-weight: bold;"></p>
+            <p id="modal-gem-desc" style="font-size: 0.92rem; color: #f1f5f9; line-height: 1.5; margin-bottom: 16px; background: rgba(15,23,42,0.6); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);"></p>
+            <button onclick="closeGemInfoModal()" class="btn-pass" style="width: 100%; padding: 9px; font-size: 0.8rem;">Entendido</button>
+        </div>
+    </div>
+
     <!-- MODAL DE VICTORIA -->
     <div id="game-over-modal" class="modal">
         <div class="modal-content-victory">
@@ -967,6 +1010,30 @@
             }
 
             loadSavedSkin();
+        }
+
+        function showGemDetails(gemObj, isControlled, owner) {
+            if (!gemObj) return;
+            const isClassic = document.body.classList.contains('skin-classic');
+            const iconContainer = document.getElementById('modal-gem-icon');
+            
+            iconContainer.innerHTML = isClassic 
+                ? `<span style="font-size: 2.8rem;">${GEM_CLASSIC_ICONS[gemObj.id] || '💎'}</span>`
+                : (GEM_SVGS[gemObj.id] || '');
+            
+            document.getElementById('modal-gem-title').innerText = `${gemObj.protected ? '🛡️ ' : ''}${gemObj.name}`;
+            
+            let statusText = isControlled 
+                ? (owner === 'red' ? '🔴 Controlada por Jugador Rojo' : '🔵 Controlada por Jugador Azul') 
+                : '💎 Gema en el Tablero';
+            document.getElementById('modal-gem-pts').innerText = `Puntos: ${gemObj.pts} | ${statusText}`;
+            document.getElementById('modal-gem-desc').innerText = gemObj.desc;
+            
+            document.getElementById('gem-info-modal').style.display = 'flex';
+        }
+
+        function closeGemInfoModal() {
+            document.getElementById('gem-info-modal').style.display = 'none';
         }
 
         function switchGameMode(mode) {
@@ -2086,10 +2153,10 @@
                             const diagBL = eff['bottom-left'].toFixed(1).replace('.0', '');
 
                             diagonalHTML = `
-                                <div style="position: absolute; top: 3px; left: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
-                                <div style="position: absolute; top: 3px; right: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
-                                <div style="position: absolute; bottom: 3px; right: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
-                                <div style="position: absolute; bottom: 3px; left: 4px; font-size: 7px; font-weight: 900; z-index: 6; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                <div style="position: absolute; top: 3px; left: 4px; font-size: 7px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                <div style="position: absolute; top: 3px; right: 4px; font-size: 7px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                <div style="position: absolute; bottom: 3px; right: 4px; font-size: 7px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                <div style="position: absolute; bottom: 3px; left: 4px; font-size: 7px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
                             `;
                         }
 
@@ -2118,7 +2185,10 @@
                             </div>
                             
                             <div class="cell-content">
-                                <div class="gem-pod">${gemDisplay}</div>
+                                <div class="gem-pod">
+                                    ${gemDisplay}
+                                    <div class="gem-info-btn" onclick="event.stopPropagation(); showGemDetails(${JSON.stringify(cell.gemRevealed).replace(/"/g, '&quot;')}, true, '${cell.owner}')" title="Ver Gema">ℹ️</div>
+                                </div>
                                 <span style="font-size:0.72rem; color:#cbd5e1; font-weight:bold; line-height:1.1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.isProtected ? '🛡️ ' : ''}${cell.gemRevealed.name}</span>
                                 <span style="font-size:0.55rem; color:#38bdf8; text-align:center; line-height:1.1; margin-top:2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
                             </div>
@@ -2129,7 +2199,10 @@
                             : (GEM_SVGS[gemData.id] || '');
                         div.innerHTML = `
                             <div class="cell-content">
-                                <div class="gem-pod">${gemDisplay}</div>
+                                <div class="gem-pod">
+                                    ${gemDisplay}
+                                    <div class="gem-info-btn" onclick="event.stopPropagation(); showGemDetails(${JSON.stringify(gemData).replace(/"/g, '&quot;')}, false, null)" title="Ver Gema">ℹ️</div>
+                                </div>
                                 <span style="font-size:0.72rem; color:#cbd5e1; font-weight:bold; line-height:1.1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${gemData.protected ? '🛡️ ' : ''}${gemData.name}</span>
                                 <span style="font-size:0.55rem; color:#38bdf8; text-align:center; line-height:1.1; margin-top:2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">${gemData.desc}</span>
                             </div>
@@ -2187,10 +2260,10 @@
                                     const diagBL = eff['bottom-left'].toFixed(1).replace('.0', '');
 
                                     diagonalHTML = `
-                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
-                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
-                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
-                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
                                     `;
                                 }
 
@@ -2211,7 +2284,9 @@
                                     <div class="val-wrapper val-right"><div class="card-val ${eff && eff.boosted.right ? 'boosted' : ''}">${eff ? eff.right : coreCell.right}</div></div>
                                     
                                     <div class="cell-content">
-                                        <div class="gem-pod">${gemDisplay}</div>
+                                        <div class="gem-pod">
+                                            ${gemDisplay}
+                                        </div>
                                         <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreCell.isProtected ? '🛡️ ' : ''}${coreCell.gemRevealed.name}</span>
                                     </div>
                                 `;
@@ -2221,7 +2296,9 @@
                                     : (GEM_SVGS[coreGemData.id] || '');
                                 div.innerHTML = `
                                     <div class="cell-content">
-                                        <div class="gem-pod">${gemDisplay}</div>
+                                        <div class="gem-pod">
+                                            ${gemDisplay}
+                                        </div>
                                         <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreGemData.protected ? '🛡️ ' : ''}${coreGemData.name}</span>
                                     </div>
                                 `;
@@ -2256,10 +2333,10 @@
                                     const diagBL = effMirror['bottom-left'].toFixed(1).replace('.0', '');
 
                                     diagonalHTML = `
-                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
-                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
-                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
-                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 5; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                                        <div style="position: absolute; top: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                        <div style="position: absolute; top: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                        <div style="position: absolute; bottom: 1px; right: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                        <div style="position: absolute; bottom: 1px; left: 1px; font-size: 6px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
                                     `;
                                 }
 
