@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>9 Gemas - Duelo de Cristales</title>
     
-    <!-- Configuración PWA y Enlaces de Iconos -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon.png">
@@ -119,6 +118,7 @@
         .room-status { font-size: 0.58rem; color: #38bdf8; margin-top: 4px; font-weight: bold; }
         .btn-share { background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.58rem; font-weight: bold; cursor: pointer; margin-top: 4px; }
 
+        /* SCOREBOARD CON BARRAS DE PROGRESO */
         .scoreboard { 
             display: flex; 
             justify-content: space-between; 
@@ -129,10 +129,26 @@
             border: 1px solid rgba(255,255,255,0.05); 
             margin-bottom: 6px; 
         }
-        .score-box { text-align: center; }
-        .score-val { font-size: 1rem; font-weight: 900; }
+        .score-box { text-align: center; flex: 1; }
+        .score-val { font-size: 0.95rem; font-weight: 900; margin-bottom: 2px; }
         .score-red { color: #f43f5e; text-shadow: 0 0 6px rgba(244, 63, 94, 0.4); }
         .score-blue { color: #38bdf8; text-shadow: 0 0 6px rgba(56, 189, 248, 0.4); }
+        
+        .progress-bar-track {
+            width: 80%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .fill-red { background: linear-gradient(90deg, #f43f5e, #fb7185); box-shadow: 0 0 6px rgba(244, 63, 94, 0.6); }
+        .fill-blue { background: linear-gradient(90deg, #38bdf8, #60a5fa); box-shadow: 0 0 6px rgba(56, 189, 248, 0.6); }
 
         .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: bold; position: relative; }
         .energy-tag { 
@@ -201,6 +217,17 @@
             50% { transform: translateY(-2px) scale(1.01); box-shadow: 0 0 4px #fbbf24; border-color: #fde047; }
         }
         .card-item.selected { border-color: #fbbf24 !important; animation: selectedPulse 1.2s infinite ease-in-out; z-index: 5; }
+        
+        /* AFFORDANCE: Carta sin energía suficiente */
+        .card-item.disabled-energy {
+            opacity: 0.4;
+            filter: grayscale(0.6);
+            cursor: not-allowed !important;
+        }
+        .card-item.disabled-energy .card-energy-hint {
+            background: #ef4444;
+            color: #ffffff;
+        }
 
         @keyframes turnBannerAnim {
             0% { transform: scale(0.5) translateY(-20px); opacity: 0; }
@@ -217,7 +244,6 @@
             animation: turnBannerAnim 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        /* TABLERO DINÁMICO */
         .board-wrapper {
             width: 100%;
             background: rgba(2, 6, 23, 0.95);
@@ -242,18 +268,9 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .dynamic-grid.mode-3x3 {
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-        .dynamic-grid.mode-5x5 {
-            grid-template-columns: repeat(5, 1fr);
-            gap: 3px;
-        }
-
-        .mode-5x5 .gem-info-btn {
-            display: none !important;
-        }
+        .dynamic-grid.mode-3x3 { grid-template-columns: repeat(3, 1fr); }
+        .dynamic-grid.mode-5x5 { grid-template-columns: repeat(5, 1fr); gap: 3px; }
+        .mode-5x5 .gem-info-btn { display: none !important; }
 
         .cell-dynamic {
             border-radius: 8px;
@@ -310,7 +327,6 @@
             z-index: 20; 
         }
 
-        /* ESPACIO GARANTIZADO Y POSICIONAMIENTO HOMOGÉNEO EN 3X3 Y 5X5 */
         .cell-dynamic .val-wrapper {
             position: absolute;
             display: flex;
@@ -320,13 +336,11 @@
             pointer-events: none;
         }
 
-        /* Posiciones en 3x3 */
         .mode-3x3 .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
         .mode-3x3 .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
         .mode-3x3 .val-left { left: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
         .mode-3x3 .val-right { right: 4px; top: 50%; transform: translateY(-50%); flex-direction: column; }
 
-        /* Posiciones simétricas en 5x5 (resguardo idéntico de 3px a los bordes) */
         .mode-5x5 .val-top { top: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
         .mode-5x5 .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); flex-direction: row; }
         .mode-5x5 .val-left { left: 3px; top: 50%; transform: translateY(-50%); flex-direction: column; }
@@ -531,8 +545,9 @@
         .hand-container { background: rgba(2, 6, 23, 0.6); padding: 4px; border-radius: 8px; border: 1px solid rgba(30, 41, 59, 0.8); margin-bottom: 4px; }
         .hand-title { font-size: 0.58rem; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; }
         
-        /* FILA DE MANO CON MAZO Y DESCARTE A LOS LADOS */
         .hand-row-layout { display: flex; align-items: center; gap: 4px; }
+        
+        /* MAZO Y DESCARTE CON PILAS 3D */
         .mini-pile-box {
             width: 38px;
             height: 54px;
@@ -548,12 +563,27 @@
             color: #94a3b8;
             text-align: center;
             padding: 2px;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .mini-pile-box::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            right: 2px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px 2px 0 0;
+        }
+        .mini-pile-box.empty-pile {
+            opacity: 0.4;
+            border-style: dashed;
         }
         .mini-pile-box span.count { font-size: 0.65rem; font-weight: 900; color: #fbbf24; }
 
         .hand-cards { display: flex; gap: 4px; overflow-x: auto; padding: 4px; flex-grow: 1; min-width: 0; }
 
-        /* CARTAS DE LA MANO - POSICIONES DE LOS 4 NÚMEROS CORREGIDAS */
         .card-item { 
             width: 44px; 
             height: 62px; 
@@ -596,7 +626,35 @@
             z-index: 10;
         }
 
-        .log-msg { text-align: center; font-size: 0.58rem; color: #fbbf24; font-style: italic; min-height: 20px; margin-bottom: 4px; }
+        /* LOG DESPLEGABLE */
+        .log-container {
+            background: rgba(2, 6, 23, 0.7);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 8px;
+            padding: 5px 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .log-container:hover { border-color: #38bdf8; }
+        .log-msg { text-align: center; font-size: 0.58rem; color: #fbbf24; font-style: italic; font-weight: bold; }
+        .log-history {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            font-size: 0.52rem;
+            color: #94a3b8;
+            border-top: 0px solid rgba(51, 65, 85, 0.3);
+            margin-top: 0px;
+        }
+        .log-container.expanded .log-history {
+            max-height: 80px;
+            overflow-y: auto;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top-width: 1px;
+        }
+        .log-history-item { margin-bottom: 2px; text-align: center; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
         .hidden { display: none !important; }
@@ -753,7 +811,7 @@
 
     <div class="container" id="game-container">
         <div class="header">
-            <h1 class="title">💎 9 GEMAS</h1>
+            <h1 class="title">💎 9 GEMAS <span style="font-size: 0.65rem; color: #94a3b8; font-weight: normal;">v1.5.0</span></h1>
             <p class="subtitle">Duelo de Cristales Reales</p>
         </div>
 
@@ -795,15 +853,25 @@
             <span id="energy-badge" class="energy-tag">⚡ 3 / 3 ENERGÍA</span>
         </div>
 
+        <!-- SCOREBOARD CON BARRAS DE PROGRESO -->
         <div class="scoreboard">
             <div class="score-box">
                 <div class="score-val score-red" id="score-red">0 / 7</div>
+                <div class="progress-bar-track">
+                    <div id="progress-red" class="progress-bar-fill fill-red"></div>
+                </div>
             </div>
-            <button id="btn-pass-turn" onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
-            <button id="btn-claim-victory" onclick="claimVictory()" class="btn-claim-win hidden">👑 Reclamar Victoria</button>
+            
+            <div style="display: flex; gap: 4px; padding: 0 6px;">
+                <button id="btn-pass-turn" onclick="endTurnManual()" class="btn-pass">PASAR ⏭️</button>
+                <button id="btn-claim-victory" onclick="claimVictory()" class="btn-claim-win hidden">👑 Reclamar</button>
+            </div>
             
             <div class="score-box">
                 <div class="score-val score-blue" id="score-blue">0 / 7</div>
+                <div class="progress-bar-track">
+                    <div id="progress-blue" class="progress-bar-fill fill-blue"></div>
+                </div>
             </div>
         </div>
 
@@ -861,18 +929,22 @@
             </button>
         </div>
 
-        <div id="log-message" class="log-msg">Crea una sala online o inicia vs IA.</div>
+        <!-- HISTORIAL DE ACCIONES DESPLEGABLE -->
+        <div id="log-container" class="log-container" onclick="toggleLogExpand()">
+            <div id="log-message" class="log-msg">Crea una sala online o inicia vs IA. (Toca para historial)</div>
+            <div id="log-history" class="log-history"></div>
+        </div>
 
         <!-- MANO JUGADOR ROJO -->
         <div class="hand-container">
             <div id="label-hand-red" class="hand-title" style="color: #f43f5e;">Mano Jugador Rojo (Vos)</div>
             <div class="hand-row-layout">
-                <div class="mini-pile-box" title="Descarte Rojo">
+                <div id="pile-discard-red" class="mini-pile-box" title="Descarte Rojo">
                     <span>Descarte</span>
                     <span id="discard-count-red" class="count">0</span>
                 </div>
                 <div id="hand-red" class="hand-cards"></div>
-                <div class="mini-pile-box" title="Mazo Rojo">
+                <div id="pile-deck-red" class="mini-pile-box" title="Mazo Rojo">
                     <span>Mazo</span>
                     <span id="deck-count-red" class="count">4</span>
                 </div>
@@ -883,12 +955,12 @@
         <div class="hand-container">
             <div id="label-hand-blue" class="hand-title" style="color: #38bdf8;">Mano Jugador Azul</div>
             <div class="hand-row-layout">
-                <div class="mini-pile-box" title="Descarte Azul">
+                <div id="pile-discard-blue" class="mini-pile-box" title="Descarte Azul">
                     <span>Descarte</span>
                     <span id="discard-count-blue" class="count">0</span>
                 </div>
                 <div id="hand-blue" class="hand-cards"></div>
-                <div class="mini-pile-box" title="Mazo Azul">
+                <div id="pile-deck-blue" class="mini-pile-box" title="Mazo Azul">
                     <span>Mazo</span>
                     <span id="deck-count-blue" class="count">4</span>
                 </div>
@@ -995,6 +1067,7 @@
         let usedBlackEnergyBonusThisTurn = false;
         
         let isInspectMode = false;
+        let actionLogHistory = [];
 
         let selectedCard = null;
         let selectedHandIndex = null;
@@ -1023,6 +1096,11 @@
                 joinRoomAuto(roomParam);
             }
         };
+
+        function toggleLogExpand() {
+            const container = document.getElementById('log-container');
+            container.classList.toggle('expanded');
+        }
 
         function initSettingsManager() {
             const STORAGE_KEY = '9gemas_selected_skin';
@@ -1134,13 +1212,13 @@
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            actionLogHistory = [];
             const initialState = createInitialGameState();
             applyGameState(initialState);
             
             const diffNames = { easy: 'Fácil', normal: 'Normal', hard: 'Avanzado' };
             document.getElementById('room-status').innerText = `Jugando vs IA (${diffNames[aiDifficulty]}). Sos ROJO.`;
-            document.getElementById('log-message').innerText = `Partida contra IA iniciada. ¡Tu turno!`;
-            render();
+            syncGameState(`Partida contra IA iniciada. ¡Tu turno!`);
         }
 
         function createRoom() {
@@ -1150,6 +1228,7 @@
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            actionLogHistory = [];
             document.getElementById('room-code-input').value = code;
             document.getElementById('room-status').innerText = `Sala: ${code} (Sos ROJO).`;
             document.getElementById('btn-share-link').classList.remove('hidden');
@@ -1180,6 +1259,7 @@
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            actionLogHistory = [];
             document.getElementById('room-status').innerText = `Sala: ${code} (Sos AZUL).`;
             roomRef = database.ref('rooms/' + code);
             listenRoomState();
@@ -1192,6 +1272,7 @@
             lastTurnNotified = null;
             previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            actionLogHistory = [];
             document.getElementById('room-status').innerText = `Sala: ${code} (Sos AZUL).`;
             roomRef = database.ref('rooms/' + code);
             
@@ -1235,7 +1316,8 @@
                 hands: { red: handRed, blue: handBlue },
                 decks: { red: fullDeckRed, blue: fullDeckBlue },
                 discards: { red: [], blue: [] },
-                lastLog: "Elige un modo para comenzar."
+                lastLog: "Elige un modo para comenzar.",
+                logHistory: []
             };
         }
 
@@ -1261,12 +1343,15 @@
             hands = data.hands || { red: [], blue: [] };
             decks = data.decks || { red: [], blue: [] };
             discards = data.discards || { red: [], blue: [] };
+            actionLogHistory = data.logHistory || [];
 
             if (!hands.red) hands.red = []; if (!hands.blue) hands.blue = [];
             if (!decks.red) decks.red = []; if (!decks.blue) decks.blue = [];
             if (!discards.red) discards.red = []; if (!discards.blue) discards.blue = [];
 
-            document.getElementById('log-message').innerText = data.lastLog || "";
+            if (data.lastLog) {
+                document.getElementById('log-message').innerText = data.lastLog;
+            }
             render();
             checkGameOver();
         }
@@ -1282,7 +1367,11 @@
         }
 
         function syncGameState(logText) {
-            document.getElementById('log-message').innerText = logText;
+            if (logText) {
+                actionLogHistory.unshift(logText);
+                if (actionLogHistory.length > 15) actionLogHistory.pop();
+            }
+            document.getElementById('log-message').innerText = logText || "";
             render();
             checkGameOver();
 
@@ -1308,7 +1397,8 @@
                 usedBlueEnergyBonusThisTurn: usedBlueEnergyBonusThisTurn,
                 usedYellowEnergyBonusThisTurn: usedYellowEnergyBonusThisTurn,
                 usedBlackEnergyBonusThisTurn: usedBlackEnergyBonusThisTurn,
-                hands: hands, decks: decks, discards: discards, lastLog: logText
+                hands: hands, decks: decks, discards: discards, 
+                lastLog: logText, logHistory: actionLogHistory
             }).then(() => {
                 setTimeout(() => { isSyncing = false; }, 150);
             }).catch(() => { isSyncing = false; });
@@ -2142,6 +2232,7 @@
             justChangedTurn = true;
             isMapamundiActive = false;
             isDiagonalActive = false;
+            actionLogHistory = [];
             if (gameMode === 'ai') startAIGame();
             else if (roomRef) {
                 const initialState = createInitialGameState();
@@ -2456,16 +2547,38 @@
 
             document.getElementById('score-red').innerText = `${redTotal} / ${TARGET_SCORE}`;
             document.getElementById('score-blue').innerText = `${blueTotal} / ${TARGET_SCORE}`;
+
+            // Actualizar barras de progreso de puntos
+            const redPercent = Math.min(100, (redTotal / TARGET_SCORE) * 100);
+            const bluePercent = Math.min(100, (blueTotal / TARGET_SCORE) * 100);
+            document.getElementById('progress-red').style.width = `${redPercent}%`;
+            document.getElementById('progress-blue').style.width = `${bluePercent}%`;
             
-            // Actualizar contadores de Mazo y Descarte en la interfaz
-            document.getElementById('discard-count-red').innerText = discards.red ? discards.red.length : 0;
-            document.getElementById('discard-count-blue').innerText = discards.blue ? discards.blue.length : 0;
-            document.getElementById('deck-count-red').innerText = decks.red ? decks.red.length : 0;
-            document.getElementById('deck-count-blue').innerText = decks.blue ? decks.blue.length : 0;
+            // Contadores numéricos laterales y estado de pilas 3D
+            const redDiscardLen = discards.red ? discards.red.length : 0;
+            const blueDiscardLen = discards.blue ? discards.blue.length : 0;
+            const redDeckLen = decks.red ? decks.red.length : 0;
+            const blueDeckLen = decks.blue ? decks.blue.length : 0;
+
+            document.getElementById('discard-count-red').innerText = redDiscardLen;
+            document.getElementById('discard-count-blue').innerText = blueDiscardLen;
+            document.getElementById('deck-count-red').innerText = redDeckLen;
+            document.getElementById('deck-count-blue').innerText = blueDeckLen;
+
+            document.getElementById('pile-discard-red').classList.toggle('empty-pile', redDiscardLen === 0);
+            document.getElementById('pile-discard-blue').classList.toggle('empty-pile', blueDiscardLen === 0);
+            document.getElementById('pile-deck-red').classList.toggle('empty-pile', redDeckLen === 0);
+            document.getElementById('pile-deck-blue').classList.toggle('empty-pile', blueDeckLen === 0);
 
             document.getElementById('turn-indicator').innerText = `Turno: ${turn === 'red' ? 'Rojo' : 'Azul'}`;
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
+
+            // Renderizar historial de acciones desplegable
+            const historyEl = document.getElementById('log-history');
+            if (historyEl) {
+                historyEl.innerHTML = actionLogHistory.map(item => `<div class="log-history-item">• ${item}</div>`).join('');
+            }
 
             const isBoardFull = board.every(c => c !== null);
             const anyAttackPossible = checkIfAnyAttackPossible();
@@ -2556,8 +2669,15 @@
                             div.innerHTML = `<span style="font-size:0.6rem; opacity:0.3;">💎</span>`;
                         } else {
                             const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
-                            div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''}`;
-                            div.onclick = () => selectHandCard(p, idx);
+                            // AFFORDANCE: Si es nuestro turno pero no tenemos 2⚡ de energía, atenuamos la carta visualmente
+                            const lacksEnergy = (isMyTurnActive && currentEnergy < 2);
+                            div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${lacksEnergy ? 'disabled-energy' : ''}`;
+                            
+                            div.onclick = () => {
+                                if (lacksEnergy && isMyTurnActive) return;
+                                selectHandCard(p, idx);
+                            };
+                            
                             div.innerHTML = `
                                 <div class="card-energy-hint">2⚡</div>
                                 <div class="card-val-pos val-top">${card.top}</div>
