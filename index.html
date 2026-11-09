@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>9 Gemas - Duelo de Cristales</title>
+    <title>9 Gemas - Duelo de Cristales v1.9.0</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
@@ -45,6 +45,20 @@
             overflow: visible !important;
             transition: all 0.3s ease;
         }
+
+        /* EFECTO SCREEN SHAKE */
+        @keyframes screenShakeAnim {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-3px, 2px); }
+            40% { transform: translate(3px, -2px); }
+            60% { transform: translate(-2px, -1px); }
+            80% { transform: translate(2px, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+        .screen-shake {
+            animation: screenShakeAnim 0.3s ease-in-out;
+        }
+
         .header { text-align: center; margin-bottom: 6px; }
         .title { 
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); 
@@ -118,7 +132,6 @@
         .room-status { font-size: 0.58rem; color: #38bdf8; margin-top: 4px; font-weight: bold; }
         .btn-share { background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.58rem; font-weight: bold; cursor: pointer; margin-top: 4px; }
 
-        /* SCOREBOARD CON BARRAS DE PROGRESO */
         .scoreboard { 
             display: flex; 
             justify-content: space-between; 
@@ -218,7 +231,6 @@
         }
         .card-item.selected { border-color: #fbbf24 !important; animation: selectedPulse 1.2s infinite ease-in-out; z-index: 5; }
         
-        /* AFFORDANCE: Carta sin energía suficiente */
         .card-item.disabled-energy {
             opacity: 0.4;
             filter: grayscale(0.6);
@@ -256,8 +268,8 @@
             overflow: hidden;
         }
         .board-wrapper.mapamundi-active {
-            border-color: #38bdf8 !important;
-            box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+            border-color: #94a3b8 !important;
+            box-shadow: 0 0 18px rgba(148, 163, 184, 0.4);
             padding: 4px;
         }
 
@@ -287,40 +299,95 @@
         .mode-3x3 .cell-dynamic { border-radius: 10px; aspect-ratio: 3 / 3.8; }
         .mode-5x5 .cell-dynamic { border-radius: 6px; aspect-ratio: 1 / 1; min-height: 52px; }
 
+        /* CELDAS VACÍAS: METÁLICO GRIS FIJO (SIN TITILAR) */
         .cell-dynamic.core-cell {
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(51, 65, 85, 0.6);
+            background: radial-gradient(circle at center, #334155 0%, #1e293b 100%);
+            border: 1.5px solid rgba(148, 163, 184, 0.45);
             cursor: pointer;
+            box-shadow: inset 0 0 10px rgba(100, 116, 139, 0.25);
         }
         .cell-dynamic.core-cell.inspectable {
-            border: 2px dashed #eab308 !important;
+            border: 2px dashed #fbbf24 !important;
             background: rgba(234, 179, 8, 0.2) !important;
         }
         
-        .cell-dynamic.core-cell.card-red, .cell-dynamic.mirror-edge-cell.card-red {
+        /* CARTAS EN TABLERO CENTRAL 3X3: FIJAS (SIN TITILAR) */
+        .cell-dynamic.core-cell.card-red {
             background: radial-gradient(circle at center, #680d22 0%, #29020b 100%) !important;
             border: 2px solid #f43f5e !important;
-            box-shadow: inset 0 0 12px rgba(244, 63, 94, 0.35), 0 0 10px rgba(244, 63, 94, 0.4) !important;
+            box-shadow: inset 0 0 12px rgba(244, 63, 94, 0.35), 0 0 6px rgba(244, 63, 94, 0.3);
+            animation: none !important;
         }
-        .cell-dynamic.core-cell.card-blue, .cell-dynamic.mirror-edge-cell.card-blue {
+        .cell-dynamic.core-cell.card-blue {
             background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%) !important;
             border: 2px solid #38bdf8 !important;
-            box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.35), 0 0 10px rgba(56, 189, 248, 0.4) !important;
+            box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.35), 0 0 6px rgba(56, 189, 248, 0.3);
+            animation: none !important;
+        }
+
+        /* ANILLO EXTERIOR MAPAMUNDI: OPACAS, METÁLICO GRIS Y PULSO A 1 SEGUNDO */
+        @keyframes redCardPulse1s {
+            0%, 100% {
+                box-shadow: inset 0 0 12px rgba(244, 63, 94, 0.35), 0 0 6px rgba(244, 63, 94, 0.3);
+                border-color: #f43f5e;
+            }
+            50% {
+                box-shadow: inset 0 0 20px rgba(244, 63, 94, 0.7), 0 0 16px rgba(244, 63, 94, 0.6);
+                border-color: #fb7185;
+            }
+        }
+        @keyframes blueCardPulse1s {
+            0%, 100% {
+                box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.35), 0 0 6px rgba(56, 189, 248, 0.3);
+                border-color: #38bdf8;
+            }
+            50% {
+                box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.7), 0 0 16px rgba(56, 189, 248, 0.6);
+                border-color: #7dd3fc;
+            }
         }
 
         .cell-dynamic.mirror-edge-cell {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1.5px dashed rgba(56, 189, 248, 0.7);
-            opacity: 0.78;
-            backdrop-filter: blur(4px);
+            background: radial-gradient(circle at center, #64748b 0%, #334155 100%);
+            border: 1.5px dashed #cbd5e1 !important;
             pointer-events: none;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25) inset;
+            position: relative;
+        }
+        .cell-dynamic.mirror-edge-cell.card-red {
+            background: radial-gradient(circle at center, #680d22 0%, #29020b 100%) !important;
+            border: 1.5px dashed #f43f5e !important;
+            animation: redCardPulse1s 1s infinite ease-in-out !important;
+        }
+        .cell-dynamic.mirror-edge-cell.card-blue {
+            background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%) !important;
+            border: 1.5px dashed #38bdf8 !important;
+            animation: blueCardPulse1s 1s infinite ease-in-out !important;
+        }
+
+        .mirror-tag {
+            position: absolute;
+            top: 13px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(148, 163, 184, 0.25);
+            color: #f1f5f9;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            font-size: 5px;
+            font-weight: 900;
+            padding: 0px 3px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 18;
         }
 
         @keyframes attackerPulseAnim {
             0%, 100% { border-color: #fde047; box-shadow: 0 0 14px #fbbf24; transform: scale(1.02); }
             50% { border-color: #f59e0b; box-shadow: 0 0 22px #fde047; transform: scale(1.04); }
         }
+        .cell-dynamic.core-cell.card-red.selected-attacker,
+        .cell-dynamic.core-cell.card-blue.selected-attacker,
         .cell-dynamic.selected-attacker { 
             border: 2.5px solid #fde047 !important; 
             animation: attackerPulseAnim 0.9s infinite ease-in-out !important; 
@@ -453,9 +520,9 @@
         }
         .btn-action:disabled { opacity: 0.35; cursor: not-allowed; }
         .btn-action.mapamundi-btn-active {
-            background: linear-gradient(135deg, #0284c7, #7c3aed) !important;
-            border-color: #38bdf8 !important;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            background: linear-gradient(135deg, #475569, #64748b) !important;
+            border-color: #94a3b8 !important;
+            box-shadow: 0 0 10px rgba(148, 163, 184, 0.5);
         }
 
         .special-attacks-label {
@@ -547,7 +614,6 @@
         
         .hand-row-layout { display: flex; align-items: center; gap: 4px; }
         
-        /* MAZO Y DESCARTE CON PILAS 3D */
         .mini-pile-box {
             width: 38px;
             height: 54px;
@@ -626,7 +692,6 @@
             z-index: 10;
         }
 
-        /* LOG DESPLEGABLE */
         .log-container {
             background: rgba(2, 6, 23, 0.7);
             border: 1px solid rgba(51, 65, 85, 0.5);
@@ -733,9 +798,13 @@
           padding: 16px; width: 85%; max-width: 290px; color: #f0f0f0; text-align: center;
         }
         .modal-content-settings h2 { font-size: 1.1rem; margin-bottom: 12px; }
-        .setting-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 16px; text-align: left; }
+        .setting-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 12px; text-align: left; }
         .setting-item label { font-size: 0.8rem; color: #aaaaaa; }
         .setting-item select { width: 100%; padding: 6px; border-radius: 6px; background: #2a2a35; color: #ffffff; border: 1px solid #444455; font-size: 0.85rem; }
+        
+        .setting-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 12px; font-size: 0.8rem; color: #aaaaaa; }
+        .setting-row input[type="checkbox"] { transform: scale(1.2); cursor: pointer; }
+
         .btn-settings-close { width: 100%; padding: 8px; border-radius: 6px; border: none; background: #ffcc00; color: #121212; font-weight: bold; font-size: 0.85rem; cursor: pointer; }
 
         /* SKINS */
@@ -805,13 +874,17 @@
             <option value="gothic">🎃 Oscuro / Gótico</option>
           </select>
         </div>
+        <div class="setting-row">
+          <label for="check-sound">Efectos de Sonido</label>
+          <input type="checkbox" id="check-sound" checked>
+        </div>
         <button id="btn-close-settings" class="btn-settings-close">Guardar y Cerrar</button>
       </div>
     </div>
 
     <div class="container" id="game-container">
         <div class="header">
-            <h1 class="title">💎 9 GEMAS <span style="font-size: 0.65rem; color: #94a3b8; font-weight: normal;">v1.5.0</span></h1>
+            <h1 class="title">💎 9 GEMAS <span style="font-size: 0.65rem; color: #94a3b8; font-weight: normal;">v1.9.0</span></h1>
             <p class="subtitle">Duelo de Cristales Reales</p>
         </div>
 
@@ -853,7 +926,6 @@
             <span id="energy-badge" class="energy-tag">⚡ 3 / 3 ENERGÍA</span>
         </div>
 
-        <!-- SCOREBOARD CON BARRAS DE PROGRESO -->
         <div class="scoreboard">
             <div class="score-box">
                 <div class="score-val score-red" id="score-red">0 / 7</div>
@@ -875,12 +947,10 @@
             </div>
         </div>
 
-        <!-- TABLERO DINÁMICO -->
         <div id="board-wrapper" class="board-wrapper">
             <div id="dynamic-grid" class="dynamic-grid mode-3x3"></div>
         </div>
 
-        <!-- PANEL DE ATAQUE 3x3 EN 8 DIRECCIONES -->
         <div id="attack-panel" class="attack-panel hidden">
             <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 4px; align-items: center;">
                 <span style="font-size: 0.65rem; color: #fbbf24; font-weight: bold;">Atacar (1⚡ - 8 Direcciones):</span>
@@ -929,13 +999,11 @@
             </button>
         </div>
 
-        <!-- HISTORIAL DE ACCIONES DESPLEGABLE -->
         <div id="log-container" class="log-container" onclick="toggleLogExpand()">
             <div id="log-message" class="log-msg">Crea una sala online o inicia vs IA. (Toca para historial)</div>
             <div id="log-history" class="log-history"></div>
         </div>
 
-        <!-- MANO JUGADOR ROJO -->
         <div class="hand-container">
             <div id="label-hand-red" class="hand-title" style="color: #f43f5e;">Mano Jugador Rojo (Vos)</div>
             <div class="hand-row-layout">
@@ -951,7 +1019,6 @@
             </div>
         </div>
 
-        <!-- MANO JUGADOR AZUL -->
         <div class="hand-container">
             <div id="label-hand-blue" class="hand-title" style="color: #38bdf8;">Mano Jugador Azul</div>
             <div class="hand-row-layout">
@@ -968,7 +1035,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE DETALLES DE GEMA -->
     <div id="gem-info-modal" class="modal" onclick="closeGemInfoModal()">
         <div class="modal-content-victory" style="text-align: center; max-width: 300px;" onclick="event.stopPropagation()">
             <div id="modal-gem-icon" style="width: 72px; height: 72px; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);"></div>
@@ -979,7 +1045,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE VICTORIA -->
     <div id="game-over-modal" class="modal">
         <div class="modal-content-victory">
             <div class="victory-particles" id="victory-particles-container"></div>
@@ -1001,6 +1066,78 @@
         const database = firebase.database();
 
         const TARGET_SCORE = 7;
+
+        // SISTEMA DE AUDIO NATIVO (WEB AUDIO API)
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function isSoundEnabled() {
+            const chk = document.getElementById('check-sound');
+            return chk ? chk.checked : true;
+        }
+
+        function playSound(type) {
+            if (!isSoundEnabled()) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(now); osc.stop(now + 0.05);
+                } else if (type === 'fly') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.15);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(now); osc.stop(now + 0.15);
+                } else if (type === 'hit') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(120, now);
+                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(now); osc.stop(now + 0.12);
+                } else if (type === 'win') {
+                    const notes = [261.63, 329.63, 392.00, 523.25];
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        gain.gain.setValueAtTime(0.2, now + idx * 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.3);
+                        osc.connect(gain); gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.1);
+                        osc.stop(now + idx * 0.1 + 0.3);
+                    });
+                }
+            } catch(e) { console.error(e); }
+        }
 
         const GEM_SVGS = {
             'rojo': `<svg class="gem-svg" viewBox="0 0 24 24"><path fill="#ffe4e6" d="M12 2L6 8h12l-6-6z"/><path fill="#f43f5e" d="M2 8l10 14L6 8H2z"/><path fill="#e11d48" d="M22 8l-10 14 6-14h4z"/><path fill="#ffffff" opacity="0.8" d="M12 2l6 6H6l6-6z"/><path fill="#be123c" d="M6 8l6 14 6-14H6z"/></svg>`,
@@ -1030,14 +1167,6 @@
             { id: 'blanco', name: 'Diamante', pts: 0, protected: true, type: 'special', desc: 'Protegida/x2 stats' }, 
             { id: 'negro', name: 'Ónix', pts: 1, type: 'special', desc: '+1⚡ descartar' },
             { id: 'marron', name: 'Cuarzo', pts: 1, type: 'special', desc: 'Iguala al mayor' }      
-        ];
-
-        const MATRIX_5X5_MAPPING = [
-            [8, 6, 7, 8, 6],
-            [2, 0, 1, 2, 0],
-            [5, 3, 4, 5, 3],
-            [8, 6, 7, 8, 6],
-            [2, 0, 1, 2, 0]
         ];
 
         let gameMode = 'online';
@@ -1098,6 +1227,7 @@
         };
 
         function toggleLogExpand() {
+            playSound('click');
             const container = document.getElementById('log-container');
             container.classList.toggle('expanded');
         }
@@ -1127,6 +1257,7 @@
             }
 
             function saveSkinPreference() {
+                playSound('click');
                 if (!selectSkin) return;
                 const chosenSkin = selectSkin.value;
                 localStorage.setItem(STORAGE_KEY, chosenSkin);
@@ -1136,7 +1267,7 @@
             }
 
             if (btnSettings && modalSettings) {
-                btnSettings.addEventListener('click', () => { modalSettings.style.display = 'flex'; });
+                btnSettings.addEventListener('click', () => { playSound('click'); modalSettings.style.display = 'flex'; });
             }
             if (btnCloseSettings) {
                 btnCloseSettings.addEventListener('click', saveSkinPreference);
@@ -1152,6 +1283,7 @@
 
         function showGemDetails(gemObj, isControlled, owner) {
             if (!gemObj) return;
+            playSound('click');
             const isClassic = document.body.classList.contains('skin-classic');
             const iconContainer = document.getElementById('modal-gem-icon');
             
@@ -1171,10 +1303,12 @@
         }
 
         function closeGemInfoModal() {
+            playSound('click');
             document.getElementById('gem-info-modal').style.display = 'none';
         }
 
         function switchGameMode(mode) {
+            playSound('click');
             gameMode = mode;
             document.getElementById('btn-mode-online').classList.toggle('active', mode === 'online');
             document.getElementById('btn-mode-ai').classList.toggle('active', mode === 'ai');
@@ -1207,6 +1341,7 @@
         }
 
         function startAIGame() {
+            playSound('click');
             aiDifficulty = document.getElementById('ai-difficulty').value;
             myRole = 'red';
             lastTurnNotified = null;
@@ -1222,6 +1357,7 @@
         }
 
         function createRoom() {
+            playSound('click');
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             myRole = 'red';
             currentRoomCode = code;
@@ -1241,6 +1377,7 @@
         }
 
         function shareRoomLink() {
+            playSound('click');
             if (!currentRoomCode) return;
             const baseUrl = window.location.href.split('?')[0];
             const inviteUrl = `${baseUrl}?sala=${currentRoomCode}`;
@@ -1252,6 +1389,7 @@
         }
 
         function joinRoom() {
+            playSound('click');
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
             if (code.length !== 4) return alert("Ingresá un código válido de 4 letras.");
             myRole = 'blue';
@@ -1472,12 +1610,14 @@
         }
 
         function endTurnManual() {
+            playSound('click');
             if (!isMyTurn()) return;
             const nextTurn = turn === 'red' ? 'blue' : 'red';
             startTurn(nextTurn);
         }
 
         function actionActivateMapamundi() {
+            playSound('click');
             if (!isMyTurn()) return;
             if (isMapamundiActive) return;
             if (currentEnergy < 1) return;
@@ -1491,6 +1631,7 @@
         }
 
         function toggleDiagonal() {
+            playSound('click');
             if (!isMyTurn()) return;
             if (isDiagonalActive) return;
             if (currentEnergy < 1) return;
@@ -1602,6 +1743,7 @@
         }
 
         function triggerVictoryModal(title, detail) {
+            playSound('win');
             document.getElementById('winner-text').innerText = title;
             document.getElementById('winner-detail').innerText = detail;
             document.getElementById('game-over-modal').style.display = 'flex';
@@ -1622,6 +1764,7 @@
         }
 
         function claimVictory() {
+            playSound('click');
             let redTotal = getPlayerTotalScore('red');
             let blueTotal = getPlayerTotalScore('blue');
 
@@ -1635,6 +1778,7 @@
         }
 
         function inspectBoardAfterVictory() {
+            playSound('click');
             document.getElementById('game-over-modal').style.display = 'none';
             document.getElementById('log-message').innerText = "🔍 Modo Análisis: Analizando tablero final.";
             
@@ -1759,6 +1903,7 @@
         }
 
         function aiPlayCard(handIdx, boardIdx) {
+            playSound('fly');
             currentEnergy -= 2;
             const gem = gems[boardIdx] || GEM_TYPES[0];
             revealedBoardGems[boardIdx] = true;
@@ -1789,6 +1934,7 @@
         }
 
         function selectHandCard(player, index) {
+            playSound('click');
             if (!isMyTurn()) return;
             if (currentEnergy < 2) return;
             isInspectMode = false;
@@ -1801,6 +1947,7 @@
         }
 
         function toggleInspectMode() {
+            playSound('click');
             if (!isMyTurn()) return;
             const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
             const inspectCost = controlsViolet ? 0 : 1;
@@ -1836,12 +1983,14 @@
 
             if (selectedCard !== null && board[index] === null) {
                 if (currentEnergy < 2) return;
+                playSound('fly');
                 playCard(index);
                 return;
             }
 
             if (board[index] !== null && board[index].owner === turn) {
                 if (currentEnergy < 1) return;
+                playSound('click');
                 selectedBoardIndex = index;
                 selectedCard = null; selectedHandIndex = null;
                 document.getElementById('attack-panel').classList.remove('hidden');
@@ -1851,6 +2000,7 @@
         }
 
         function cancelAttack() {
+            playSound('click');
             selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
             document.getElementById('log-message').innerText = "Ataque cancelado.";
@@ -1908,6 +2058,7 @@
         }
 
         function actionDrawCard() {
+            playSound('click');
             if (currentEnergy < 1 || decks[turn].length === 0) return;
             currentEnergy -= 1;
             hands[turn].push(decks[turn].pop());
@@ -1927,6 +2078,7 @@
         }
 
         function actionRecoverDiscard() {
+            playSound('click');
             if (currentEnergy < 1 || discards[turn].length === 0) return;
             currentEnergy -= 1;
             for (let i = 0; i < 2; i++) {
@@ -1947,6 +2099,7 @@
         }
 
         function actionDiscardOpponent() {
+            playSound('click');
             if (currentEnergy < 1) return;
             const opponent = turn === 'red' ? 'blue' : 'red';
             if (hands[opponent].length === 0) return;
@@ -2029,6 +2182,7 @@
             if (defender.owner === turn || defender.isProtected) return;
 
             document.getElementById('attack-panel').classList.add('hidden');
+            playSound('fly');
 
             const gridEl = document.getElementById('dynamic-grid');
             const gridNodes = gridEl.children;
@@ -2110,7 +2264,17 @@
             });
 
             setTimeout(() => {
+                playSound('hit');
                 targetNode.classList.add('anim-target-hit');
+
+                const attVals = getEffectiveCardValues(idx);
+                if (attVals[dir] >= 8) {
+                    const gameCont = document.getElementById('game-container');
+                    if (gameCont) {
+                        gameCont.classList.add('screen-shake');
+                        setTimeout(() => gameCont.classList.remove('screen-shake'), 300);
+                    }
+                }
 
                 setTimeout(() => {
                     flyer.remove();
@@ -2220,6 +2384,7 @@
         }
 
         function resetGame() {
+            playSound('click');
             document.getElementById('game-over-modal').style.display = 'none';
             const analysisBar = document.getElementById('analysis-bar');
             if (analysisBar) analysisBar.style.display = 'none';
@@ -2359,7 +2524,7 @@
                             </div>
                         `;
                     } else {
-                        div.innerHTML = `<div class="cell-content"><span style="font-size:1.1rem; opacity:0.25;">💎</span></div>`;
+                        div.innerHTML = `<div class="cell-content"><span style="font-size:1.1rem; opacity:0.35; color:#94a3b8;">💎</span></div>`;
                     }
                     gridEl.appendChild(div);
                 }
@@ -2367,17 +2532,22 @@
             } else {
                 gridEl.className = "dynamic-grid mode-5x5";
 
+                const rowMap = { 0: 2, 1: 0, 2: 1, 3: 2, 4: 0 };
+                const colMap = { 0: 2, 1: 0, 2: 1, 3: 2, 4: 0 };
+
                 for (let r = 0; r < 5; r++) {
                     for (let c = 0; c < 5; c++) {
                         const isCore = (r >= 1 && r <= 3 && c >= 1 && c <= 3);
-                        const originalCoreIdx = MATRIX_5X5_MAPPING[r][c];
+                        const r_core = rowMap[r];
+                        const c_core = colMap[c];
+                        const originalCoreIdx = r_core * 3 + c_core;
 
                         const div = document.createElement('div');
                         const cell = board[originalCoreIdx];
                         const gemData = gems[originalCoreIdx] || GEM_TYPES[originalCoreIdx % GEM_TYPES.length];
 
                         if (isCore) {
-                            const coreIdx = (r - 1) * 3 + (c - 1);
+                            const coreIdx = originalCoreIdx;
                             const coreCell = board[coreIdx];
                             const coreGemData = gems[coreIdx] || GEM_TYPES[coreIdx % GEM_TYPES.length];
                             const isCoreSel = selectedBoardIndex === coreIdx;
@@ -2454,10 +2624,14 @@
                                     </div>
                                 `;
                             } else {
-                                div.innerHTML = `<div class="cell-content"><span style="font-size:0.6rem; opacity:0.25;">💎</span></div>`;
+                                div.innerHTML = `<div class="cell-content"><span style="font-size:0.6rem; opacity:0.35; color:#94a3b8;">💎</span></div>`;
                             }
                         } else {
-                            div.className = `cell-dynamic mirror-edge-cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''}`;
+                            // CELDAS PROYECTADAS EN EL ANILLO EXTERIOR (ESPEJO - METÁLICO OPACAS)
+                            const mirrorOwnerClass = cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : '';
+                            div.className = `cell-dynamic mirror-edge-cell ${mirrorOwnerClass}`;
+
+                            let mirrorTag = `<div class="mirror-tag">ESPEJO</div>`;
 
                             if (cell && cell.gemRevealed) {
                                 const effMirror = getEffectiveCardValues(originalCoreIdx);
@@ -2492,6 +2666,7 @@
                                 }
 
                                 div.innerHTML = `
+                                    ${mirrorTag}
                                     ${diagonalHTML}
                                     <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}" style="top:2px;left:35%;font-size:5px;">⭐</span>
                                     <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}" style="top:2px;left:65%;font-size:5px;">⭐</span>
@@ -2513,7 +2688,7 @@
                                     </div>
                                 `;
                             } else {
-                                div.innerHTML = `<span style="font-size:0.5rem; opacity:0.2;">✨</span>`;
+                                div.innerHTML = `${mirrorTag}<span style="font-size:0.5fn; opacity:0.3; color:#94a3b8;">✨</span>`;
                             }
                         }
 
@@ -2548,13 +2723,11 @@
             document.getElementById('score-red').innerText = `${redTotal} / ${TARGET_SCORE}`;
             document.getElementById('score-blue').innerText = `${blueTotal} / ${TARGET_SCORE}`;
 
-            // Actualizar barras de progreso de puntos
             const redPercent = Math.min(100, (redTotal / TARGET_SCORE) * 100);
             const bluePercent = Math.min(100, (blueTotal / TARGET_SCORE) * 100);
             document.getElementById('progress-red').style.width = `${redPercent}%`;
             document.getElementById('progress-blue').style.width = `${bluePercent}%`;
             
-            // Contadores numéricos laterales y estado de pilas 3D
             const redDiscardLen = discards.red ? discards.red.length : 0;
             const blueDiscardLen = discards.blue ? discards.blue.length : 0;
             const redDeckLen = decks.red ? decks.red.length : 0;
@@ -2574,7 +2747,6 @@
             document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
             document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
 
-            // Renderizar historial de acciones desplegable
             const historyEl = document.getElementById('log-history');
             if (historyEl) {
                 historyEl.innerHTML = actionLogHistory.map(item => `<div class="log-history-item">• ${item}</div>`).join('');
@@ -2669,7 +2841,6 @@
                             div.innerHTML = `<span style="font-size:0.6rem; opacity:0.3;">💎</span>`;
                         } else {
                             const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
-                            // AFFORDANCE: Si es nuestro turno pero no tenemos 2⚡ de energía, atenuamos la carta visualmente
                             const lacksEnergy = (isMyTurnActive && currentEnergy < 2);
                             div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${lacksEnergy ? 'disabled-energy' : ''}`;
                             
