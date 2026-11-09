@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>9 Gemas - Duelo de Cristales v1.9.0</title>
+    <title>9 Gemas - Duelo de Cristales v1.9.4</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
@@ -163,6 +163,18 @@
         .fill-red { background: linear-gradient(90deg, #f43f5e, #fb7185); box-shadow: 0 0 6px rgba(244, 63, 94, 0.6); }
         .fill-blue { background: linear-gradient(90deg, #38bdf8, #60a5fa); box-shadow: 0 0 6px rgba(56, 189, 248, 0.6); }
 
+        .combo-panel {
+            background: rgba(2, 6, 23, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 8px;
+            padding: 5px 8px;
+            margin-bottom: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 0.58rem;
+        }
+
         .turn-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: bold; position: relative; }
         .energy-tag { 
             background: rgba(245, 158, 11, 0.15); 
@@ -197,6 +209,16 @@
             100% { transform: scale(1); filter: brightness(1); }
         }
         .anim-target-hit { animation: targetHitFlash 0.35s cubic-bezier(0.25, 1, 0.5, 1) both !important; z-index: 30; }
+
+        /* ANIMACIÓN DE COMBO FLASHEO (1 SOLA VEZ) */
+        @keyframes comboFlashAnim {
+            0%, 100% { filter: brightness(1); transform: scale(1); }
+            50% { filter: brightness(1.9); transform: scale(1.08); box-shadow: 0 0 26px #fde047, inset 0 0 18px #fbbf24; border-color: #fde047 !important; }
+        }
+        .card-combo-flash {
+            animation: comboFlashAnim 0.6s ease-in-out 1 !important;
+            z-index: 25;
+        }
 
         .flying-projectile {
             position: absolute;
@@ -299,7 +321,6 @@
         .mode-3x3 .cell-dynamic { border-radius: 10px; aspect-ratio: 3 / 3.8; }
         .mode-5x5 .cell-dynamic { border-radius: 6px; aspect-ratio: 1 / 1; min-height: 52px; }
 
-        /* CELDAS VACÍAS: METÁLICO GRIS FIJO (SIN TITILAR) */
         .cell-dynamic.core-cell {
             background: radial-gradient(circle at center, #334155 0%, #1e293b 100%);
             border: 1.5px solid rgba(148, 163, 184, 0.45);
@@ -311,21 +332,17 @@
             background: rgba(234, 179, 8, 0.2) !important;
         }
         
-        /* CARTAS EN TABLERO CENTRAL 3X3: FIJAS (SIN TITILAR) */
         .cell-dynamic.core-cell.card-red {
             background: radial-gradient(circle at center, #680d22 0%, #29020b 100%) !important;
             border: 2px solid #f43f5e !important;
             box-shadow: inset 0 0 12px rgba(244, 63, 94, 0.35), 0 0 6px rgba(244, 63, 94, 0.3);
-            animation: none !important;
         }
         .cell-dynamic.core-cell.card-blue {
             background: radial-gradient(circle at center, #0c4a6e 0%, #030712 100%) !important;
             border: 2px solid #38bdf8 !important;
             box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.35), 0 0 6px rgba(56, 189, 248, 0.3);
-            animation: none !important;
         }
 
-        /* ANILLO EXTERIOR MAPAMUNDI: OPACAS, METÁLICO GRIS Y PULSO A 1 SEGUNDO */
         @keyframes redCardPulse1s {
             0%, 100% {
                 box-shadow: inset 0 0 12px rgba(244, 63, 94, 0.35), 0 0 6px rgba(244, 63, 94, 0.3);
@@ -878,13 +895,17 @@
           <label for="check-sound">Efectos de Sonido</label>
           <input type="checkbox" id="check-sound" checked>
         </div>
+        <div class="setting-row">
+          <label for="check-haptic">Vibración Háptica</label>
+          <input type="checkbox" id="check-haptic">
+        </div>
         <button id="btn-close-settings" class="btn-settings-close">Guardar y Cerrar</button>
       </div>
     </div>
 
     <div class="container" id="game-container">
         <div class="header">
-            <h1 class="title">💎 9 GEMAS <span style="font-size: 0.65rem; color: #94a3b8; font-weight: normal;">v1.9.0</span></h1>
+            <h1 class="title">💎 9 GEMAS <span style="font-size: 0.65rem; color: #94a3b8; font-weight: normal;">v1.9.4</span></h1>
             <p class="subtitle">Duelo de Cristales Reales</p>
         </div>
 
@@ -945,6 +966,15 @@
                     <div id="progress-blue" class="progress-bar-fill fill-blue"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- INDICADOR VISUAL DE COMBOS ACTIVOS -->
+        <div id="combo-panel" class="combo-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #38bdf8; font-weight: bold;">💎 Combos Activos:</span>
+                <span id="combo-total-pts" style="color: #fbbf24; font-weight: 900;">+0 pts</span>
+            </div>
+            <span id="combo-list-text" style="color: #e2e8f0; font-weight: normal; font-size: 0.55rem; line-height: 1.2;">Ninguno</span>
         </div>
 
         <div id="board-wrapper" class="board-wrapper">
@@ -1085,6 +1115,18 @@
             return chk ? chk.checked : true;
         }
 
+        function isHapticEnabled() {
+            const chk = document.getElementById('check-haptic');
+            return chk ? chk.checked : false;
+        }
+
+        function triggerVibrate(pattern) {
+            if (!isHapticEnabled()) return;
+            if (navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
+        }
+
         function playSound(type) {
             if (!isSoundEnabled()) return;
             try {
@@ -1208,8 +1250,8 @@
         let newlyDrawnCardIndex = { red: null, blue: null };
         let discardingCardInfo = { player: null, cardIndex: null };
 
-        let previousComboCount = { red: 0, blue: 0 };
         let justChangedTurn = true;
+        let triggerComboFlashFlag = true;
 
         window.onload = function() {
             initSettingsManager();
@@ -1228,6 +1270,7 @@
 
         function toggleLogExpand() {
             playSound('click');
+            triggerVibrate(20);
             const container = document.getElementById('log-container');
             container.classList.toggle('expanded');
         }
@@ -1240,6 +1283,13 @@
             const modalSettings = document.getElementById('modal-settings');
             const btnCloseSettings = document.getElementById('btn-close-settings');
             const selectSkin = document.getElementById('select-skin');
+            const checkHaptic = document.getElementById('check-haptic');
+
+            if (checkHaptic && localStorage.getItem('9gemas_haptic_set') === null) {
+                checkHaptic.checked = false;
+            } else if (checkHaptic) {
+                checkHaptic.checked = localStorage.getItem('9gemas_haptic_val') === 'true';
+            }
 
             function applySkin(skinName) {
                 const classesToRemove = [];
@@ -1258,16 +1308,23 @@
 
             function saveSkinPreference() {
                 playSound('click');
+                triggerVibrate(30);
                 if (!selectSkin) return;
                 const chosenSkin = selectSkin.value;
                 localStorage.setItem(STORAGE_KEY, chosenSkin);
                 applySkin(chosenSkin);
+
+                if (checkHaptic) {
+                    localStorage.setItem('9gemas_haptic_set', 'true');
+                    localStorage.setItem('9gemas_haptic_val', checkHaptic.checked);
+                }
+
                 if (modalSettings) modalSettings.style.display = 'none';
                 render();
             }
 
             if (btnSettings && modalSettings) {
-                btnSettings.addEventListener('click', () => { playSound('click'); modalSettings.style.display = 'flex'; });
+                btnSettings.addEventListener('click', () => { playSound('click'); triggerVibrate(20); modalSettings.style.display = 'flex'; });
             }
             if (btnCloseSettings) {
                 btnCloseSettings.addEventListener('click', saveSkinPreference);
@@ -1284,6 +1341,7 @@
         function showGemDetails(gemObj, isControlled, owner) {
             if (!gemObj) return;
             playSound('click');
+            triggerVibrate(20);
             const isClassic = document.body.classList.contains('skin-classic');
             const iconContainer = document.getElementById('modal-gem-icon');
             
@@ -1309,6 +1367,7 @@
 
         function switchGameMode(mode) {
             playSound('click');
+            triggerVibrate(25);
             gameMode = mode;
             document.getElementById('btn-mode-online').classList.toggle('active', mode === 'online');
             document.getElementById('btn-mode-ai').classList.toggle('active', mode === 'ai');
@@ -1342,11 +1401,12 @@
 
         function startAIGame() {
             playSound('click');
+            triggerVibrate(40);
             aiDifficulty = document.getElementById('ai-difficulty').value;
             myRole = 'red';
             lastTurnNotified = null;
-            previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            triggerComboFlashFlag = true;
             actionLogHistory = [];
             const initialState = createInitialGameState();
             applyGameState(initialState);
@@ -1358,12 +1418,13 @@
 
         function createRoom() {
             playSound('click');
+            triggerVibrate(40);
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             myRole = 'red';
             currentRoomCode = code;
             lastTurnNotified = null;
-            previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            triggerComboFlashFlag = true;
             actionLogHistory = [];
             document.getElementById('room-code-input').value = code;
             document.getElementById('room-status').innerText = `Sala: ${code} (Sos ROJO).`;
@@ -1390,13 +1451,14 @@
 
         function joinRoom() {
             playSound('click');
+            triggerVibrate(40);
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
             if (code.length !== 4) return alert("Ingresá un código válido de 4 letras.");
             myRole = 'blue';
             currentRoomCode = code;
             lastTurnNotified = null;
-            previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            triggerComboFlashFlag = true;
             actionLogHistory = [];
             document.getElementById('room-status').innerText = `Sala: ${code} (Sos AZUL).`;
             roomRef = database.ref('rooms/' + code);
@@ -1408,8 +1470,8 @@
             myRole = 'blue';
             currentRoomCode = code;
             lastTurnNotified = null;
-            previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            triggerComboFlashFlag = true;
             actionLogHistory = [];
             document.getElementById('room-status').innerText = `Sala: ${code} (Sos AZUL).`;
             roomRef = database.ref('rooms/' + code);
@@ -1433,8 +1495,8 @@
             discardingCardInfo = { player: null, cardIndex: null };
             newlyDeployedCellIndex = null;
             lastTurnNotified = null;
-            previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            triggerComboFlashFlag = true;
             isMapamundiActive = false;
             isDiagonalActive = false;
 
@@ -1604,6 +1666,7 @@
             document.getElementById('attack-panel').classList.add('hidden');
 
             justChangedTurn = true;
+            triggerComboFlashFlag = true;
 
             const log = `Turno de ${turn === 'red' ? 'Rojo' : 'Azul'}. Energía: ${currentEnergy}⚡.`;
             syncGameState(log);
@@ -1611,6 +1674,7 @@
 
         function endTurnManual() {
             playSound('click');
+            triggerVibrate(20);
             if (!isMyTurn()) return;
             const nextTurn = turn === 'red' ? 'blue' : 'red';
             startTurn(nextTurn);
@@ -1618,9 +1682,13 @@
 
         function actionActivateMapamundi() {
             playSound('click');
+            triggerVibrate(30);
             if (!isMyTurn()) return;
             if (isMapamundiActive) return;
-            if (currentEnergy < 1) return;
+            if (currentEnergy < 1) {
+                triggerVibrate([30, 30]);
+                return;
+            }
 
             currentEnergy -= 1;
             isMapamundiActive = true;
@@ -1632,9 +1700,13 @@
 
         function toggleDiagonal() {
             playSound('click');
+            triggerVibrate(30);
             if (!isMyTurn()) return;
             if (isDiagonalActive) return;
-            if (currentEnergy < 1) return;
+            if (currentEnergy < 1) {
+                triggerVibrate([30, 30]);
+                return;
+            }
 
             currentEnergy -= 1;
             isDiagonalActive = true;
@@ -1744,6 +1816,7 @@
 
         function triggerVictoryModal(title, detail) {
             playSound('win');
+            triggerVibrate([80, 50, 80]);
             document.getElementById('winner-text').innerText = title;
             document.getElementById('winner-detail').innerText = detail;
             document.getElementById('game-over-modal').style.display = 'flex';
@@ -1765,6 +1838,7 @@
 
         function claimVictory() {
             playSound('click');
+            triggerVibrate(40);
             let redTotal = getPlayerTotalScore('red');
             let blueTotal = getPlayerTotalScore('blue');
 
@@ -1779,6 +1853,7 @@
 
         function inspectBoardAfterVictory() {
             playSound('click');
+            triggerVibrate(20);
             document.getElementById('game-over-modal').style.display = 'none';
             document.getElementById('log-message').innerText = "🔍 Modo Análisis: Analizando tablero final.";
             
@@ -1904,6 +1979,7 @@
 
         function aiPlayCard(handIdx, boardIdx) {
             playSound('fly');
+            triggerVibrate(35);
             currentEnergy -= 2;
             const gem = gems[boardIdx] || GEM_TYPES[0];
             revealedBoardGems[boardIdx] = true;
@@ -1935,8 +2011,12 @@
 
         function selectHandCard(player, index) {
             playSound('click');
+            triggerVibrate(20);
             if (!isMyTurn()) return;
-            if (currentEnergy < 2) return;
+            if (currentEnergy < 2) {
+                triggerVibrate([30, 30]);
+                return;
+            }
             isInspectMode = false;
             selectedCard = hands[player][index];
             selectedHandIndex = index;
@@ -1948,11 +2028,15 @@
 
         function toggleInspectMode() {
             playSound('click');
+            triggerVibrate(20);
             if (!isMyTurn()) return;
             const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
             const inspectCost = controlsViolet ? 0 : 1;
 
-            if (currentEnergy < inspectCost) return;
+            if (currentEnergy < inspectCost) {
+                triggerVibrate([30, 30]);
+                return;
+            }
             isInspectMode = !isInspectMode;
             selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
@@ -1969,10 +2053,16 @@
                     const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
                     const inspectCost = controlsViolet ? 0 : 1;
 
+                    if (currentEnergy < inspectCost) {
+                        triggerVibrate([30, 30]);
+                        return;
+                    }
+
                     currentEnergy -= inspectCost;
                     revealedBoardGems[index] = true;
                     isInspectMode = false;
                     justChangedTurn = false;
+                    triggerVibrate(30);
                     
                     const gName = gems[index] ? gems[index].name : "Gema";
                     let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló ${gName}!`;
@@ -1982,15 +2072,22 @@
             }
 
             if (selectedCard !== null && board[index] === null) {
-                if (currentEnergy < 2) return;
+                if (currentEnergy < 2) {
+                    triggerVibrate([30, 30]);
+                    return;
+                }
                 playSound('fly');
                 playCard(index);
                 return;
             }
 
             if (board[index] !== null && board[index].owner === turn) {
-                if (currentEnergy < 1) return;
+                if (currentEnergy < 1) {
+                    triggerVibrate([30, 30]);
+                    return;
+                }
                 playSound('click');
+                triggerVibrate(25);
                 selectedBoardIndex = index;
                 selectedCard = null; selectedHandIndex = null;
                 document.getElementById('attack-panel').classList.remove('hidden');
@@ -2001,6 +2098,7 @@
 
         function cancelAttack() {
             playSound('click');
+            triggerVibrate(15);
             selectedBoardIndex = null;
             document.getElementById('attack-panel').classList.add('hidden');
             document.getElementById('log-message').innerText = "Ataque cancelado.";
@@ -2047,6 +2145,8 @@
             newlyDrawnCardIndex[turn] = null;
             newlyDeployedCellIndex = index;
             justChangedTurn = false;
+            triggerComboFlashFlag = true;
+            triggerVibrate(35);
 
             let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-2⚡)`;
             if (gem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); logText += ` 🟣 [+1⚡]`; }
@@ -2059,7 +2159,11 @@
 
         function actionDrawCard() {
             playSound('click');
-            if (currentEnergy < 1 || decks[turn].length === 0) return;
+            if (currentEnergy < 1 || !decks[turn] || decks[turn].length === 0) {
+                triggerVibrate([30, 30]);
+                return;
+            }
+            triggerVibrate(25);
             currentEnergy -= 1;
             hands[turn].push(decks[turn].pop());
             newlyDrawnCardIndex[turn] = hands[turn].length - 1;
@@ -2079,7 +2183,11 @@
 
         function actionRecoverDiscard() {
             playSound('click');
-            if (currentEnergy < 1 || discards[turn].length === 0) return;
+            if (currentEnergy < 1 || !discards[turn] || discards[turn].length === 0) {
+                triggerVibrate([30, 30]);
+                return;
+            }
+            triggerVibrate(25);
             currentEnergy -= 1;
             for (let i = 0; i < 2; i++) {
                 if (discards[turn].length > 0) decks[turn].push(discards[turn].pop());
@@ -2100,10 +2208,14 @@
 
         function actionDiscardOpponent() {
             playSound('click');
-            if (currentEnergy < 1) return;
+            if (currentEnergy < 1) {
+                triggerVibrate([30, 30]);
+                return;
+            }
             const opponent = turn === 'red' ? 'blue' : 'red';
-            if (hands[opponent].length === 0) return;
+            if (!hands[opponent] || hands[opponent].length === 0) return;
 
+            triggerVibrate(30);
             currentEnergy -= 1;
             const randomIdx = Math.floor(Math.random() * hands[opponent].length);
             
@@ -2168,7 +2280,10 @@
         }
 
         function executeAttack(dir) {
-            if (selectedBoardIndex === null || currentEnergy < 1) return;
+            if (selectedBoardIndex === null || currentEnergy < 1) {
+                triggerVibrate([30, 30]);
+                return;
+            }
 
             const idx = selectedBoardIndex;
             const targetInfo = getAttackTarget(idx, dir);
@@ -2265,6 +2380,7 @@
 
             setTimeout(() => {
                 playSound('hit');
+                triggerVibrate(50);
                 targetNode.classList.add('anim-target-hit');
 
                 const attVals = getEffectiveCardValues(idx);
@@ -2310,6 +2426,7 @@
                 board[idx] = null;
                 newlyDeployedCellIndex = null;
                 justChangedTurn = false;
+                triggerComboFlashFlag = true;
 
                 attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.name} (-1⚡).`;
                 if (targetGem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); }
@@ -2335,36 +2452,50 @@
             syncGameState(attackMsg);
         }
 
-        function countPlayerCombos(player) {
-            const controlledGems = board.filter(c => c !== null && c.owner === player && c.gemRevealed).map(c => c.gemRevealed.id);
-            const hasAll = (arr) => arr.every(item => controlledGems.includes(item));
-            let count = 0;
-            if (hasAll(['azul', 'verde', 'violeta'])) count++;
-            if (hasAll(['rojo', 'amarillo', 'naranja'])) count++;
-            if (hasAll(['rojo', 'azul', 'amarillo'])) count++;
-            if (hasAll(['verde', 'naranja', 'violeta'])) count++;
-            if (hasAll(['blanco', 'negro', 'marron'])) count++;
-            return count;
+        function getActiveCombosDetails(player) {
+            const controlledCards = board.map((c, i) => (c !== null && c.owner === player && c.gemRevealed) ? { idx: i, id: c.gemRevealed.id } : null).filter(Boolean);
+            const gemIds = controlledCards.map(c => c.id);
+            const hasAll = (arr) => arr.every(item => gemIds.includes(item));
+            
+            let active = [];
+            if (hasAll(['azul', 'verde', 'violeta'])) active.push({ name: 'Trinidad Arcana', pts: 1 });
+            if (hasAll(['rojo', 'amarillo', 'naranja'])) active.push({ name: 'Furia Elemental', pts: 1 });
+            if (hasAll(['rojo', 'azul', 'amarillo'])) active.push({ name: 'Trinidad Primaria', pts: 1 });
+            if (hasAll(['verde', 'naranja', 'violeta'])) active.push({ name: 'Dominio Místico', pts: 1 });
+            if (hasAll(['blanco', 'negro', 'marron'])) active.push({ name: 'Trinidad Absoluta', pts: 2 });
+            return active;
         }
 
-        function checkCombos(controlledGemIds) {
-            let comboPts = 0;
-            const hasAll = (arr) => arr.every(item => controlledGemIds.includes(item));
+        function countPlayerCombos(player) {
+            return getActiveCombosDetails(player).reduce((sum, c) => sum + c.pts, 0);
+        }
 
-            if (hasAll(['azul', 'verde', 'violeta'])) comboPts += 1;
-            if (hasAll(['rojo', 'amarillo', 'naranja'])) comboPts += 1;
-            if (hasAll(['rojo', 'azul', 'amarillo'])) comboPts += 1;
-            if (hasAll(['verde', 'naranja', 'violeta'])) comboPts += 1;
-            if (hasAll(['blanco', 'negro', 'marron'])) comboPts += 2;
+        function getComboCardsIndices(player) {
+            const controlledCards = board.map((c, i) => (c !== null && c.owner === player && c.gemRevealed) ? { idx: i, id: c.gemRevealed.id } : null).filter(Boolean);
+            const gemIds = controlledCards.map(c => c.id);
+            const activeCombos = getActiveCombosDetails(player);
+            
+            const comboMap = {
+                'Trinidad Arcana': ['azul', 'verde', 'violeta'],
+                'Furia Elemental': ['rojo', 'amarillo', 'naranja'],
+                'Trinidad Primaria': ['rojo', 'azul', 'amarillo'],
+                'Dominio Místico': ['verde', 'naranja', 'violeta'],
+                'Trinidad Absoluta': ['blanco', 'negro', 'marron']
+            };
 
-            return comboPts;
+            let comboGemIds = new Set();
+            activeCombos.forEach(c => {
+                if (comboMap[c.name]) comboMap[c.name].forEach(g => comboGemIds.add(g));
+            });
+            
+            return controlledCards.filter(c => comboGemIds.has(c.id)).map(c => c.idx);
         }
 
         function getPlayerTotalScore(player) {
             const controlledCards = board.filter(c => c !== null && c.owner === player && c.gemRevealed);
             const controlledGems = controlledCards.map(c => c.gemRevealed);
             const gemPts = controlledGems.reduce((sum, g) => sum + (g.pts || 0), 0);
-            return gemPts + checkCombos(controlledGems.map(g => g.id));
+            return gemPts + countPlayerCombos(player);
         }
 
         function checkGameOver() {
@@ -2385,6 +2516,7 @@
 
         function resetGame() {
             playSound('click');
+            triggerVibrate(30);
             document.getElementById('game-over-modal').style.display = 'none';
             const analysisBar = document.getElementById('analysis-bar');
             if (analysisBar) analysisBar.style.display = 'none';
@@ -2393,8 +2525,8 @@
             discardingCardInfo = { player: null, cardIndex: null };
             newlyDeployedCellIndex = null;
             lastTurnNotified = null;
-            previousComboCount = { red: 0, blue: 0 };
             justChangedTurn = true;
+            triggerComboFlashFlag = true;
             isMapamundiActive = false;
             isDiagonalActive = false;
             actionLogHistory = [];
@@ -2430,6 +2562,7 @@
             gridEl.innerHTML = '';
 
             const isClassic = document.body.classList.contains('skin-classic');
+            const activeComboIndices = getComboCardsIndices(turn);
 
             if (!isMapamundiActive) {
                 gridEl.className = "dynamic-grid mode-3x3";
@@ -2439,9 +2572,10 @@
                     const gemData = gems[idx] || GEM_TYPES[idx % GEM_TYPES.length];
                     const isSelectedAttacker = selectedBoardIndex === idx;
                     const isNewlyDeployed = newlyDeployedCellIndex === idx;
+                    const isComboCard = cell && cell.owner === turn && activeComboIndices.includes(idx) && triggerComboFlashFlag;
 
                     const div = document.createElement('div');
-                    div.className = `cell-dynamic core-cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''} ${isNewlyDeployed ? 'anim-card-deploy' : ''}`;
+                    div.className = `cell-dynamic core-cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''} ${isNewlyDeployed ? 'anim-card-deploy' : ''} ${isComboCard ? 'card-combo-flash' : ''}`;
                     div.onclick = () => handleBoardClick(idx);
 
                     if (cell && cell.gemRevealed) {
@@ -2552,8 +2686,9 @@
                             const coreGemData = gems[coreIdx] || GEM_TYPES[coreIdx % GEM_TYPES.length];
                             const isCoreSel = selectedBoardIndex === coreIdx;
                             const isCoreNew = newlyDeployedCellIndex === coreIdx;
+                            const isCoreCombo = coreCell && coreCell.owner === turn && activeComboIndices.includes(coreIdx) && triggerComboFlashFlag;
 
-                            div.className = `cell-dynamic core-cell ${coreCell ? (coreCell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[coreIdx] ? 'inspectable' : ''} ${isCoreSel ? 'selected-attacker' : ''} ${isCoreNew ? 'anim-card-deploy' : ''}`;
+                            div.className = `cell-dynamic core-cell ${coreCell ? (coreCell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[coreIdx] ? 'inspectable' : ''} ${isCoreSel ? 'selected-attacker' : ''} ${isCoreNew ? 'anim-card-deploy' : ''} ${isCoreCombo ? 'card-combo-flash' : ''}`;
                             div.onclick = () => handleBoardClick(coreIdx);
 
                             if (coreCell && coreCell.gemRevealed) {
@@ -2627,9 +2762,9 @@
                                 div.innerHTML = `<div class="cell-content"><span style="font-size:0.6rem; opacity:0.35; color:#94a3b8;">💎</span></div>`;
                             }
                         } else {
-                            // CELDAS PROYECTADAS EN EL ANILLO EXTERIOR (ESPEJO - METÁLICO OPACAS)
                             const mirrorOwnerClass = cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : '';
-                            div.className = `cell-dynamic mirror-edge-cell ${mirrorOwnerClass}`;
+                            const isMirrorCombo = cell && cell.owner === turn && activeComboIndices.includes(originalCoreIdx) && triggerComboFlashFlag;
+                            div.className = `cell-dynamic mirror-edge-cell ${mirrorOwnerClass} ${isMirrorCombo ? 'card-combo-flash' : ''}`;
 
                             let mirrorTag = `<div class="mirror-tag">ESPEJO</div>`;
 
@@ -2688,7 +2823,7 @@
                                     </div>
                                 `;
                             } else {
-                                div.innerHTML = `${mirrorTag}<span style="font-size:0.5fn; opacity:0.3; color:#94a3b8;">✨</span>`;
+                                div.innerHTML = `${mirrorTag}<span style="font-size:0.5rem; opacity:0.3; color:#94a3b8;">✨</span>`;
                             }
                         }
 
@@ -2698,6 +2833,10 @@
             }
             newlyDeployedCellIndex = null;
             justChangedTurn = false;
+            
+            if (triggerComboFlashFlag) {
+                setTimeout(() => { triggerComboFlashFlag = false; }, 1400);
+            }
         }
 
         function render() {
@@ -2711,11 +2850,23 @@
             
             renderDynamicGrid();
 
-            const redCombosCount = countPlayerCombos('red');
-            const blueCombosCount = countPlayerCombos('blue');
+            const redCombos = getActiveCombosDetails('red');
+            const blueCombos = getActiveCombosDetails('blue');
 
-            previousComboCount.red = redCombosCount;
-            previousComboCount.blue = blueCombosCount;
+            const currentActiveCombos = turn === 'red' ? redCombos : blueCombos;
+            const totalComboPts = currentActiveCombos.reduce((sum, c) => sum + c.pts, 0);
+
+            const comboListTextEl = document.getElementById('combo-list-text');
+            const comboTotalPtsEl = document.getElementById('combo-total-pts');
+            
+            if (comboTotalPtsEl) comboTotalPtsEl.innerText = `+${totalComboPts} pts`;
+            if (comboListTextEl) {
+                if (currentActiveCombos.length > 0) {
+                    comboListTextEl.innerText = currentActiveCombos.map(c => `${c.name} (+${c.pts})`).join(' • ');
+                } else {
+                    comboListTextEl.innerText = "Ninguno";
+                }
+            }
 
             let redTotal = getPlayerTotalScore('red');
             let blueTotal = getPlayerTotalScore('blue');
