@@ -221,6 +221,7 @@ function initSettingsManager() {
             playSound('click');
             if (tcgBuilderContainer) tcgBuilderContainer.classList.toggle('hidden', !checkTcgMode.checked);
             localStorage.setItem('9gemas_tcg_mode', checkTcgMode.checked);
+            render();
         });
     }
 
@@ -467,6 +468,8 @@ function startAIGame() {
     const diffNames = { easy: 'Fácil', normal: 'Normal', hard: 'Avanzado' };
     document.getElementById('room-status').innerText = `Jugando vs IA (${diffNames[aiDifficulty]}). Sos ROJO.`;
     syncGameState(`Partida contra IA iniciada. ¡Tu turno!`);
+    
+    document.getElementById('modal-settings').style.display = 'none';
 }
 
 function createRoom() {
@@ -486,6 +489,8 @@ function createRoom() {
     roomRef.set(initialState);
     listenRoomState();
     render();
+
+    document.getElementById('modal-settings').style.display = 'none';
 }
 
 function shareRoomLink() {
@@ -513,6 +518,8 @@ function joinRoom() {
     roomRef = database.ref('rooms/' + code);
     listenRoomState();
     render();
+
+    document.getElementById('modal-settings').style.display = 'none';
 }
 
 function joinRoomAuto(code) {
@@ -576,7 +583,7 @@ function createInitialGameState() {
         hands: { red: handRed, blue: handBlue },
         decks: { red: fullDeckRed, blue: fullDeckBlue },
         discards: { red: [], blue: [] },
-        lastLog: isTCG ? "Modo TCG Activo. ¡Mazo personalizado cargado!" : "Elige un modo para comenzar.",
+        lastLog: isTCG ? "Modo TCG Activo. ¡Mazo personalizado cargado!" : "Configura tu partida en el menú ⚙️.",
         logHistory: []
     };
 }
@@ -666,7 +673,7 @@ function syncGameState(logText) {
 
 function isMyTurn() {
     if (gameMode === 'ai') return turn === 'red';
-    if (!myRole) { alert("Primero crea o únete a una sala."); return false; }
+    if (!myRole) { alert("Primero crea o únete a una sala en el menú de configuración (⚙️)."); return false; }
     if (turn !== myRole) {
         document.getElementById('log-message').innerText = "⚠️ Es el turno de tu rival.";
         return false;
@@ -753,7 +760,6 @@ function startTurn(player) {
     selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
     document.getElementById('attack-panel').classList.add('hidden');
 
-    // Forzar el destello de combo para ambos o para el jugador en turno
     comboFlashTriggers.red = true;
     comboFlashTriggers.blue = true;
 
@@ -1829,7 +1835,23 @@ function renderDynamicGrid() {
                             ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[coreCell.gemRevealed.id] || '💎'}</span>`
                             : (GEM_SVGS[coreCell.gemRevealed.id] || '');
 
+                        let diagonalHTML = '';
+                        if (isDiagonalActive && eff) {
+                            const diagTL = eff['top-left'].toFixed(1).replace('.0', '');
+                            const diagTR = eff['top-right'].toFixed(1).replace('.0', '');
+                            const diagBR = eff['bottom-right'].toFixed(1).replace('.0', '');
+                            const diagBL = eff['bottom-left'].toFixed(1).replace('.0', '');
+
+                            diagonalHTML = `
+                                <div style="position: absolute; top: 1px; left: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                <div style="position: absolute; top: 1px; right: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                <div style="position: absolute; bottom: 1px; right: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                <div style="position: absolute; bottom: 1px; left: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                            `;
+                        }
+
                         div.innerHTML = `
+                            ${diagonalHTML}
                             <div class="val-wrapper val-top"><div class="card-val ${eff && eff.boosted.top ? 'boosted' : ''}">${eff ? eff.top : coreCell.top}</div></div>
                             <div class="val-wrapper val-bottom"><div class="card-val ${eff && eff.boosted.bottom ? 'boosted' : ''}">${eff ? eff.bottom : coreCell.bottom}</div></div>
                             <div class="val-wrapper val-left"><div class="card-val ${eff && eff.boosted.left ? 'boosted' : ''}">${eff ? eff.left : coreCell.left}</div></div>
@@ -1869,8 +1891,25 @@ function renderDynamicGrid() {
                         const gemDisplay = isClassic 
                             ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
                             : (GEM_SVGS[cell.gemRevealed.id] || '');
+
+                        let diagonalMirrorHTML = '';
+                        if (isDiagonalActive && effMirror) {
+                            const diagTL = effMirror['top-left'].toFixed(1).replace('.0', '');
+                            const diagTR = effMirror['top-right'].toFixed(1).replace('.0', '');
+                            const diagBR = effMirror['bottom-right'].toFixed(1).replace('.0', '');
+                            const diagBL = effMirror['bottom-left'].toFixed(1).replace('.0', '');
+
+                            diagonalMirrorHTML = `
+                                <div style="position: absolute; top: 1px; left: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTL}</div>
+                                <div style="position: absolute; top: 1px; right: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagTR}</div>
+                                <div style="position: absolute; bottom: 1px; right: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBR}</div>
+                                <div style="position: absolute; bottom: 1px; left: 2px; font-size: 8px; font-weight: 900; z-index: 16; color: #ffffff; text-shadow: 0 1px 2px #000;">${diagBL}</div>
+                            `;
+                        }
+
                         div.innerHTML = `
                             ${mirrorTag}
+                            ${diagonalMirrorHTML}
                             <div class="val-wrapper val-top"><div class="card-val">${effMirror ? effMirror.top : cell.top}</div></div>
                             <div class="val-wrapper val-bottom"><div class="card-val">${effMirror ? effMirror.bottom : cell.bottom}</div></div>
                             <div class="val-wrapper val-left"><div class="card-val">${effMirror ? effMirror.left : cell.left}</div></div>
@@ -1904,6 +1943,15 @@ function render() {
     if (boardWrapper) boardWrapper.classList.toggle('mapamundi-active', isMapamundiActive);
     
     renderDynamicGrid();
+
+    const tcgBadge = document.getElementById('tcg-mode-badge');
+    if (tcgBadge) {
+        const isTcgActive = isTCGModeEnabled();
+        tcgBadge.innerText = isTcgActive ? '🎴 TCG (Mazo Custom)' : '⚡ Mazo Normal';
+        tcgBadge.style.color = isTcgActive ? '#fbbf24' : '#38bdf8';
+        tcgBadge.style.borderColor = isTcgActive ? 'rgba(251, 191, 36, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+        tcgBadge.style.background = isTcgActive ? 'rgba(251, 191, 36, 0.1)' : 'rgba(56, 189, 248, 0.1)';
+    }
 
     const redCombos = getActiveCombosDetails('red');
     const blueCombos = getActiveCombosDetails('blue');
