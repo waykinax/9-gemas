@@ -4,6 +4,19 @@ const database = firebase.database();
 
 const TARGET_SCORE = 7;
 
+// Respaldo seguro por si tcg-powers.js no estuviera disponible
+const ACTIVE_TCG_GEM_TYPES_LIST = (typeof TCG_GEM_TYPES_LIST !== 'undefined') ? TCG_GEM_TYPES_LIST : [
+    { id: 'rojo', name: 'Rubí (Rojo)' },
+    { id: 'azul', name: 'Zafiro (Azul)' },
+    { id: 'amarillo', name: 'Topacio (Amarillo)' },
+    { id: 'verde', name: 'Esmeralda (Verde)' },
+    { id: 'naranja', name: 'Ámbar (Naranja)' },
+    { id: 'violeta', name: 'Amatista (Violeta)' },
+    { id: 'blanco', name: 'Diamante (Blanco)' },
+    { id: 'negro', name: 'Ónix (Negro)' },
+    { id: 'marron', name: 'Cuarzo (Marrón)' }
+];
+
 let audioCtx = null;
 function getAudioContext() {
     if (!audioCtx) {
@@ -28,6 +41,11 @@ function isHapticEnabled() {
 
 function isTCGModeEnabled() {
     const chk = document.getElementById('check-tcg-mode');
+    return chk ? chk.checked : false;
+}
+
+function isAITCGModeEnabled() {
+    const chk = document.getElementById('check-ai-tcg-mode');
     return chk ? chk.checked : false;
 }
 
@@ -89,7 +107,7 @@ function playSound(type) {
                 osc.stop(now + idx * 0.1 + 0.3);
             });
         }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 const GEM_SVGS = {
@@ -117,9 +135,9 @@ const GEM_TYPES = [
     { id: 'verde', name: 'Esmeralda', pts: 1, type: 'secondary', desc: 'Recupera y roba' },
     { id: 'naranja', name: 'Ámbar', pts: 1, type: 'secondary', desc: 'Max 4⚡ energía' },
     { id: 'violeta', name: 'Amatista', pts: 2, type: 'secondary', desc: '+1⚡ jugar/0⚡ ver' },
-    { id: 'blanco', name: 'Diamante', pts: 0, protected: true, type: 'special', desc: 'Protegida/x2 stats' }, 
+    { id: 'blanco', name: 'Diamante', pts: 0, protected: true, type: 'special', desc: 'Protegida/x2 stats' },
     { id: 'negro', name: 'Ónix', pts: 1, type: 'special', desc: '+1⚡ descartar' },
-    { id: 'marron', name: 'Cuarzo', pts: 1, type: 'special', desc: 'Iguala al mayor' }      
+    { id: 'marron', name: 'Cuarzo', pts: 1, type: 'special', desc: 'Iguala al mayor' }
 ];
 
 let gameMode = 'online';
@@ -164,7 +182,18 @@ let discardingCardInfo = { player: null, cardIndex: null };
 let lastComboSignatures = { red: "", blue: "" };
 let comboFlashTriggers = { red: true, blue: true };
 
-window.onload = function() {
+function getDiamondTempShieldBadgeHTML(cell) {
+    if (!cell || !cell.diamondTempShield) return '';
+    return `<div class="diamond-temp-shield-badge" title="Escudo temporal de Diamante (expira al iniciar el siguiente turno del dueño)">💠 1T</div>`;
+}
+
+function getAIStatusLabel() {
+    const diffNames = { easy: 'Fácil', normal: 'Normal', hard: 'Avanzado' };
+    const tcgLabel = isAITCGModeEnabled() ? ' • 🎴 Mazo con Poderes TCG' : ' • ⚡ Mazo Estándar (Sin Poderes)';
+    return `🤖 IA (${diffNames[aiDifficulty] || 'Normal'})${tcgLabel}`;
+}
+
+function initGameApp() {
     initSettingsManager();
 
     const initialState = createInitialGameState();
@@ -174,16 +203,23 @@ window.onload = function() {
     const roomParam = urlParams.get('sala');
     if (roomParam) {
         switchGameMode('online');
-        document.getElementById('room-code-input').value = roomParam;
+        const roomInput = document.getElementById('room-code-input');
+        if (roomInput) roomInput.value = roomParam;
         joinRoomAuto(roomParam);
     }
-};
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGameApp);
+} else {
+    initGameApp();
+}
 
 function toggleLogExpand() {
     playSound('click');
     triggerVibrate(20);
     const container = document.getElementById('log-container');
-    container.classList.toggle('expanded');
+    if (container) container.classList.toggle('expanded');
 }
 
 const TCG_DEEF_SLOTS = [
@@ -208,12 +244,26 @@ function initSettingsManager() {
     const selectSkin = document.getElementById('select-skin');
     const checkHaptic = document.getElementById('check-haptic');
     const checkTcgMode = document.getElementById('check-tcg-mode');
+    const checkAiTcgMode = document.getElementById('check-ai-tcg-mode');
     const tcgBuilderContainer = document.getElementById('tcg-builder-container');
     const btnOpenTcgBuilder = document.getElementById('btn-open-tcg-builder');
 
     if (localStorage.getItem('9gemas_tcg_mode') === 'true' && checkTcgMode) {
         checkTcgMode.checked = true;
         if (tcgBuilderContainer) tcgBuilderContainer.classList.remove('hidden');
+    }
+
+    if (checkAiTcgMode) {
+        checkAiTcgMode.checked = localStorage.getItem('9gemas_ai_tcg_mode') === 'true';
+        checkAiTcgMode.addEventListener('change', () => {
+            playSound('click');
+            localStorage.setItem('9gemas_ai_tcg_mode', checkAiTcgMode.checked);
+            const statusEl = document.getElementById('room-status');
+            if (gameMode === 'ai' && statusEl) {
+                statusEl.innerText = `${getAIStatusLabel()}. Sos ROJO.`;
+            }
+            render();
+        });
     }
 
     if (checkTcgMode) {
@@ -290,61 +340,81 @@ function openTCGBuilderModal() {
     if (!container) return;
     container.innerHTML = '';
 
-    let savedDeck = getSavedCustomTCGDeck('red');
+    const savedDeck = getSavedCustomTCGDeck('red');
 
     TCG_DEEF_SLOTS.forEach((slot, idx) => {
-        const currentVal = savedDeck[idx] || { minorVal: 2, specialDir: 'top' };
+        const currentVal = savedDeck[idx] || { minorVal: 2, specialDir: 'top', powerCondition: 'none', powerEffect: 'rojo' };
         const div = document.createElement('div');
         div.className = 'tcg-card-row';
+        div.style.cssText = "flex-direction: column; align-items: stretch; gap: 4px; margin-bottom: 8px;";
+
+        const conditionOptionsHtml = `<option value="none" ${currentVal.powerCondition === 'none' ? 'selected' : ''}>Sin Condición</option>` +
+            ACTIVE_TCG_GEM_TYPES_LIST.map(g => `<option value="${g.id}" ${currentVal.powerCondition === g.id ? 'selected' : ''}>Controlar: ${g.name}</option>`).join('');
+
+        const effectOptionsHtml = ACTIVE_TCG_GEM_TYPES_LIST.map(g => `<option value="${g.id}" ${currentVal.powerEffect === g.id ? 'selected' : ''}>Efecto: ${g.name}</option>`).join('');
+
         div.innerHTML = `
-            <span><b>${slot.label}</b> (Base: ${slot.val})</span>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span><b>${slot.label}</b> (Base: ${slot.val})</span>
+                <div style="display: flex; gap: 4px;">
+                    <select id="tcg-minor-${idx}" title="Valor Flojo (0-4)">
+                        <option value="0" ${currentVal.minorVal === 0 ? 'selected' : ''}>0</option>
+                        <option value="1" ${currentVal.minorVal === 1 ? 'selected' : ''}>1</option>
+                        <option value="2" ${currentVal.minorVal === 2 ? 'selected' : ''}>2</option>
+                        <option value="3" ${currentVal.minorVal === 3 ? 'selected' : ''}>3</option>
+                        <option value="4" ${currentVal.minorVal === 4 ? 'selected' : ''}>4</option>
+                    </select>
+                    <select id="tcg-dir-${idx}" title="Dirección Débil">
+                        <option value="top" ${currentVal.specialDir === 'top' ? 'selected' : ''}>⬆️ Arriba</option>
+                        <option value="bottom" ${currentVal.specialDir === 'bottom' ? 'selected' : ''}>⬇️ Abajo</option>
+                        <option value="left" ${currentVal.specialDir === 'left' ? 'selected' : ''}>⬅️ Izquierda</option>
+                        <option value="right" ${currentVal.specialDir === 'right' ? 'selected' : ''}>➡️ Derecha</option>
+                    </select>
+                </div>
+            </div>
             <div style="display: flex; gap: 4px;">
-                <select id="tcg-minor-${idx}" title="Valor Flojo (0-4)">
-                    <option value="0" ${currentVal.minorVal === 0 ? 'selected' : ''}>0</option>
-                    <option value="1" ${currentVal.minorVal === 1 ? 'selected' : ''}>1</option>
-                    <option value="2" ${currentVal.minorVal === 2 ? 'selected' : ''}>2</option>
-                    <option value="3" ${currentVal.minorVal === 3 ? 'selected' : ''}>3</option>
-                    <option value="4" ${currentVal.minorVal === 4 ? 'selected' : ''}>4</option>
+                <select id="tcg-cond-${idx}" style="flex: 1; font-size: 0.6rem; padding: 3px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 4px;">
+                    ${conditionOptionsHtml}
                 </select>
-                <select id="tcg-dir-${idx}" title="Dirección Débil">
-                    <option value="top" ${currentVal.specialDir === 'top' ? 'selected' : ''}>⬆️ Arriba</option>
-                    <option value="bottom" ${currentVal.specialDir === 'bottom' ? 'selected' : ''}>⬇️ Abajo</option>
-                    <option value="left" ${currentVal.specialDir === 'left' ? 'selected' : ''}>⬅️ Izquierda</option>
-                    <option value="right" ${currentVal.specialDir === 'right' ? 'selected' : ''}>➡️ Derecha</option>
+                <select id="tcg-eff-${idx}" style="flex: 1; font-size: 0.6rem; padding: 3px; background: #0f172a; color: #fbbf24; border: 1px solid #334155; border-radius: 4px;">
+                    ${effectOptionsHtml}
                 </select>
             </div>
         `;
         container.appendChild(div);
     });
 
-    document.getElementById('modal-tcg-builder').style.display = 'flex';
+    const modalBuilder = document.getElementById('modal-tcg-builder');
+    if (modalBuilder) modalBuilder.style.display = 'flex';
 }
 
 function getSavedCustomTCGDeck(player) {
     const key = `9gemas_tcg_deck_${player}`;
     const data = localStorage.getItem(key);
     if (data) {
-        try { return JSON.parse(data); } catch(e) {}
+        try { return JSON.parse(data); } catch (e) {}
     }
-    return TCG_DEEF_SLOTS.map(() => ({ minorVal: 2, specialDir: 'top' }));
+    return TCG_DEEF_SLOTS.map(() => ({ minorVal: 2, specialDir: 'top', powerCondition: 'none', powerEffect: 'rojo' }));
 }
 
 function saveCustomTCGDeck() {
     playSound('click');
     triggerVibrate(30);
 
-    let customDeck = [];
-    let counts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+    const customDeck = [];
+    const counts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
 
     TCG_DEEF_SLOTS.forEach((slot, idx) => {
-        const minorVal = parseInt(document.getElementById(`tcg-minor-${idx}`).value);
+        const minorVal = parseInt(document.getElementById(`tcg-minor-${idx}`).value, 10);
         const specialDir = document.getElementById(`tcg-dir-${idx}`).value;
-        
+        const powerCondition = document.getElementById(`tcg-cond-${idx}`).value;
+        const powerEffect = document.getElementById(`tcg-eff-${idx}`).value;
+
         if (counts[minorVal] !== undefined) {
             counts[minorVal]++;
         }
 
-        customDeck.push({ val: slot.val, minorVal, specialDir });
+        customDeck.push({ val: slot.val, minorVal, specialDir, powerCondition, powerEffect });
     });
 
     if (counts[0] !== 1 || counts[1] !== 2 || counts[2] !== 2 || counts[3] !== 2 || counts[4] !== 2) {
@@ -354,8 +424,9 @@ function saveCustomTCGDeck() {
     }
 
     localStorage.setItem('9gemas_tcg_deck_red', JSON.stringify(customDeck));
-    document.getElementById('modal-tcg-builder').style.display = 'none';
-    alert("¡Mazo TCG guardado con éxito!");
+    const modalBuilder = document.getElementById('modal-tcg-builder');
+    if (modalBuilder) modalBuilder.style.display = 'none';
+    alert("¡Mazo TCG custom guardado con éxito!");
 }
 
 function showGemDetails(gemObj, isControlled, owner) {
@@ -364,42 +435,56 @@ function showGemDetails(gemObj, isControlled, owner) {
     triggerVibrate(20);
     const isClassic = document.body.classList.contains('skin-classic');
     const iconContainer = document.getElementById('modal-gem-icon');
-    
-    iconContainer.innerHTML = isClassic 
-        ? `<span style="font-size: 2.8rem;">${GEM_CLASSIC_ICONS[gemObj.id] || '💎'}</span>`
-        : (GEM_SVGS[gemObj.id] || '');
-    
-    document.getElementById('modal-gem-title').innerText = `${gemObj.protected ? '🛡️ ' : ''}${gemObj.name}`;
-    
-    let statusText = isControlled 
-        ? (owner === 'red' ? '🔴 Controlada por Jugador Rojo' : '🔵 Controlada por Jugador Azul') 
+
+    if (iconContainer) {
+        iconContainer.innerHTML = isClassic
+            ? `<span style="font-size: 2.8rem;">${GEM_CLASSIC_ICONS[gemObj.id] || '💎'}</span>`
+            : (GEM_SVGS[gemObj.id] || '');
+    }
+
+    const titleEl = document.getElementById('modal-gem-title');
+    if (titleEl) titleEl.innerText = `${gemObj.protected ? '🛡️ ' : ''}${gemObj.name}`;
+
+    const statusText = isControlled
+        ? (owner === 'red' ? '🔴 Controlada por Jugador Rojo' : '🔵 Controlada por Jugador Azul')
         : '💎 Gema en el Tablero';
-    document.getElementById('modal-gem-pts').innerText = `Puntos: ${gemObj.pts} | ${statusText}`;
-    document.getElementById('modal-gem-desc').innerText = gemObj.desc;
-    
-    document.getElementById('gem-info-modal').style.display = 'flex';
+    const ptsEl = document.getElementById('modal-gem-pts');
+    if (ptsEl) ptsEl.innerText = `Puntos: ${gemObj.pts} | ${statusText}`;
+
+    const descEl = document.getElementById('modal-gem-desc');
+    if (descEl) descEl.innerText = gemObj.desc;
+
+    const modalGem = document.getElementById('gem-info-modal');
+    if (modalGem) modalGem.style.display = 'flex';
 }
 
 function closeGemInfoModal() {
     playSound('click');
-    document.getElementById('gem-info-modal').style.display = 'none';
+    const modalGem = document.getElementById('gem-info-modal');
+    if (modalGem) modalGem.style.display = 'none';
 }
 
 function switchGameMode(mode) {
     playSound('click');
     triggerVibrate(25);
     gameMode = mode;
-    document.getElementById('btn-mode-online').classList.toggle('active', mode === 'online');
-    document.getElementById('btn-mode-ai').classList.toggle('active', mode === 'ai');
-    
-    document.getElementById('online-controls').classList.toggle('hidden', mode !== 'online');
-    document.getElementById('ai-controls').classList.toggle('hidden', mode !== 'ai');
-    document.getElementById('btn-share-link').classList.add('hidden');
+    const btnOnline = document.getElementById('btn-mode-online');
+    const btnAi = document.getElementById('btn-mode-ai');
+    if (btnOnline) btnOnline.classList.toggle('active', mode === 'online');
+    if (btnAi) btnAi.classList.toggle('active', mode === 'ai');
 
-    if (mode === 'ai') {
-        document.getElementById('room-status').innerText = "Modo vs IA seleccionado. Elige dificultad e inicia.";
-    } else {
-        document.getElementById('room-status').innerText = "Crea una sala o únete con un código.";
+    const onlineCtrl = document.getElementById('online-controls');
+    const aiCtrl = document.getElementById('ai-controls');
+    const btnShare = document.getElementById('btn-share-link');
+    if (onlineCtrl) onlineCtrl.classList.toggle('hidden', mode !== 'online');
+    if (aiCtrl) aiCtrl.classList.toggle('hidden', mode !== 'ai');
+    if (btnShare) btnShare.classList.add('hidden');
+
+    const statusEl = document.getElementById('room-status');
+    if (statusEl) {
+        statusEl.innerText = mode === 'ai'
+            ? `${getAIStatusLabel()}. Elegí dificultad e iniciá.`
+            : "Crea una sala o únete con un código.";
     }
     render();
 }
@@ -413,41 +498,78 @@ function generateBalancedDeck() {
 
     return globals.map((majorVal, idx) => {
         const specialDir = directions[Math.floor(Math.random() * directions.length)];
-        let card = { val: majorVal, top: majorVal, right: majorVal, bottom: majorVal, left: majorVal, specialDir };
+        const card = {
+            val: majorVal, top: majorVal, right: majorVal, bottom: majorVal, left: majorVal,
+            specialDir, powerCondition: 'none', powerEffect: 'none'
+        };
         card[specialDir] = minors[idx];
         return card;
     });
 }
 
-function generateTCGDeckForPlayer(player) {
-    if (player === 'blue' && gameMode === 'ai') {
-        return generateBalancedDeck();
-    }
+function generateAITCGDeckConfig() {
+    const baseDeck = generateBalancedDeck();
+    const effectPool = ['rojo', 'azul', 'amarillo', 'verde', 'naranja', 'violeta', 'blanco', 'negro', 'marron'];
+    const conditionPool = aiDifficulty === 'easy'
+        ? ['none', 'none', 'rojo', 'azul']
+        : ['none', 'rojo', 'azul', 'amarillo', 'verde', 'naranja', 'violeta'];
 
-    const customConfig = getSavedCustomTCGDeck(player);
+    return baseDeck.map((card, idx) => {
+        const powerEffect = effectPool[idx % effectPool.length];
+        const powerCondition = aiDifficulty === 'hard'
+            ? conditionPool[(idx + 2) % conditionPool.length]
+            : (idx % 2 === 0 ? 'none' : conditionPool[idx % conditionPool.length]);
+
+        return {
+            val: card.val,
+            minorVal: card[card.specialDir],
+            specialDir: card.specialDir,
+            powerCondition,
+            powerEffect
+        };
+    });
+}
+
+function generateTCGDeckForPlayer(player) {
+    const customConfig = (player === 'blue' && gameMode === 'ai')
+        ? generateAITCGDeckConfig()
+        : getSavedCustomTCGDeck(player);
+
     return customConfig.map(item => {
-        let card = {
+        const card = {
             val: item.val,
             top: item.val, right: item.val, bottom: item.val, left: item.val,
-            specialDir: item.specialDir
+            specialDir: item.specialDir,
+            powerCondition: item.powerCondition || 'none',
+            powerEffect: item.powerEffect || 'rojo'
         };
         card[item.specialDir] = item.minorVal;
         return card;
     });
 }
 
+function triggerTCGPower(playedCard, currentBoard, player, energyNow, playerDecks, playerHands, playerDiscards, boardIdx) {
+    const canUseTCG = (player === 'blue' && gameMode === 'ai') ? isAITCGModeEnabled() : isTCGModeEnabled();
+    if (!canUseTCG) return { logText: '', energyDelta: 0 };
+    if (!playedCard.powerEffect || playedCard.powerEffect === 'none') return { logText: '', energyDelta: 0 };
+    if (typeof resolveTCGCardPower === 'function') {
+        return resolveTCGCardPower(playedCard, currentBoard, player, energyNow, playerDecks, playerHands, playerDiscards, boardIdx);
+    }
+    return { logText: '', energyDelta: 0 };
+}
+
 function splitTCGDeck(fullDeck) {
-    let fives = fullDeck.filter(c => c.val === 5);
-    let sixes = fullDeck.filter(c => c.val === 6);
-    let sevens = shuffle(fullDeck.filter(c => c.val === 7));
-    let eights = fullDeck.filter(c => c.val === 8);
-    let nines = fullDeck.filter(c => c.val === 9);
+    const fives = fullDeck.filter(c => c.val === 5);
+    const sixes = fullDeck.filter(c => c.val === 6);
+    const sevens = shuffle(fullDeck.filter(c => c.val === 7));
+    const eights = fullDeck.filter(c => c.val === 8);
+    const nines = fullDeck.filter(c => c.val === 9);
 
-    let handSevens = sevens.slice(0, 1);
-    let deckSevens = sevens.slice(1);
+    const handSevens = sevens.slice(0, 1);
+    const deckSevens = sevens.slice(1);
 
-    let hand = [...fives, ...sixes, ...handSevens].sort((a, b) => a.val - b.val);
-    let deck = [...deckSevens, ...eights, ...nines];
+    const hand = [...fives, ...sixes, ...handSevens].sort((a, b) => a.val - b.val);
+    const deck = [...deckSevens, ...eights, ...nines];
 
     return {
         hand: hand,
@@ -458,18 +580,24 @@ function splitTCGDeck(fullDeck) {
 function startAIGame() {
     playSound('click');
     triggerVibrate(40);
-    aiDifficulty = document.getElementById('ai-difficulty').value;
+    const diffSelect = document.getElementById('ai-difficulty');
+    aiDifficulty = diffSelect ? diffSelect.value : 'normal';
     myRole = 'red';
     lastTurnNotified = null;
     actionLogHistory = [];
     const initialState = createInitialGameState();
     applyGameState(initialState);
-    
-    const diffNames = { easy: 'Fácil', normal: 'Normal', hard: 'Avanzado' };
-    document.getElementById('room-status').innerText = `Jugando vs IA (${diffNames[aiDifficulty]}). Sos ROJO.`;
-    syncGameState(`Partida contra IA iniciada. ¡Tu turno!`);
-    
-    document.getElementById('modal-settings').style.display = 'none';
+
+    const statusEl = document.getElementById('room-status');
+    if (statusEl) statusEl.innerText = `${getAIStatusLabel()}. Sos ROJO.`;
+
+    const startLog = isAITCGModeEnabled()
+        ? `Partida vs IA con Mazo TCG iniciada. ¡Tu turno!`
+        : `Partida contra IA (sin poderes TCG) iniciada. ¡Tu turno!`;
+    syncGameState(startLog);
+
+    const modalSettings = document.getElementById('modal-settings');
+    if (modalSettings) modalSettings.style.display = 'none';
 }
 
 function createRoom() {
@@ -480,9 +608,12 @@ function createRoom() {
     currentRoomCode = code;
     lastTurnNotified = null;
     actionLogHistory = [];
-    document.getElementById('room-code-input').value = code;
-    document.getElementById('room-status').innerText = `Sala: ${code} (Sos ROJO).`;
-    document.getElementById('btn-share-link').classList.remove('hidden');
+    const roomInput = document.getElementById('room-code-input');
+    if (roomInput) roomInput.value = code;
+    const statusEl = document.getElementById('room-status');
+    if (statusEl) statusEl.innerText = `Sala: ${code} (Sos ROJO).`;
+    const btnShare = document.getElementById('btn-share-link');
+    if (btnShare) btnShare.classList.remove('hidden');
 
     roomRef = database.ref('rooms/' + code);
     const initialState = createInitialGameState();
@@ -490,7 +621,8 @@ function createRoom() {
     listenRoomState();
     render();
 
-    document.getElementById('modal-settings').style.display = 'none';
+    const modalSettings = document.getElementById('modal-settings');
+    if (modalSettings) modalSettings.style.display = 'none';
 }
 
 function shareRoomLink() {
@@ -514,12 +646,14 @@ function joinRoom() {
     currentRoomCode = code;
     lastTurnNotified = null;
     actionLogHistory = [];
-    document.getElementById('room-status').innerText = `Sala: ${code} (Sos AZUL).`;
+    const statusEl = document.getElementById('room-status');
+    if (statusEl) statusEl.innerText = `Sala: ${code} (Sos AZUL).`;
     roomRef = database.ref('rooms/' + code);
     listenRoomState();
     render();
 
-    document.getElementById('modal-settings').style.display = 'none';
+    const modalSettings = document.getElementById('modal-settings');
+    if (modalSettings) modalSettings.style.display = 'none';
 }
 
 function joinRoomAuto(code) {
@@ -527,9 +661,10 @@ function joinRoomAuto(code) {
     currentRoomCode = code;
     lastTurnNotified = null;
     actionLogHistory = [];
-    document.getElementById('room-status').innerText = `Sala: ${code} (Sos AZUL).`;
+    const statusEl = document.getElementById('room-status');
+    if (statusEl) statusEl.innerText = `Sala: ${code} (Sos AZUL).`;
     roomRef = database.ref('rooms/' + code);
-    
+
     roomRef.once('value').then((snapshot) => {
         const data = snapshot.val();
         if (data) applyGameState(data);
@@ -539,24 +674,28 @@ function joinRoomAuto(code) {
 
 function createInitialGameState() {
     const shuffledGemTypes = shuffle(GEM_TYPES);
-    const isTCG = isTCGModeEnabled();
+    const isPlayerTCG = isTCGModeEnabled();
+    const isBlueTCG = gameMode === 'ai' ? isAITCGModeEnabled() : isPlayerTCG;
 
     let handRed, fullDeckRed, handBlue, fullDeckBlue;
 
-    if (isTCG) {
+    if (isPlayerTCG) {
         const redCustomDeck = generateTCGDeckForPlayer('red');
-        const blueCustomDeck = generateTCGDeckForPlayer('blue');
         const splitRed = splitTCGDeck(redCustomDeck);
-        const splitBlue = splitTCGDeck(blueCustomDeck);
-
         handRed = splitRed.hand;
         fullDeckRed = splitRed.deck;
+    } else {
+        fullDeckRed = generateBalancedDeck();
+        handRed = fullDeckRed.splice(0, 5);
+    }
+
+    if (isBlueTCG) {
+        const blueCustomDeck = generateTCGDeckForPlayer('blue');
+        const splitBlue = splitTCGDeck(blueCustomDeck);
         handBlue = splitBlue.hand;
         fullDeckBlue = splitBlue.deck;
     } else {
-        fullDeckRed = generateBalancedDeck();
         fullDeckBlue = generateBalancedDeck();
-        handRed = fullDeckRed.splice(0, 5);
         handBlue = fullDeckBlue.splice(0, 5);
     }
 
@@ -566,6 +705,15 @@ function createInitialGameState() {
     lastTurnNotified = null;
     isMapamundiActive = false;
     isDiagonalActive = false;
+
+    let initialLog = "Configura tu partida en el menú ⚙️.";
+    if (gameMode === 'ai') {
+        initialLog = isBlueTCG
+            ? "Modo IA con Mazo TCG Activo."
+            : "Modo IA Estándar (sin poderes TCG).";
+    } else if (isPlayerTCG) {
+        initialLog = "Modo TCG Sinergia Activo. ¡Mazo cargado!";
+    }
 
     return {
         board: Array(9).fill(false),
@@ -583,7 +731,7 @@ function createInitialGameState() {
         hands: { red: handRed, blue: handBlue },
         decks: { red: fullDeckRed, blue: fullDeckBlue },
         discards: { red: [], blue: [] },
-        lastLog: isTCG ? "Modo TCG Activo. ¡Mazo personalizado cargado!" : "Configura tu partida en el menú ⚙️.",
+        lastLog: initialLog,
         logHistory: []
     };
 }
@@ -593,7 +741,7 @@ function applyGameState(data) {
     revealedBoardGems = data.revealedBoardGems || Array(9).fill(false);
     gems = (data.gems && data.gems.length === 9) ? data.gems : shuffle(GEM_TYPES);
     turn = data.turn || 'red';
-    
+
     const newEnergy = data.currentEnergy !== undefined ? data.currentEnergy : 3;
     if (newEnergy > currentEnergy) spawnEnergyParticles();
     previousEnergy = currentEnergy;
@@ -606,7 +754,7 @@ function applyGameState(data) {
     usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
     usedYellowEnergyBonusThisTurn = data.usedYellowEnergyBonusThisTurn || false;
     usedBlackEnergyBonusThisTurn = data.usedBlackEnergyBonusThisTurn || false;
-    
+
     hands = data.hands || { red: [], blue: [] };
     decks = data.decks || { red: [], blue: [] };
     discards = data.discards || { red: [], blue: [] };
@@ -616,8 +764,9 @@ function applyGameState(data) {
     if (!decks.red) decks.red = []; if (!decks.blue) decks.blue = [];
     if (!discards.red) discards.red = []; if (!discards.blue) discards.blue = [];
 
-    if (data.lastLog) {
-        document.getElementById('log-message').innerText = data.lastLog;
+    const logEl = document.getElementById('log-message');
+    if (data.lastLog && logEl) {
+        logEl.innerText = data.lastLog;
     }
     render();
     checkGameOver();
@@ -638,7 +787,8 @@ function syncGameState(logText) {
         actionLogHistory.unshift(logText);
         if (actionLogHistory.length > 15) actionLogHistory.pop();
     }
-    document.getElementById('log-message').innerText = logText || "";
+    const logEl = document.getElementById('log-message');
+    if (logEl) logEl.innerText = logText || "";
     render();
     checkGameOver();
 
@@ -664,7 +814,7 @@ function syncGameState(logText) {
         usedBlueEnergyBonusThisTurn: usedBlueEnergyBonusThisTurn,
         usedYellowEnergyBonusThisTurn: usedYellowEnergyBonusThisTurn,
         usedBlackEnergyBonusThisTurn: usedBlackEnergyBonusThisTurn,
-        hands: hands, decks: decks, discards: discards, 
+        hands: hands, decks: decks, discards: discards,
         lastLog: logText, logHistory: actionLogHistory
     }).then(() => {
         setTimeout(() => { isSyncing = false; }, 150);
@@ -675,7 +825,8 @@ function isMyTurn() {
     if (gameMode === 'ai') return turn === 'red';
     if (!myRole) { alert("Primero crea o únete a una sala en el menú de configuración (⚙️)."); return false; }
     if (turn !== myRole) {
-        document.getElementById('log-message').innerText = "⚠️ Es el turno de tu rival.";
+        const logEl = document.getElementById('log-message');
+        if (logEl) logEl.innerText = "⚠️ Es el turno de tu rival.";
         return false;
     }
     return true;
@@ -683,7 +834,8 @@ function isMyTurn() {
 
 function getMaxEnergyForPlayer(player) {
     const controlledNaranja = board.some(c => c !== null && c.owner === player && c.gemRevealed && c.gemRevealed.id === 'naranja');
-    return controlledNaranja ? 4 : 3;
+    const hasAmberCardEffect = board.some(c => c !== null && c.owner === player && c.hasTCGAmberEffect);
+    return (controlledNaranja || hasAmberCardEffect) ? 4 : 3;
 }
 
 function hasPlayerControlledGem(player, gemId) {
@@ -716,9 +868,10 @@ function spawnEnergyParticles() {
 }
 
 function spawnConquestParticles(node, playerColor) {
-    if (!node) return;
+    const wrapper = document.getElementById('board-wrapper');
+    if (!node || !wrapper) return;
     const rect = node.getBoundingClientRect();
-    const boardRect = document.getElementById('board-wrapper').getBoundingClientRect();
+    const boardRect = wrapper.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2 - boardRect.left;
     const centerY = rect.top + rect.height / 2 - boardRect.top;
 
@@ -726,7 +879,7 @@ function spawnConquestParticles(node, playerColor) {
     ring.className = `conquest-ring ${playerColor}`;
     ring.style.left = `${centerX}px`;
     ring.style.top = `${centerY}px`;
-    document.getElementById('board-wrapper').appendChild(ring);
+    wrapper.appendChild(ring);
     setTimeout(() => ring.remove(), 500);
 
     for (let i = 0; i < 16; i++) {
@@ -738,7 +891,7 @@ function spawnConquestParticles(node, playerColor) {
         spark.style.top = `${centerY}px`;
         spark.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
         spark.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
-        document.getElementById('board-wrapper').appendChild(spark);
+        wrapper.appendChild(spark);
         setTimeout(() => spark.remove(), 600);
     }
 }
@@ -748,7 +901,21 @@ function startTurn(player) {
     maxEnergy = getMaxEnergyForPlayer(player);
     if (maxEnergy > currentEnergy) spawnEnergyParticles();
     currentEnergy = maxEnergy;
-    
+
+    board.forEach(c => {
+        if (c) {
+            if (c.quartzAuraOwner === player) {
+                c.quartzAuraTempBuff = 0;
+                c.quartzAuraOwner = null;
+            }
+            if (c.diamondTempShield && c.diamondShieldOwner === player) {
+                c.diamondTempShield = false;
+                c.diamondShieldOwner = null;
+                c.isProtected = (c.gemRevealed && c.gemRevealed.protected) || false;
+            }
+        }
+    });
+
     isMapamundiActive = false;
     isDiagonalActive = false;
     usedRedEnergyBonusThisTurn = false;
@@ -758,7 +925,8 @@ function startTurn(player) {
 
     isInspectMode = false;
     selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
-    document.getElementById('attack-panel').classList.add('hidden');
+    const atkPanel = document.getElementById('attack-panel');
+    if (atkPanel) atkPanel.classList.add('hidden');
 
     comboFlashTriggers.red = true;
     comboFlashTriggers.blue = true;
@@ -829,8 +997,7 @@ function getAttackTarget(idx, dir) {
     } else if (dir === 'right') {
         targetCol = col + 1; oppSide = 'left';
         if (targetCol > 2) { if (!isMapamundiActive) return null; targetCol = 0; }
-    }
-    else if (dir === 'top-left') {
+    } else if (dir === 'top-left') {
         if (!isDiagonalActive) return null;
         targetRow = row - 1; targetCol = col - 1; oppSide = 'bottom-right';
         if (targetRow < 0 || targetCol < 0) {
@@ -872,8 +1039,8 @@ function checkIfAnyAttackPossible() {
     const directions = ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
     const realMapamundiState = isMapamundiActive;
     const realDiagonalState = isDiagonalActive;
-    
-    isMapamundiActive = true; 
+
+    isMapamundiActive = true;
     isDiagonalActive = true;
 
     let attackFound = false;
@@ -910,9 +1077,12 @@ function checkIfAnyAttackPossible() {
 function triggerVictoryModal(title, detail) {
     playSound('win');
     triggerVibrate([80, 50, 80]);
-    document.getElementById('winner-text').innerText = title;
-    document.getElementById('winner-detail').innerText = detail;
-    document.getElementById('game-over-modal').style.display = 'flex';
+    const winText = document.getElementById('winner-text');
+    const winDetail = document.getElementById('winner-detail');
+    const winModal = document.getElementById('game-over-modal');
+    if (winText) winText.innerText = title;
+    if (winDetail) winDetail.innerText = detail;
+    if (winModal) winModal.style.display = 'flex';
 
     const particlesContainer = document.getElementById('victory-particles-container');
     if (particlesContainer) {
@@ -932,24 +1102,26 @@ function triggerVictoryModal(title, detail) {
 function claimVictory() {
     playSound('click');
     triggerVibrate(40);
-    let redTotal = getPlayerTotalScore('red');
-    let blueTotal = getPlayerTotalScore('blue');
+    const redTotal = getPlayerTotalScore('red');
+    const blueTotal = getPlayerTotalScore('blue');
 
-    let title = "👑 ¡Victoria por Bloqueo Táctico!";
-    let winnerText = redTotal > blueTotal ? "Jugador Rojo" : (blueTotal > redTotal ? "Jugador Azul" : "Empate");
-    let detail = redTotal === blueTotal 
+    const title = "👑 ¡Victoria por Bloqueo Táctico!";
+    const winnerText = redTotal > blueTotal ? "Jugador Rojo" : (blueTotal > redTotal ? "Jugador Azul" : "Empate");
+    const detail = redTotal === blueTotal
         ? `¡Empate técnico!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`
         : `¡Victoria de ${winnerText} por superioridad táctica!\n(Rojo: ${redTotal} - Azul: ${blueTotal} puntos)`;
-    
+
     triggerVictoryModal(title, detail);
 }
 
 function inspectBoardAfterVictory() {
     playSound('click');
     triggerVibrate(20);
-    document.getElementById('game-over-modal').style.display = 'none';
-    document.getElementById('log-message').innerText = "🔍 Modo Análisis: Analizando tablero final.";
-    
+    const winModal = document.getElementById('game-over-modal');
+    if (winModal) winModal.style.display = 'none';
+    const logEl = document.getElementById('log-message');
+    if (logEl) logEl.innerText = "🔍 Modo Análisis: Analizando tablero final.";
+
     let analysisBar = document.getElementById('analysis-bar');
     if (!analysisBar) {
         analysisBar = document.createElement('div');
@@ -960,7 +1132,9 @@ function inspectBoardAfterVictory() {
             <button onclick="resetGame()" class="btn-pass" style="padding: 3px 8px; font-size: 0.55rem;">Reiniciar Partida</button>
         `;
         const boardWrapper = document.getElementById('board-wrapper');
-        boardWrapper.parentNode.insertBefore(analysisBar, boardWrapper);
+        if (boardWrapper && boardWrapper.parentNode) {
+            boardWrapper.parentNode.insertBefore(analysisBar, boardWrapper);
+        }
     } else {
         analysisBar.style.display = 'flex';
     }
@@ -1024,7 +1198,7 @@ function executeAITurn() {
 
 function findBestAIAttack() {
     if (currentEnergy < 1) return null;
-    let possibleAttacks = [];
+    const possibleAttacks = [];
     const directions = ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
 
     board.forEach((cell, idx) => {
@@ -1066,6 +1240,7 @@ function findBestAICardPlacement() {
         emptyCells.forEach(bIdx => {
             let score = card.top + card.bottom + card.left + card.right;
             const gem = gems[bIdx];
+            if (isAITCGModeEnabled() && card.powerEffect && card.powerEffect !== 'none') score += 6;
             if (aiDifficulty === 'hard' && gem) {
                 if (gem.id === 'violeta') score += 15;
                 if (gem.id === 'naranja') score += 10;
@@ -1086,10 +1261,11 @@ function aiPlayCard(handIdx, boardIdx) {
     revealedBoardGems[boardIdx] = true;
     const card = hands.blue[handIdx];
 
-    let playedCard = {
+    const playedCard = {
         val: card.val,
         top: card.top, right: card.right, bottom: card.bottom, left: card.left,
-        specialDir: card.specialDir, owner: 'blue', gemRevealed: gem, isProtected: gem.protected || false
+        specialDir: card.specialDir, powerCondition: card.powerCondition, powerEffect: card.powerEffect,
+        owner: 'blue', gemRevealed: gem, isProtected: gem.protected || false
     };
 
     board[boardIdx] = playedCard;
@@ -1098,9 +1274,28 @@ function aiPlayCard(handIdx, boardIdx) {
     newlyDeployedCellIndex = boardIdx;
 
     let logText = `🤖 IA jugó en ${gem.name}! (-2⚡)`;
+
+    const tcgRes = triggerTCGPower(playedCard, board, 'blue', currentEnergy, decks, hands, discards, boardIdx);
+    if (tcgRes.logText) logText += tcgRes.logText;
+    if (tcgRes.energyDelta) {
+        currentEnergy += tcgRes.energyDelta;
+        spawnEnergyParticles();
+    }
+
     if (gem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); }
-    if (gem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer('blue');
-    if (gem.id === 'verde') logText += triggerGreenGemDeploymentEffect('blue');
+    if (gem.id === 'naranja' || playedCard.hasTCGAmberEffect) maxEnergy = getMaxEnergyForPlayer('blue');
+
+    if (gem.id === 'verde') {
+        for (let i = 0; i < 2; i++) {
+            if (discards['blue'].length > 0) { decks['blue'].push(discards['blue'].pop()); }
+        }
+        if (decks['blue'].length > 0) { hands['blue'].push(decks['blue'].pop()); }
+        if (hands['red'].length > 0) {
+            const rIdx = Math.floor(Math.random() * hands['red'].length);
+            discards['red'].push(hands['red'].splice(rIdx, 1)[0]);
+        }
+        logText += ` 🟢 [Esmeralda: Recup/Robo/Desc]`;
+    }
 
     syncGameState(logText);
 }
@@ -1122,8 +1317,10 @@ function selectHandCard(player, index) {
     selectedCard = hands[player][index];
     selectedHandIndex = index;
     selectedBoardIndex = null;
-    document.getElementById('attack-panel').classList.add('hidden');
-    document.getElementById('log-message').innerText = "Tocá casilla vacía para JUGAR la carta (2⚡).";
+    const atkPanel = document.getElementById('attack-panel');
+    if (atkPanel) atkPanel.classList.add('hidden');
+    const logEl = document.getElementById('log-message');
+    if (logEl) logEl.innerText = "Tocá casilla vacía para JUGAR la carta (2⚡).";
     render();
 }
 
@@ -1140,8 +1337,10 @@ function toggleInspectMode() {
     }
     isInspectMode = !isInspectMode;
     selectedCard = null; selectedHandIndex = null; selectedBoardIndex = null;
-    document.getElementById('attack-panel').classList.add('hidden');
-    document.getElementById('log-message').innerText = isInspectMode ? `👁️ Inspección activa (${inspectCost}⚡). Tocá casilla vacía.` : "Inspección cancelada.";
+    const atkPanel = document.getElementById('attack-panel');
+    if (atkPanel) atkPanel.classList.add('hidden');
+    const logEl = document.getElementById('log-message');
+    if (logEl) logEl.innerText = isInspectMode ? `👁️ Inspección activa (${inspectCost}⚡). Tocá casilla vacía.` : "Inspección cancelada.";
     render();
 }
 
@@ -1163,9 +1362,9 @@ function handleBoardClick(index) {
             revealedBoardGems[index] = true;
             isInspectMode = false;
             triggerVibrate(30);
-            
+
             const gName = gems[index] ? gems[index].name : "Gema";
-            let logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló ${gName}!`;
+            const logText = `👁️ ${turn === 'red' ? 'Rojo' : 'Azul'} reveló ${gName}!`;
             syncGameState(logText);
             return;
         }
@@ -1190,8 +1389,10 @@ function handleBoardClick(index) {
         triggerVibrate(25);
         selectedBoardIndex = index;
         selectedCard = null; selectedHandIndex = null;
-        document.getElementById('attack-panel').classList.remove('hidden');
-        document.getElementById('log-message').innerText = "Elegí dirección para ATACAR (1⚡).";
+        const atkPanel = document.getElementById('attack-panel');
+        if (atkPanel) atkPanel.classList.remove('hidden');
+        const logEl = document.getElementById('log-message');
+        if (logEl) logEl.innerText = "Elegí dirección para ATACAR (1⚡).";
         render();
     }
 }
@@ -1200,34 +1401,11 @@ function cancelAttack() {
     playSound('click');
     triggerVibrate(15);
     selectedBoardIndex = null;
-    document.getElementById('attack-panel').classList.add('hidden');
-    document.getElementById('log-message').innerText = "Ataque cancelado.";
+    const atkPanel = document.getElementById('attack-panel');
+    if (atkPanel) atkPanel.classList.add('hidden');
+    const logEl = document.getElementById('log-message');
+    if (logEl) logEl.innerText = "Ataque cancelado.";
     render();
-}
-
-function triggerGreenGemDeploymentEffect(player) {
-    let details = [];
-    let recovered = 0;
-    for (let i = 0; i < 2; i++) {
-        if (discards[player].length > 0) { decks[player].push(discards[player].pop()); recovered++; }
-    }
-    if (recovered > 0) details.push(`${recovered} descarte al mazo`);
-    if (decks[player].length > 0) { 
-        hands[player].push(decks[player].pop()); 
-        newlyDrawnCardIndex[player] = hands[player].length - 1;
-        details.push("1 robada"); 
-    }
-
-    const opponent = player === 'red' ? 'blue' : 'red';
-    if (hands[opponent].length > 0) {
-        const randomIdx = Math.floor(Math.random() * hands[opponent].length);
-        const discardedCard = hands[opponent].splice(randomIdx, 1)[0];
-        discards[opponent].push(discardedCard);
-        newlyDrawnCardIndex[opponent] = null;
-        details.push("1 desc. al rival");
-    }
-
-    return details.length > 0 ? ` 🟢 [Verde: ${details.join(', ')}]` : '';
 }
 
 function playCard(index) {
@@ -1235,10 +1413,14 @@ function playCard(index) {
     const gem = gems[index] || GEM_TYPES[0];
     revealedBoardGems[index] = true;
 
-    let playedCard = {
+    const playedCard = {
         val: selectedCard.val,
         top: selectedCard.top, right: selectedCard.right, bottom: selectedCard.bottom, left: selectedCard.left,
-        specialDir: selectedCard.specialDir, owner: turn, gemRevealed: gem, isProtected: gem.protected || false
+        specialDir: selectedCard.specialDir,
+        powerCondition: selectedCard.powerCondition,
+        powerEffect: selectedCard.powerEffect,
+        owner: turn, gemRevealed: gem,
+        isProtected: gem.protected || false
     };
 
     board[index] = playedCard;
@@ -1248,9 +1430,35 @@ function playCard(index) {
     triggerVibrate(35);
 
     let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-2⚡)`;
+
+    const tcgRes = triggerTCGPower(playedCard, board, turn, currentEnergy, decks, hands, discards, index);
+    if (tcgRes.logText) logText += tcgRes.logText;
+    if (tcgRes.energyDelta) {
+        currentEnergy += tcgRes.energyDelta;
+        spawnEnergyParticles();
+    }
+
     if (gem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); logText += ` 🟣 [+1⚡]`; }
-    if (gem.id === 'naranja') { maxEnergy = getMaxEnergyForPlayer(turn); logText += ` 🟠 [Máx. 4⚡]`; }
-    if (gem.id === 'verde') { logText += triggerGreenGemDeploymentEffect(turn); }
+
+    if (gem.id === 'naranja' || playedCard.hasTCGAmberEffect) {
+        maxEnergy = getMaxEnergyForPlayer(turn);
+        logText += ` 🟠 [Máx. 4⚡]`;
+    }
+
+    if (gem.id === 'verde') {
+        for (let i = 0; i < 2; i++) {
+            if (discards[turn].length > 0) { decks[turn].push(discards[turn].pop()); }
+        }
+        if (decks[turn].length > 0) {
+            hands[turn].push(decks[turn].pop());
+        }
+        const opponent = turn === 'red' ? 'blue' : 'red';
+        if (hands[opponent] && hands[opponent].length > 0) {
+            const rIdx = Math.floor(Math.random() * hands[opponent].length);
+            discards[opponent].push(hands[opponent].splice(rIdx, 1)[0]);
+        }
+        logText += ` 🟢 [Esmeralda: Recup/Robo/Desc]`;
+    }
 
     selectedCard = null; selectedHandIndex = null;
     syncGameState(logText);
@@ -1268,12 +1476,15 @@ function actionDrawCard() {
     newlyDrawnCardIndex[turn] = hands[turn].length - 1;
 
     let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} robó 1 carta (-1⚡).`;
+
     const controlledGemIds = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
-    if (controlledGemIds.includes('azul') && !usedBlueEnergyBonusThisTurn) {
-        usedBlueEnergyBonusThisTurn = true; 
-        currentEnergy += 1; 
-        spawnEnergyParticles(); 
-        logText += ` 🔵 [+1⚡ Bonus]`;
+    const hasZafiroCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGZafiroEffect);
+
+    if ((controlledGemIds.includes('azul') || hasZafiroCardEffect) && !usedBlueEnergyBonusThisTurn) {
+        usedBlueEnergyBonusThisTurn = true;
+        currentEnergy += 1;
+        spawnEnergyParticles();
+        logText += ` 🔵 [+1⚡ Bonus Zafiro]`;
     }
 
     syncGameState(logText);
@@ -1293,11 +1504,13 @@ function actionRecoverDiscard() {
 
     let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} recuperó cartas al mazo (-1⚡).`;
     const controlledGemIds = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
-    if (controlledGemIds.includes('amarillo') && !usedYellowEnergyBonusThisTurn) {
-        usedYellowEnergyBonusThisTurn = true; 
-        currentEnergy += 1; 
-        spawnEnergyParticles(); 
-        logText += ` 🟡 [+1⚡ Bonus]`;
+    const hasTopacioCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGTopacioEffect);
+
+    if ((controlledGemIds.includes('amarillo') || hasTopacioCardEffect) && !usedYellowEnergyBonusThisTurn) {
+        usedYellowEnergyBonusThisTurn = true;
+        currentEnergy += 1;
+        spawnEnergyParticles();
+        logText += ` 🟡 [+1⚡ Bonus Topacio]`;
     }
 
     syncGameState(logText);
@@ -1315,16 +1528,18 @@ function actionDiscardOpponent() {
     triggerVibrate(30);
     currentEnergy -= 1;
     const randomIdx = Math.floor(Math.random() * hands[opponent].length);
-    
+
     discardingCardInfo = { player: opponent, cardIndex: randomIdx };
 
     let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} descartó 1 carta al rival (-1⚡).`;
     const controlledGemIds = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
-    if (controlledGemIds.includes('negro') && !usedBlackEnergyBonusThisTurn) {
-        usedBlackEnergyBonusThisTurn = true; 
-        currentEnergy += 1; 
-        spawnEnergyParticles(); 
-        logText += ` 🖤 [+1⚡ Bonus]`;
+    const hasOnixCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGOnixEffect);
+
+    if ((controlledGemIds.includes('negro') || hasOnixCardEffect) && !usedBlackEnergyBonusThisTurn) {
+        usedBlackEnergyBonusThisTurn = true;
+        currentEnergy += 1;
+        spawnEnergyParticles();
+        logText += ` 🖤 [+1⚡ Bonus Ónix]`;
     }
 
     render();
@@ -1344,28 +1559,37 @@ function getEffectiveCardValues(boardIndex) {
     const owner = card.owner;
     const ownerGemIds = board.filter(c => c !== null && c.owner === owner && c.gemRevealed).map(c => c.gemRevealed.id);
     const hasMarron = ownerGemIds.includes('marron');
+    const hasAnyQuartzCardEffect = board.some(c => c !== null && c.owner === owner && c.hasTCGQuartzEffect);
     const cardGemId = card.gemRevealed ? card.gemRevealed.id : null;
 
-    let values = { 
+    const values = {
         top: card.top, right: card.right, bottom: card.bottom, left: card.left,
         'top-left': (card.top + card.left) / 2,
         'top-right': (card.top + card.right) / 2,
         'bottom-left': (card.bottom + card.left) / 2,
         'bottom-right': (card.bottom + card.right) / 2
     };
-    let boosted = { top: false, right: false, bottom: false, left: false };
+    const boosted = { top: false, right: false, bottom: false, left: false };
 
-    if (hasMarron) {
+    if (hasMarron || hasAnyQuartzCardEffect) {
         const currentMax = Math.max(card.top, card.right, card.bottom, card.left);
         ['top', 'right', 'bottom', 'left'].forEach(dir => {
             if (card[dir] < currentMax) boosted[dir] = true;
             values[dir] = currentMax;
         });
-        values['top-left'] = (values.top + values.left) / 2;
-        values['top-right'] = (values.top + values.right) / 2;
-        values['bottom-left'] = (values.bottom + values.left) / 2;
-        values['bottom-right'] = (values.bottom + values.right) / 2;
     }
+
+    if (card.quartzAuraTempBuff && card.quartzAuraTempBuff > 0) {
+        ['top', 'right', 'bottom', 'left'].forEach(dir => {
+            values[dir] += card.quartzAuraTempBuff;
+            boosted[dir] = true;
+        });
+    }
+
+    values['top-left'] = (values.top + values.left) / 2;
+    values['top-right'] = (values.top + values.right) / 2;
+    values['bottom-left'] = (values.bottom + values.left) / 2;
+    values['bottom-right'] = (values.bottom + values.right) / 2;
 
     if (cardGemId === 'blanco') {
         ['top', 'right', 'bottom', 'left', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(dir => {
@@ -1392,12 +1616,17 @@ function executeAttack(dir) {
     const defender = board[targetIdx];
     if (defender.owner === turn || defender.isProtected) return;
 
-    document.getElementById('attack-panel').classList.add('hidden');
+    const atkPanel = document.getElementById('attack-panel');
+    if (atkPanel) atkPanel.classList.add('hidden');
     playSound('fly');
 
     const gridEl = document.getElementById('dynamic-grid');
+    if (!gridEl) {
+        processAttackLogic(idx, targetIdx, dir, oppSide);
+        return;
+    }
     const gridNodes = gridEl.children;
-    
+
     let attackerVisualIdx = idx;
     let targetVisualIdx = targetIdx;
     if (isMapamundiActive) {
@@ -1422,8 +1651,8 @@ function executeAttack(dir) {
     const targetRect = targetNode.getBoundingClientRect();
     const boardRect = gridEl.getBoundingClientRect();
 
-    let deltaX = targetRect.left - sourceRect.left;
-    let deltaY = targetRect.top - sourceRect.top;
+    const deltaX = targetRect.left - sourceRect.left;
+    const deltaY = targetRect.top - sourceRect.top;
 
     const isToroidalWrap = isMapamundiActive && (
         (dir === 'top' && Math.floor(idx / 3) === 0) ||
@@ -1439,9 +1668,10 @@ function executeAttack(dir) {
     flyer.style.top = `${sourceRect.top - boardRect.top}px`;
     flyer.style.width = `${sourceRect.width}px`;
     flyer.style.height = `${sourceRect.height}px`;
-    
+
     flyer.innerHTML = attackerNode.innerHTML;
-    document.getElementById('board-wrapper').appendChild(flyer);
+    const boardWrapper = document.getElementById('board-wrapper');
+    if (boardWrapper) boardWrapper.appendChild(flyer);
 
     attackerNode.style.opacity = '0';
 
@@ -1458,8 +1688,8 @@ function executeAttack(dir) {
 
             setTimeout(() => {
                 flyer.style.transition = 'none';
-                let inX = outX * -1;
-                let inY = outY * -1;
+                const inX = outX * -1;
+                const inY = outY * -1;
                 flyer.style.transform = `translate3d(${deltaX + inX}px, ${deltaY + inY}px, 0) scale(0.6)`;
                 flyer.style.opacity = '0.2';
 
@@ -1501,22 +1731,23 @@ function processAttackLogic(idx, targetIdx, dir, oppSide) {
     const attVals = getEffectiveCardValues(idx);
     const defVals = getEffectiveCardValues(targetIdx);
 
-    let attackVal = attVals[dir];
-    let defenseVal = defVals[oppSide];
+    const attackVal = attVals[dir];
+    const defenseVal = defVals[oppSide];
     let attackMsg = "";
 
     const controlledBeforeAttack = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
-    const hadRedBeforeAttack = controlledBeforeAttack.includes('rojo');
+    const hasRedBeforeAttack = controlledBeforeAttack.includes('rojo');
+    const hasRubíCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGRubyEffect);
 
     if (attackVal > defenseVal) {
         const defender = board[targetIdx];
         discards[defender.owner].push(defender);
-        let attackerCard = board[idx];
+        const attackerCard = board[idx];
         const targetGem = gems[targetIdx] || GEM_TYPES[0];
         revealedBoardGems[targetIdx] = true;
-        
+
         attackerCard.gemRevealed = targetGem;
-        attackerCard.isProtected = targetGem.protected || false;
+        attackerCard.isProtected = (targetGem.protected || attackerCard.diamondTempShield) || false;
 
         board[targetIdx] = attackerCard;
         board[idx] = null;
@@ -1535,13 +1766,29 @@ function processAttackLogic(idx, targetIdx, dir, oppSide) {
 
         attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.name} (-1⚡).`;
         if (targetGem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); }
-        if (targetGem.id === 'naranja') maxEnergy = getMaxEnergyForPlayer(turn);
-        if (targetGem.id === 'verde') attackMsg += triggerGreenGemDeploymentEffect(turn);
+        if (targetGem.id === 'naranja' || attackerCard.hasTCGAmberEffect) {
+            maxEnergy = getMaxEnergyForPlayer(turn);
+        }
 
-        if (hadRedBeforeAttack && !usedRedEnergyBonusThisTurn) {
-            usedRedEnergyBonusThisTurn = true; 
-            currentEnergy += 1; 
-            spawnEnergyParticles(); 
+        if (targetGem.id === 'verde') {
+            for (let i = 0; i < 2; i++) {
+                if (discards[turn].length > 0) { decks[turn].push(discards[turn].pop()); }
+            }
+            if (decks[turn].length > 0) {
+                hands[turn].push(decks[turn].pop());
+            }
+            const opponent = turn === 'red' ? 'blue' : 'red';
+            if (hands[opponent] && hands[opponent].length > 0) {
+                const rIdx = Math.floor(Math.random() * hands[opponent].length);
+                discards[opponent].push(hands[opponent].splice(rIdx, 1)[0]);
+            }
+            attackMsg += ` 🟢 [Esmeralda: Recup/Robo/Desc]`;
+        }
+
+        if ((hasRedBeforeAttack || hasRubíCardEffect) && !usedRedEnergyBonusThisTurn) {
+            usedRedEnergyBonusThisTurn = true;
+            currentEnergy += 1;
+            spawnEnergyParticles();
             attackMsg += ` 🔴 [+1⚡ Bonus Rubí]`;
         }
     } else {
@@ -1560,8 +1807,8 @@ function getActiveCombosDetails(player) {
     const controlledCards = board.map((c, i) => (c !== null && c.owner === player && c.gemRevealed) ? { idx: i, id: c.gemRevealed.id } : null).filter(Boolean);
     const gemIds = controlledCards.map(c => c.id);
     const hasAll = (arr) => arr.every(item => gemIds.includes(item));
-    
-    let active = [];
+
+    const active = [];
     if (hasAll(['azul', 'verde', 'violeta'])) active.push({ name: 'Trinidad Arcana', pts: 1 });
     if (hasAll(['rojo', 'amarillo', 'naranja'])) active.push({ name: 'Furia Elemental', pts: 1 });
     if (hasAll(['rojo', 'azul', 'amarillo'])) active.push({ name: 'Trinidad Primaria', pts: 1 });
@@ -1577,7 +1824,7 @@ function countPlayerCombos(player) {
 function getComboCardsIndices(player) {
     const controlledCards = board.map((c, i) => (c !== null && c.owner === player && c.gemRevealed) ? { idx: i, id: c.gemRevealed.id } : null).filter(Boolean);
     const activeCombos = getActiveCombosDetails(player);
-    
+
     const comboMap = {
         'Trinidad Arcana': ['azul', 'verde', 'violeta'],
         'Furia Elemental': ['rojo', 'amarillo', 'naranja'],
@@ -1586,11 +1833,11 @@ function getComboCardsIndices(player) {
         'Trinidad Absoluta': ['blanco', 'negro', 'marron']
     };
 
-    let comboGemIds = new Set();
+    const comboGemIds = new Set();
     activeCombos.forEach(c => {
         if (comboMap[c.name]) comboMap[c.name].forEach(g => comboGemIds.add(g));
     });
-    
+
     return controlledCards.filter(c => comboGemIds.has(c.id)).map(c => c.idx);
 }
 
@@ -1602,25 +1849,27 @@ function getPlayerTotalScore(player) {
 }
 
 function checkGameOver() {
-    let redTotal = getPlayerTotalScore('red');
-    let blueTotal = getPlayerTotalScore('blue');
+    const redTotal = getPlayerTotalScore('red');
+    const blueTotal = getPlayerTotalScore('blue');
 
     if (redTotal >= TARGET_SCORE || blueTotal >= TARGET_SCORE) {
-        let title = "¡Fin del Duelo!";
-        let winnerText = redTotal >= TARGET_SCORE ? "Jugador Rojo" : "Jugador Azul";
-        let winningScore = redTotal >= TARGET_SCORE ? redTotal : blueTotal;
-        let detail = `¡Victoria de ${winnerText} con ${winningScore} puntos!\n(Rojo: ${redTotal} - Azul: ${blueTotal})`;
-        
+        const title = "¡Fin del Duelo!";
+        const winnerText = redTotal >= TARGET_SCORE ? "Jugador Rojo" : "Jugador Azul";
+        const winningScore = redTotal >= TARGET_SCORE ? redTotal : blueTotal;
+        const detail = `¡Victoria de ${winnerText} con ${winningScore} puntos!\n(Rojo: ${redTotal} - Azul: ${blueTotal})`;
+
         triggerVictoryModal(title, detail);
     } else {
-        document.getElementById('game-over-modal').style.display = 'none';
+        const winModal = document.getElementById('game-over-modal');
+        if (winModal) winModal.style.display = 'none';
     }
 }
 
 function resetGame() {
     playSound('click');
     triggerVibrate(30);
-    document.getElementById('game-over-modal').style.display = 'none';
+    const winModal = document.getElementById('game-over-modal');
+    if (winModal) winModal.style.display = 'none';
     const analysisBar = document.getElementById('analysis-bar');
     if (analysisBar) analysisBar.style.display = 'none';
 
@@ -1643,6 +1892,7 @@ function resetGame() {
 
 function showTurnBanner(player) {
     const container = document.getElementById('game-container');
+    if (!container) return;
     const existingBanner = container.querySelector('.turn-banner');
     if (existingBanner) existingBanner.remove();
 
@@ -1652,7 +1902,7 @@ function showTurnBanner(player) {
     banner.style.color = isRed ? '#f43f5e' : '#38bdf8';
     banner.style.borderColor = isRed ? '#f43f5e' : '#38bdf8';
     banner.innerText = isRed ? '⚔️ TURNO ROJO ⚔️' : '⚔️ TURNO AZUL ⚔️';
-    
+
     container.appendChild(banner);
     setTimeout(() => { if (banner) banner.remove(); }, 1200);
 }
@@ -1663,7 +1913,7 @@ function renderDynamicGrid() {
     gridEl.innerHTML = '';
 
     const isClassic = document.body.classList.contains('skin-classic');
-    
+
     const redCombos = getActiveCombosDetails('red');
     const blueCombos = getActiveCombosDetails('blue');
     const redComboIndices = getComboCardsIndices('red');
@@ -1702,18 +1952,16 @@ function renderDynamicGrid() {
 
             if (cell && cell.gemRevealed) {
                 const eff = getEffectiveCardValues(idx);
-                const owner = cell.owner;
-                const hasMarron = board.some(c => c !== null && c.owner === owner && c.gemRevealed && c.gemRevealed.id === 'marron');
 
                 let litTop = false, litBottom = false, litLeft = false, litRight = false;
-                if (hasMarron && eff && eff.boosted) {
+                if (eff && eff.boosted) {
                     if (eff.boosted.top) litTop = true;
                     if (eff.boosted.bottom) litBottom = true;
                     if (eff.boosted.left) litLeft = true;
                     if (eff.boosted.right) litRight = true;
                 }
 
-                const gemDisplay = isClassic 
+                const gemDisplay = isClassic
                     ? `<span style="font-size: 1.2rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
                     : (GEM_SVGS[cell.gemRevealed.id] || '');
 
@@ -1732,7 +1980,10 @@ function renderDynamicGrid() {
                     `;
                 }
 
+                const tempShieldBadge = getDiamondTempShieldBadgeHTML(cell);
+
                 div.innerHTML = `
+                    ${tempShieldBadge}
                     ${diagonalHTML}
                     <span class="card-line-star star-top-1 ${litTop ? 'lit' : ''}">⭐</span>
                     <span class="card-line-star star-top-2 ${litTop ? 'lit' : ''}">⭐</span>
@@ -1755,7 +2006,7 @@ function renderDynamicGrid() {
                     <div class="val-wrapper val-right">
                         <div class="card-val ${eff && eff.boosted.right ? 'boosted' : ''}">${eff ? eff.right : cell.right}</div>
                     </div>
-                    
+
                     <div class="cell-content">
                         <div class="gem-pod">
                             ${gemDisplay}
@@ -1766,7 +2017,7 @@ function renderDynamicGrid() {
                     </div>
                 `;
             } else if (revealedBoardGems[idx] && gemData) {
-                const gemDisplay = isClassic 
+                const gemDisplay = isClassic
                     ? `<span style="font-size: 1.2rem;">${GEM_CLASSIC_ICONS[gemData.id] || '💎'}</span>`
                     : (GEM_SVGS[gemData.id] || '');
                 div.innerHTML = `
@@ -1784,7 +2035,6 @@ function renderDynamicGrid() {
             }
             gridEl.appendChild(div);
         }
-
     } else {
         gridEl.className = "dynamic-grid mode-5x5";
 
@@ -1808,7 +2058,7 @@ function renderDynamicGrid() {
                     const coreGemData = gems[coreIdx] || GEM_TYPES[coreIdx % GEM_TYPES.length];
                     const isCoreSel = selectedBoardIndex === coreIdx;
                     const isCoreNew = newlyDeployedCellIndex === coreIdx;
-                    
+
                     let isCoreCombo = false;
                     if (coreCell) {
                         if (coreCell.owner === 'red' && redComboIndices.includes(coreIdx) && comboFlashTriggers.red) isCoreCombo = true;
@@ -1820,18 +2070,8 @@ function renderDynamicGrid() {
 
                     if (coreCell && coreCell.gemRevealed) {
                         const eff = getEffectiveCardValues(coreIdx);
-                        const owner = coreCell.owner;
-                        const hasMarron = board.some(ch => ch !== null && ch.owner === owner && ch.gemRevealed && ch.gemRevealed.id === 'marron');
 
-                        let litTop = false, litBottom = false, litLeft = false, litRight = false;
-                        if (hasMarron && eff && eff.boosted) {
-                            if (eff.boosted.top) litTop = true;
-                            if (eff.boosted.bottom) litBottom = true;
-                            if (eff.boosted.left) litLeft = true;
-                            if (eff.boosted.right) litRight = true;
-                        }
-
-                        const gemDisplay = isClassic 
+                        const gemDisplay = isClassic
                             ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[coreCell.gemRevealed.id] || '💎'}</span>`
                             : (GEM_SVGS[coreCell.gemRevealed.id] || '');
 
@@ -1850,20 +2090,23 @@ function renderDynamicGrid() {
                             `;
                         }
 
+                        const tempShieldBadge = getDiamondTempShieldBadgeHTML(coreCell);
+
                         div.innerHTML = `
+                            ${tempShieldBadge}
                             ${diagonalHTML}
                             <div class="val-wrapper val-top"><div class="card-val ${eff && eff.boosted.top ? 'boosted' : ''}">${eff ? eff.top : coreCell.top}</div></div>
                             <div class="val-wrapper val-bottom"><div class="card-val ${eff && eff.boosted.bottom ? 'boosted' : ''}">${eff ? eff.bottom : coreCell.bottom}</div></div>
                             <div class="val-wrapper val-left"><div class="card-val ${eff && eff.boosted.left ? 'boosted' : ''}">${eff ? eff.left : coreCell.left}</div></div>
                             <div class="val-wrapper val-right"><div class="card-val ${eff && eff.boosted.right ? 'boosted' : ''}">${eff ? eff.right : coreCell.right}</div></div>
-                            
+
                             <div class="cell-content">
                                 <div class="gem-pod">${gemDisplay}</div>
                                 <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${coreCell.isProtected ? '🛡️ ' : ''}${coreCell.gemRevealed.name}</span>
                             </div>
                         `;
                     } else if (revealedBoardGems[coreIdx] && coreGemData) {
-                        const gemDisplay = isClassic 
+                        const gemDisplay = isClassic
                             ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[coreGemData.id] || '💎'}</span>`
                             : (GEM_SVGS[coreGemData.id] || '');
                         div.innerHTML = `
@@ -1884,11 +2127,11 @@ function renderDynamicGrid() {
                     }
 
                     div.className = `cell-dynamic mirror-edge-cell ${mirrorOwnerClass} ${isMirrorCombo ? 'card-combo-flash' : ''}`;
-                    let mirrorTag = `<div class="mirror-tag">ESPEJO</div>`;
+                    const mirrorTag = `<div class="mirror-tag">ESPEJO</div>`;
 
                     if (cell && cell.gemRevealed) {
                         const effMirror = getEffectiveCardValues(originalCoreIdx);
-                        const gemDisplay = isClassic 
+                        const gemDisplay = isClassic
                             ? `<span style="font-size: 0.65rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
                             : (GEM_SVGS[cell.gemRevealed.id] || '');
 
@@ -1907,13 +2150,16 @@ function renderDynamicGrid() {
                             `;
                         }
 
+                        const tempShieldBadge = getDiamondTempShieldBadgeHTML(cell);
+
                         div.innerHTML = `
+                            ${tempShieldBadge}
                             ${mirrorTag}
                             ${diagonalMirrorHTML}
-                            <div class="val-wrapper val-top"><div class="card-val">${effMirror ? effMirror.top : cell.top}</div></div>
-                            <div class="val-wrapper val-bottom"><div class="card-val">${effMirror ? effMirror.bottom : cell.bottom}</div></div>
-                            <div class="val-wrapper val-left"><div class="card-val">${effMirror ? effMirror.left : cell.left}</div></div>
-                            <div class="val-wrapper val-right"><div class="card-val">${effMirror ? effMirror.right : cell.right}</div></div>
+                            <div class="val-wrapper val-top"><div class="card-val ${effMirror && effMirror.boosted.top ? 'boosted' : ''}">${effMirror ? effMirror.top : cell.top}</div></div>
+                            <div class="val-wrapper val-bottom"><div class="card-val ${effMirror && effMirror.boosted.bottom ? 'boosted' : ''}">${effMirror ? effMirror.bottom : cell.bottom}</div></div>
+                            <div class="val-wrapper val-left"><div class="card-val ${effMirror && effMirror.boosted.left ? 'boosted' : ''}">${effMirror ? effMirror.left : cell.left}</div></div>
+                            <div class="val-wrapper val-right"><div class="card-val ${effMirror && effMirror.boosted.right ? 'boosted' : ''}">${effMirror ? effMirror.right : cell.right}</div></div>
                             <div class="cell-content">
                                 <div class="gem-pod">${gemDisplay}</div>
                                 <span style="font-size:0.48rem; color:#cbd5e1; font-weight:bold; line-height:1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.isProtected ? '🛡️ ' : ''}${cell.gemRevealed.name}</span>
@@ -1934,186 +2180,232 @@ function renderDynamicGrid() {
 }
 
 function render() {
-    if (turn !== lastTurnNotified) {
-        lastTurnNotified = turn;
-        showTurnBanner(turn);
-    }
-
-    const boardWrapper = document.getElementById('board-wrapper');
-    if (boardWrapper) boardWrapper.classList.toggle('mapamundi-active', isMapamundiActive);
-    
-    renderDynamicGrid();
-
-    const tcgBadge = document.getElementById('tcg-mode-badge');
-    if (tcgBadge) {
-        const isTcgActive = isTCGModeEnabled();
-        tcgBadge.innerText = isTcgActive ? '🎴 TCG (Mazo Custom)' : '⚡ Mazo Normal';
-        tcgBadge.style.color = isTcgActive ? '#fbbf24' : '#38bdf8';
-        tcgBadge.style.borderColor = isTcgActive ? 'rgba(251, 191, 36, 0.4)' : 'rgba(56, 189, 248, 0.4)';
-        tcgBadge.style.background = isTcgActive ? 'rgba(251, 191, 36, 0.1)' : 'rgba(56, 189, 248, 0.1)';
-    }
-
-    const redCombos = getActiveCombosDetails('red');
-    const blueCombos = getActiveCombosDetails('blue');
-
-    const currentActiveCombos = turn === 'red' ? redCombos : blueCombos;
-    const totalComboPts = currentActiveCombos.reduce((sum, c) => sum + c.pts, 0);
-
-    const comboListTextEl = document.getElementById('combo-list-text');
-    const comboTotalPtsEl = document.getElementById('combo-total-pts');
-    
-    if (comboTotalPtsEl) comboTotalPtsEl.innerText = `+${totalComboPts} pts`;
-    if (comboListTextEl) {
-        if (currentActiveCombos.length > 0) {
-            comboListTextEl.innerText = currentActiveCombos.map(c => `${c.name} (+${c.pts})`).join(' • ');
-        } else {
-            comboListTextEl.innerText = "Ninguno";
+    try {
+        if (turn !== lastTurnNotified) {
+            lastTurnNotified = turn;
+            showTurnBanner(turn);
         }
-    }
 
-    let redTotal = getPlayerTotalScore('red');
-    let blueTotal = getPlayerTotalScore('blue');
+        const boardWrapper = document.getElementById('board-wrapper');
+        if (boardWrapper) boardWrapper.classList.toggle('mapamundi-active', isMapamundiActive);
 
-    document.getElementById('score-red').innerText = `${redTotal} / ${TARGET_SCORE}`;
-    document.getElementById('score-blue').innerText = `${blueTotal} / ${TARGET_SCORE}`;
+        renderDynamicGrid();
 
-    const redPercent = Math.min(100, (redTotal / TARGET_SCORE) * 100);
-    const bluePercent = Math.min(100, (blueTotal / TARGET_SCORE) * 100);
-    document.getElementById('progress-red').style.width = `${redPercent}%`;
-    document.getElementById('progress-blue').style.width = `${bluePercent}%`;
-    
-    const redDiscardLen = discards.red ? discards.red.length : 0;
-    const blueDiscardLen = discards.blue ? discards.blue.length : 0;
-    const redDeckLen = decks.red ? decks.red.length : 0;
-    const blueDeckLen = decks.blue ? decks.blue.length : 0;
+        const tcgBadge = document.getElementById('tcg-mode-badge');
+        if (tcgBadge) {
+            const isTcgActive = isTCGModeEnabled();
+            tcgBadge.innerText = isTcgActive ? '🎴 TCG (Sinergias)' : '⚡ Mazo Normal';
+            tcgBadge.style.color = isTcgActive ? '#fbbf24' : '#38bdf8';
+            tcgBadge.style.borderColor = isTcgActive ? 'rgba(251, 191, 36, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+            tcgBadge.style.background = isTcgActive ? 'rgba(251, 191, 36, 0.1)' : 'rgba(56, 189, 248, 0.1)';
+        }
 
-    document.getElementById('discard-count-red').innerText = redDiscardLen;
-    document.getElementById('discard-count-blue').innerText = blueDiscardLen;
-    document.getElementById('deck-count-red').innerText = redDeckLen;
-    document.getElementById('deck-count-blue').innerText = blueDeckLen;
+        const redCombos = getActiveCombosDetails('red');
+        const blueCombos = getActiveCombosDetails('blue');
 
-    document.getElementById('pile-discard-red').classList.toggle('empty-pile', redDiscardLen === 0);
-    document.getElementById('pile-discard-blue').classList.toggle('empty-pile', blueDiscardLen === 0);
-    document.getElementById('pile-deck-red').classList.toggle('empty-pile', redDeckLen === 0);
-    document.getElementById('pile-deck-blue').classList.toggle('empty-pile', blueDeckLen === 0);
+        const currentActiveCombos = turn === 'red' ? redCombos : blueCombos;
+        const totalComboPts = currentActiveCombos.reduce((sum, c) => sum + c.pts, 0);
 
-    document.getElementById('turn-indicator').innerText = `Turno: ${turn === 'red' ? 'Rojo' : 'Azul'}`;
-    document.getElementById('turn-indicator').style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
-    document.getElementById('energy-badge').innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
+        const comboListTextEl = document.getElementById('combo-list-text');
+        const comboTotalPtsEl = document.getElementById('combo-total-pts');
 
-    const historyEl = document.getElementById('log-history');
-    if (historyEl) {
-        historyEl.innerHTML = actionLogHistory.map(item => `<div class="log-history-item">• ${item}</div>`).join('');
-    }
-
-    const isBoardFull = board.every(c => c !== null);
-    const anyAttackPossible = checkIfAnyAttackPossible();
-    const isBoardDeadlocked = isBoardFull && !anyAttackPossible;
-
-    const btnPass = document.getElementById('btn-pass-turn');
-    const btnClaimWin = document.getElementById('btn-claim-victory');
-    if (isBoardDeadlocked) {
-        btnPass.classList.add('hidden');
-        btnClaimWin.classList.remove('hidden');
-        document.getElementById('log-message').innerText = "⚠️ ¡Bloqueo Táctico! Podés Reclamar la Victoria.";
-    } else {
-        btnPass.classList.remove('hidden');
-        btnClaimWin.classList.add('hidden');
-    }
-
-    const myPlayerRole = myRole || 'red';
-    if (myPlayerRole === 'blue') {
-        document.getElementById('label-hand-red').innerText = 'Mano Jugador Rojo';
-        document.getElementById('label-hand-blue').innerText = 'Mano Jugador Azul (Vos)';
-    } else {
-        document.getElementById('label-hand-red').innerText = 'Mano Jugador Rojo (Vos)';
-        document.getElementById('label-hand-blue').innerText = gameMode === 'ai' ? 'Mano IA (Azul)' : 'Mano Jugador Azul';
-    }
-
-    const controlledGemIds = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
-    
-    const hasBlueBonus = controlledGemIds.includes('azul') && !usedBlueEnergyBonusThisTurn;
-    const hasYellowBonus = controlledGemIds.includes('amarillo') && !usedYellowEnergyBonusThisTurn;
-    const hasBlackBonus = controlledGemIds.includes('negro') && !usedBlackEnergyBonusThisTurn;
-    const hasRedBonus = controlledGemIds.includes('rojo') && !usedRedEnergyBonusThisTurn;
-    const controlsViolet = controlledGemIds.includes('violeta');
-
-    document.getElementById('indicator-draw').classList.toggle('hidden', !hasBlueBonus);
-    document.getElementById('indicator-recover').classList.toggle('hidden', !hasYellowBonus);
-    document.getElementById('indicator-discard').classList.toggle('hidden', !hasBlackBonus);
-    document.getElementById('indicator-attack').classList.toggle('hidden', !hasRedBonus);
-    document.getElementById('indicator-inspect').classList.toggle('hidden', !controlsViolet);
-
-    const inspectCost = controlsViolet ? 0 : 1;
-    document.getElementById('inspect-cost-label').innerText = `(${inspectCost}⚡)`;
-
-    const isMyTurnActive = gameMode === 'ai' ? turn === 'red' : turn === myRole;
-
-    const btnMapamundi = document.getElementById('btn-action-mapamundi');
-    if (btnMapamundi) {
-        btnMapamundi.classList.toggle('mapamundi-btn-active', isMapamundiActive);
-        btnMapamundi.disabled = !isMyTurnActive || isMapamundiActive || currentEnergy < 1;
-    }
-
-    const btnDiagonal = document.getElementById('btn-action-diagonal');
-    if (btnDiagonal) {
-        btnDiagonal.classList.toggle('mapamundi-btn-active', isDiagonalActive);
-        btnDiagonal.disabled = !isMyTurnActive || isDiagonalActive || currentEnergy < 1;
-    }
-
-    ['tl', 'tr', 'bl', 'br'].forEach(corner => {
-        const btn = document.getElementById(`btn-atk-${corner}`);
-        if (btn) {
-            if (isDiagonalActive) {
-                btn.classList.remove('diagonal-hidden');
-                btn.disabled = false;
+        if (comboTotalPtsEl) comboTotalPtsEl.innerText = `+${totalComboPts} pts`;
+        if (comboListTextEl) {
+            if (currentActiveCombos.length > 0) {
+                comboListTextEl.innerText = currentActiveCombos.map(c => `${c.name} (+${c.pts})`).join(' • ');
             } else {
-                btn.classList.add('diagonal-hidden');
-                btn.disabled = true;
+                comboListTextEl.innerText = "Ninguno";
             }
         }
-    });
 
-    document.getElementById('btn-pass-turn').disabled = !isMyTurnActive;
-    document.getElementById('btn-action-draw').disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
-    document.getElementById('btn-action-recover').disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
-    const opp = turn === 'red' ? 'blue' : 'red';
-    document.getElementById('btn-action-discard-opp').disabled = !isMyTurnActive || currentEnergy < 1 || !hands[opp] || hands[opp].length === 0;
-    document.getElementById('btn-action-inspect').disabled = !isMyTurnActive || currentEnergy < inspectCost;
+        const redTotal = getPlayerTotalScore('red');
+        const blueTotal = getPlayerTotalScore('blue');
 
-    ['red', 'blue'].forEach(p => {
-        const handEl = document.getElementById(`hand-${p}`);
-        handEl.innerHTML = '';
-        if (hands[p]) {
-            hands[p].forEach((card, idx) => {
-                const div = document.createElement('div');
-                const isSel = turn === p && selectedHandIndex === idx;
-                const isRivalHand = gameMode === 'online' ? (myRole && myRole !== p) : (p === 'blue');
+        const scoreRed = document.getElementById('score-red');
+        const scoreBlue = document.getElementById('score-blue');
+        if (scoreRed) scoreRed.innerText = `${redTotal} / ${TARGET_SCORE}`;
+        if (scoreBlue) scoreBlue.innerText = `${blueTotal} / ${TARGET_SCORE}`;
 
-                if (isRivalHand) {
-                    div.className = 'card-item hidden-card';
-                    div.innerHTML = `<span style="font-size:0.6rem; opacity:0.3;">💎</span>`;
-                } else {
-                    const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
-                    const lacksEnergy = (isMyTurnActive && currentEnergy < 2);
-                    div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${lacksEnergy ? 'disabled-energy' : ''}`;
-                    
-                    div.onclick = () => {
-                        if (lacksEnergy && isMyTurnActive) return;
-                        selectHandCard(p, idx);
-                    };
-                    
-                    div.innerHTML = `
-                        <div class="card-energy-hint">2⚡</div>
-                        <div class="card-val-pos val-top">${card.top}</div>
-                        <div class="card-val-pos val-bottom">${card.bottom}</div>
-                        <div class="card-val-pos val-left">${card.left}</div>
-                        <div class="card-val-pos val-right">${card.right}</div>
-                    `;
-                }
-                handEl.appendChild(div);
-            });
+        const redPercent = Math.min(100, (redTotal / TARGET_SCORE) * 100);
+        const bluePercent = Math.min(100, (blueTotal / TARGET_SCORE) * 100);
+        const progRed = document.getElementById('progress-red');
+        const progBlue = document.getElementById('progress-blue');
+        if (progRed) progRed.style.width = `${redPercent}%`;
+        if (progBlue) progBlue.style.width = `${bluePercent}%`;
+
+        const redDiscardLen = discards.red ? discards.red.length : 0;
+        const blueDiscardLen = discards.blue ? discards.blue.length : 0;
+        const redDeckLen = decks.red ? decks.red.length : 0;
+        const blueDeckLen = decks.blue ? decks.blue.length : 0;
+
+        const discRed = document.getElementById('discard-count-red');
+        const discBlue = document.getElementById('discard-count-blue');
+        const deckRed = document.getElementById('deck-count-red');
+        const deckBlue = document.getElementById('deck-count-blue');
+        if (discRed) discRed.innerText = redDiscardLen;
+        if (discBlue) discBlue.innerText = blueDiscardLen;
+        if (deckRed) deckRed.innerText = redDeckLen;
+        if (deckBlue) deckBlue.innerText = blueDeckLen;
+
+        const pileDiscRed = document.getElementById('pile-discard-red');
+        const pileDiscBlue = document.getElementById('pile-discard-blue');
+        const pileDeckRed = document.getElementById('pile-deck-red');
+        const pileDeckBlue = document.getElementById('pile-deck-blue');
+        if (pileDiscRed) pileDiscRed.classList.toggle('empty-pile', redDiscardLen === 0);
+        if (pileDiscBlue) pileDiscBlue.classList.toggle('empty-pile', blueDiscardLen === 0);
+        if (pileDeckRed) pileDeckRed.classList.toggle('empty-pile', redDeckLen === 0);
+        if (pileDeckBlue) pileDeckBlue.classList.toggle('empty-pile', blueDeckLen === 0);
+
+        const turnInd = document.getElementById('turn-indicator');
+        if (turnInd) {
+            turnInd.innerText = `Turno: ${turn === 'red' ? 'Rojo' : 'Azul'}`;
+            turnInd.style.color = turn === 'red' ? '#f43f5e' : '#38bdf8';
         }
-        newlyDrawnCardIndex[p] = null;
-    });
+        const energyBadge = document.getElementById('energy-badge');
+        if (energyBadge) energyBadge.innerText = `⚡ ${currentEnergy} / ${maxEnergy} ENERGÍA`;
+
+        const historyEl = document.getElementById('log-history');
+        if (historyEl) {
+            historyEl.innerHTML = actionLogHistory.map(item => `<div class="log-history-item">• ${item}</div>`).join('');
+        }
+
+        const isBoardFull = board.every(c => c !== null);
+        const anyAttackPossible = checkIfAnyAttackPossible();
+        const isBoardDeadlocked = isBoardFull && !anyAttackPossible;
+
+        const btnPass = document.getElementById('btn-pass-turn');
+        const btnClaimWin = document.getElementById('btn-claim-victory');
+        const logMsg = document.getElementById('log-message');
+        if (isBoardDeadlocked) {
+            if (btnPass) btnPass.classList.add('hidden');
+            if (btnClaimWin) btnClaimWin.classList.remove('hidden');
+            if (logMsg) logMsg.innerText = "⚠️ ¡Bloqueo Táctico! Podés Reclamar la Victoria.";
+        } else {
+            if (btnPass) btnPass.classList.remove('hidden');
+            if (btnClaimWin) btnClaimWin.classList.add('hidden');
+        }
+
+        const myPlayerRole = myRole || 'red';
+        const labelRed = document.getElementById('label-hand-red');
+        const labelBlue = document.getElementById('label-hand-blue');
+        if (myPlayerRole === 'blue') {
+            if (labelRed) labelRed.innerText = 'Mano Jugador Rojo';
+            if (labelBlue) labelBlue.innerText = 'Mano Jugador Azul (Vos)';
+        } else {
+            if (labelRed) labelRed.innerText = 'Mano Jugador Rojo (Vos)';
+            if (labelBlue) labelBlue.innerText = gameMode === 'ai'
+                ? (isAITCGModeEnabled() ? 'Mano IA (Azul • 🎴 TCG)' : 'Mano IA (Azul • Sin Poderes)')
+                : 'Mano Jugador Azul';
+        }
+
+        const controlledGemIds = board.filter(c => c !== null && c.owner === turn && c.gemRevealed).map(c => c.gemRevealed.id);
+        const hasZafiroCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGZafiroEffect);
+        const hasTopacioCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGTopacioEffect);
+        const hasOnixCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGOnixEffect);
+        const hasRubíCardEffect = board.some(c => c !== null && c.owner === turn && c.hasTCGRubyEffect);
+
+        const hasBlueBonus = (controlledGemIds.includes('azul') || hasZafiroCardEffect) && !usedBlueEnergyBonusThisTurn;
+        const hasYellowBonus = (controlledGemIds.includes('amarillo') || hasTopacioCardEffect) && !usedYellowEnergyBonusThisTurn;
+        const hasBlackBonus = (controlledGemIds.includes('negro') || hasOnixCardEffect) && !usedBlackEnergyBonusThisTurn;
+        const hasRedBonus = (controlledGemIds.includes('rojo') || hasRubíCardEffect) && !usedRedEnergyBonusThisTurn;
+        const controlsViolet = controlledGemIds.includes('violeta');
+
+        const indDraw = document.getElementById('indicator-draw');
+        const indRec = document.getElementById('indicator-recover');
+        const indDisc = document.getElementById('indicator-discard');
+        const indAtk = document.getElementById('indicator-attack');
+        const indInsp = document.getElementById('indicator-inspect');
+        if (indDraw) indDraw.classList.toggle('hidden', !hasBlueBonus);
+        if (indRec) indRec.classList.toggle('hidden', !hasYellowBonus);
+        if (indDisc) indDisc.classList.toggle('hidden', !hasBlackBonus);
+        if (indAtk) indAtk.classList.toggle('hidden', !hasRedBonus);
+        if (indInsp) indInsp.classList.toggle('hidden', !controlsViolet);
+
+        const inspectCost = controlsViolet ? 0 : 1;
+        const inspectLabel = document.getElementById('inspect-cost-label');
+        if (inspectLabel) inspectLabel.innerText = `(${inspectCost}⚡)`;
+
+        const isMyTurnActive = gameMode === 'ai' ? turn === 'red' : turn === myRole;
+
+        const btnMapamundi = document.getElementById('btn-action-mapamundi');
+        if (btnMapamundi) {
+            btnMapamundi.classList.toggle('mapamundi-btn-active', isMapamundiActive);
+            btnMapamundi.disabled = !isMyTurnActive || isMapamundiActive || currentEnergy < 1;
+        }
+
+        const btnDiagonal = document.getElementById('btn-action-diagonal');
+        if (btnDiagonal) {
+            btnDiagonal.classList.toggle('mapamundi-btn-active', isDiagonalActive);
+            btnDiagonal.disabled = !isMyTurnActive || isDiagonalActive || currentEnergy < 1;
+        }
+
+        ['tl', 'tr', 'bl', 'br'].forEach(corner => {
+            const btn = document.getElementById(`btn-atk-${corner}`);
+            if (btn) {
+                if (isDiagonalActive) {
+                    btn.classList.remove('diagonal-hidden');
+                    btn.disabled = false;
+                } else {
+                    btn.classList.add('diagonal-hidden');
+                    btn.disabled = true;
+                }
+            }
+        });
+
+        if (btnPass) btnPass.disabled = !isMyTurnActive;
+        const btnDraw = document.getElementById('btn-action-draw');
+        const btnRec = document.getElementById('btn-action-recover');
+        const btnDiscOpp = document.getElementById('btn-action-discard-opp');
+        const btnInsp = document.getElementById('btn-action-inspect');
+        const opp = turn === 'red' ? 'blue' : 'red';
+        if (btnDraw) btnDraw.disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
+        if (btnRec) btnRec.disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
+        if (btnDiscOpp) btnDiscOpp.disabled = !isMyTurnActive || currentEnergy < 1 || !hands[opp] || hands[opp].length === 0;
+        if (btnInsp) btnInsp.disabled = !isMyTurnActive || currentEnergy < inspectCost;
+
+        ['red', 'blue'].forEach(p => {
+            const handEl = document.getElementById(`hand-${p}`);
+            if (!handEl) return;
+            handEl.innerHTML = '';
+            if (hands[p]) {
+                hands[p].forEach((card, idx) => {
+                    const div = document.createElement('div');
+                    const isSel = turn === p && selectedHandIndex === idx;
+                    const isRivalHand = gameMode === 'online' ? (myRole && myRole !== p) : (p === 'blue');
+
+                    if (isRivalHand) {
+                        div.className = 'card-item hidden-card';
+                        div.innerHTML = `<span style="font-size:0.6rem; opacity:0.3;">💎</span>`;
+                    } else {
+                        const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
+                        const lacksEnergy = (isMyTurnActive && currentEnergy < 2);
+                        div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${lacksEnergy ? 'disabled-energy' : ''}`;
+
+                        div.onclick = () => {
+                            if (lacksEnergy && isMyTurnActive) return;
+                            selectHandCard(p, idx);
+                        };
+
+                        let effectBadge = '';
+                        if (card.powerEffect && card.powerEffect !== 'none') {
+                            effectBadge = `<div style="position:absolute; top:2px; left:3px; font-size:7px; z-index:12;">✨</div>`;
+                        }
+
+                        div.innerHTML = `
+                            <div class="card-energy-hint">2⚡</div>
+                            ${effectBadge}
+                            <div class="card-val-pos val-top">${card.top}</div>
+                            <div class="card-val-pos val-bottom">${card.bottom}</div>
+                            <div class="card-val-pos val-left">${card.left}</div>
+                            <div class="card-val-pos val-right">${card.right}</div>
+                        `;
+                    }
+                    handEl.appendChild(div);
+                });
+            }
+            newlyDrawnCardIndex[p] = null;
+        });
+    } catch (err) {
+        console.error("Error en render():", err);
+    }
 }
