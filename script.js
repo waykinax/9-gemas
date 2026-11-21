@@ -17,6 +17,206 @@ const ACTIVE_TCG_GEM_TYPES_LIST = (typeof TCG_GEM_TYPES_LIST !== 'undefined') ? 
     { id: 'marron', name: 'Cuarzo (Marrón)' }
 ];
 
+// Diccionario detallado de poderes TCG para visualización en mano, tablero y modal
+const TCG_POWER_METADATA = {
+    'rojo': {
+        shortName: 'Rubí',
+        icon: '🔴',
+        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que ataques con éxito en cada turno.'
+    },
+    'azul': {
+        shortName: 'Zafiro',
+        icon: '🔵',
+        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que robes una carta en cada turno.'
+    },
+    'amarillo': {
+        shortName: 'Topacio',
+        icon: '🟡',
+        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que recuperes cartas del descarte en cada turno.'
+    },
+    'verde': {
+        shortName: 'Esmeralda',
+        icon: '🟢',
+        desc: 'Al entrar en juego, recupera hasta 2 cartas de tu descarte al mazo, roba 1 carta y descarta 1 al azar de la mano rival.'
+    },
+    'naranja': {
+        shortName: 'Ámbar',
+        icon: '🟠',
+        desc: 'Mientras esta carta permanezca en el tablero, tu energía máxima pasa a ser 4⚡ en lugar de 3⚡.'
+    },
+    'violeta': {
+        shortName: 'Amatista',
+        icon: '🟣',
+        desc: 'Al jugarse otorga +1⚡ inmediato (o +2⚡ si cumplís la condición de controlar Amatista).'
+    },
+    'blanco': {
+        shortName: 'Diamante',
+        icon: '⚪',
+        desc: 'Al jugarse vuelve a esta carta invulnerable a ataques hasta el inicio de tu próximo turno.'
+    },
+    'negro': {
+        shortName: 'Ónix',
+        icon: '⚫',
+        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que descartes una carta al rival en cada turno.'
+    },
+    'marron': {
+        shortName: 'Cuarzo',
+        icon: '🟤',
+        desc: 'Iguala todos los lados de tus cartas al mayor valor propio (o da +1 a esta carta y adyacentes hasta tu turno si la condición es Cuarzo).'
+    }
+};
+
+function getTCGGemMeta(gemId) {
+    return TCG_POWER_METADATA[gemId] || { shortName: gemId || 'Sin poder', icon: '✨', desc: 'Sin poder especial.' };
+}
+
+function getCardTCGShortPillHTML(card) {
+    if (!card || !card.powerEffect || card.powerEffect === 'none') return '';
+    const effMeta = getTCGGemMeta(card.powerEffect);
+    if (!card.powerCondition || card.powerCondition === 'none') {
+        return `${effMeta.icon} ${effMeta.shortName}`;
+    }
+    const condMeta = getTCGGemMeta(card.powerCondition);
+    return `${condMeta.icon}→${effMeta.icon} ${effMeta.shortName}`;
+}
+
+function isCardTCGConditionMetNow(card, player) {
+    if (!card || !card.powerEffect || card.powerEffect === 'none') return false;
+    if (!card.powerCondition || card.powerCondition === 'none' || card.powerCondition === 'any') return true;
+    return hasPlayerControlledGem(player, card.powerCondition);
+}
+
+function showCardTCGDetails(card, locationType, player, boardIdx) {
+    if (!card) return;
+    playSound('click');
+    triggerVibrate(20);
+
+    const hasPower = card.powerEffect && card.powerEffect !== 'none';
+    const effMeta = getTCGGemMeta(card.powerEffect);
+    const condMeta = (card.powerCondition && card.powerCondition !== 'none') ? getTCGGemMeta(card.powerCondition) : null;
+
+    const badgeEl = document.getElementById('tcg-modal-badge');
+    const ownerEl = document.getElementById('tcg-modal-owner');
+    const previewEl = document.getElementById('tcg-modal-card-preview');
+    const topEl = document.getElementById('tcg-pv-top');
+    const bottomEl = document.getElementById('tcg-pv-bottom');
+    const leftEl = document.getElementById('tcg-pv-left');
+    const rightEl = document.getElementById('tcg-pv-right');
+    const gemIconEl = document.getElementById('tcg-pv-gem-icon');
+    const baseEl = document.getElementById('tcg-pv-base');
+    const titleEl = document.getElementById('tcg-modal-title');
+    const statusPillEl = document.getElementById('tcg-modal-status-pill');
+    const condEl = document.getElementById('tcg-modal-cond');
+    const descEl = document.getElementById('tcg-modal-desc');
+
+    if (badgeEl) badgeEl.innerText = locationType === 'board' ? '⚔️ Carta en Tablero' : '🎴 Carta en Mano';
+    if (ownerEl) {
+        ownerEl.innerText = player === 'red' ? '🔴 Jugador Rojo' : (gameMode === 'ai' ? '🤖 IA (Azul)' : '🔵 Jugador Azul');
+    }
+
+    if (previewEl) {
+        previewEl.className = `tcg-preview-card ${player === 'blue' ? 'blue' : 'red'}`;
+    }
+
+    const displayVals = (locationType === 'board' && typeof boardIdx === 'number' && board[boardIdx])
+        ? getEffectiveCardValues(boardIdx)
+        : card;
+
+    if (topEl) {
+        topEl.innerText = displayVals.top;
+        topEl.classList.toggle('weak', card.specialDir === 'top');
+    }
+    if (bottomEl) {
+        bottomEl.innerText = displayVals.bottom;
+        bottomEl.classList.toggle('weak', card.specialDir === 'bottom');
+    }
+    if (leftEl) {
+        leftEl.innerText = displayVals.left;
+        leftEl.classList.toggle('weak', card.specialDir === 'left');
+    }
+    if (rightEl) {
+        rightEl.innerText = displayVals.right;
+        rightEl.classList.toggle('weak', card.specialDir === 'right');
+    }
+
+    if (gemIconEl) {
+        const isClassic = document.body.classList.contains('skin-classic');
+        const iconId = hasPower ? card.powerEffect : (card.gemRevealed ? card.gemRevealed.id : null);
+        if (iconId) {
+            gemIconEl.innerHTML = isClassic
+                ? `<span style="font-size: 1.8rem;">${GEM_CLASSIC_ICONS[iconId] || '💎'}</span>`
+                : (GEM_SVGS[iconId] || '');
+        } else {
+            gemIconEl.innerHTML = `<span style="font-size: 1.5rem;">💎</span>`;
+        }
+    }
+
+    if (baseEl) baseEl.innerText = `Base ${card.val || Math.max(card.top, card.bottom, card.left, card.right)}`;
+
+    if (!hasPower) {
+        if (titleEl) titleEl.innerText = 'Carta Estándar';
+        if (statusPillEl) {
+            statusPillEl.innerText = '⚡ Sin poder TCG asignado';
+            statusPillEl.classList.add('inactive');
+        }
+        if (condEl) condEl.innerText = 'Ninguna';
+        if (descEl) descEl.innerText = 'Esta carta pertenece al mazo estándar y combate únicamente con sus valores numéricos.';
+    } else {
+        if (titleEl) titleEl.innerText = `${effMeta.icon} Poder: ${effMeta.shortName}`;
+
+        let descText = effMeta.desc;
+        if (card.powerEffect === 'violeta' && card.powerCondition === 'violeta') {
+            descText = 'Al jugarse otorga +2⚡ inmediatos (bonificación máxima por condición de Amatista).';
+        } else if (card.powerEffect === 'marron' && card.powerCondition === 'marron') {
+            descText = 'Al jugarse otorga +1 en todos los lados a esta carta y a tus cartas adyacentes hasta el inicio de tu próximo turno.';
+        } else if (card.powerEffect === 'marron') {
+            descText = 'Mientras esta carta siga en el tablero, iguala todos los lados de tus cartas al mayor valor propio de cada una.';
+        }
+
+        if (condEl) {
+            condEl.innerText = condMeta ? `${condMeta.icon} Controlar ${condMeta.shortName}` : '✨ Sin condición (siempre activa)';
+        }
+
+        if (statusPillEl) {
+            if (locationType === 'hand') {
+                const ready = isCardTCGConditionMetNow(card, player);
+                statusPillEl.innerText = ready
+                    ? '✅ Condición cumplida: se activará al jugar'
+                    : `🔒 Requiere controlar ${condMeta ? condMeta.shortName : 'gema'} al jugar`;
+                statusPillEl.classList.toggle('inactive', !ready);
+            } else {
+                const hasOngoingEffect = Boolean(
+                    card.hasTCGRubyEffect ||
+                    card.hasTCGZafiroEffect ||
+                    card.hasTCGTopacioEffect ||
+                    card.hasTCGOnixEffect ||
+                    card.hasTCGAmberEffect ||
+                    card.hasTCGQuartzEffect ||
+                    card.diamondTempShield
+                );
+                if (hasOngoingEffect) {
+                    statusPillEl.innerText = '🔥 Efecto activo en el tablero';
+                    statusPillEl.classList.remove('inactive');
+                } else {
+                    statusPillEl.innerText = '🎴 Carta TCG desplegada';
+                    statusPillEl.classList.add('inactive');
+                }
+            }
+        }
+
+        if (descEl) descEl.innerText = descText;
+    }
+
+    const modal = document.getElementById('card-tcg-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeCardTCGModal() {
+    playSound('click');
+    const modal = document.getElementById('card-tcg-modal');
+    if (modal) modal.style.display = 'none';
+}
+
 let audioCtx = null;
 function getAudioContext() {
     if (!audioCtx) {
@@ -1962,7 +2162,7 @@ function renderDynamicGrid() {
                 }
 
                 const gemDisplay = isClassic
-                    ? `<span style="font-size: 1.2rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
+                    ? `<span style="font-size: 1.15rem;">${GEM_CLASSIC_ICONS[cell.gemRevealed.id] || '💎'}</span>`
                     : (GEM_SVGS[cell.gemRevealed.id] || '');
 
                 let diagonalHTML = '';
@@ -1981,6 +2181,13 @@ function renderDynamicGrid() {
                 }
 
                 const tempShieldBadge = getDiamondTempShieldBadgeHTML(cell);
+                const hasCardTCG = cell.powerEffect && cell.powerEffect !== 'none';
+                const cardTCGButtonHTML = hasCardTCG
+                    ? `<div class="card-tcg-info-btn" title="Ver Poder TCG de la Carta">🎴</div>`
+                    : '';
+                const boardTCGPillHTML = hasCardTCG
+                    ? `<div class="board-tcg-pill" title="Tocar para ver el poder de la carta">${getCardTCGShortPillHTML(cell)}</div>`
+                    : '';
 
                 div.innerHTML = `
                     ${tempShieldBadge}
@@ -2010,12 +2217,30 @@ function renderDynamicGrid() {
                     <div class="cell-content">
                         <div class="gem-pod">
                             ${gemDisplay}
+                            ${cardTCGButtonHTML}
                             <div class="gem-info-btn" onclick="event.stopPropagation(); showGemDetails(${JSON.stringify(cell.gemRevealed).replace(/"/g, '&quot;')}, true, '${cell.owner}')" title="Ver Gema">ℹ️</div>
                         </div>
-                        <span style="font-size:0.72rem; color:#cbd5e1; font-weight:bold; line-height:1.1; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.isProtected ? '🛡️ ' : ''}${cell.gemRevealed.name}</span>
-                        <span style="font-size:0.55rem; color:#38bdf8; text-align:center; line-height:1.1; margin-top:2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>
+                        <span style="font-size:0.68rem; color:#cbd5e1; font-weight:bold; line-height:1.05; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${cell.isProtected ? '🛡️ ' : ''}${cell.gemRevealed.name}</span>
+                        ${boardTCGPillHTML || `<span style="font-size:0.52rem; color:#38bdf8; text-align:center; line-height:1.1; margin-top:2px; max-width:95%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${cell.gemRevealed.desc}</span>`}
                     </div>
                 `;
+
+                if (hasCardTCG) {
+                    const tcgBtn = div.querySelector('.card-tcg-info-btn');
+                    if (tcgBtn) {
+                        tcgBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            showCardTCGDetails(cell, 'board', cell.owner, idx);
+                        };
+                    }
+                    const tcgPill = div.querySelector('.board-tcg-pill');
+                    if (tcgPill) {
+                        tcgPill.onclick = (e) => {
+                            e.stopPropagation();
+                            showCardTCGDetails(cell, 'board', cell.owner, idx);
+                        };
+                    }
+                }
             } else if (revealedBoardGems[idx] && gemData) {
                 const gemDisplay = isClassic
                     ? `<span style="font-size: 1.2rem;">${GEM_CLASSIC_ICONS[gemData.id] || '💎'}</span>`
@@ -2379,26 +2604,48 @@ function render() {
                     } else {
                         const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
                         const lacksEnergy = (isMyTurnActive && currentEnergy < 2);
-                        div.className = `card-item ${p} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${lacksEnergy ? 'disabled-energy' : ''}`;
+                        const hasTCG = card.powerEffect && card.powerEffect !== 'none';
+
+                        div.className = `card-item ${p} ${hasTCG ? 'has-tcg-power' : ''} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${lacksEnergy ? 'disabled-energy' : ''}`;
 
                         div.onclick = () => {
                             if (lacksEnergy && isMyTurnActive) return;
                             selectHandCard(p, idx);
                         };
 
-                        let effectBadge = '';
-                        if (card.powerEffect && card.powerEffect !== 'none') {
-                            effectBadge = `<div style="position:absolute; top:2px; left:3px; font-size:7px; z-index:12;">✨</div>`;
+                        let tcgCenterHTML = '';
+                        let tcgInfoBtnHTML = '';
+                        if (hasTCG) {
+                            const effMeta = getTCGGemMeta(card.powerEffect);
+                            const condMeta = (card.powerCondition && card.powerCondition !== 'none') ? getTCGGemMeta(card.powerCondition) : null;
+                            const iconsStr = condMeta ? `${condMeta.icon}${effMeta.icon}` : effMeta.icon;
+                            tcgCenterHTML = `
+                                <div class="hand-tcg-center">
+                                    <span class="hand-tcg-icons">${iconsStr}</span>
+                                </div>
+                            `;
+                            tcgInfoBtnHTML = `<div class="hand-card-info-btn" title="Ver poder de la carta">ℹ️</div>`;
                         }
 
                         div.innerHTML = `
                             <div class="card-energy-hint">2⚡</div>
-                            ${effectBadge}
+                            ${tcgInfoBtnHTML}
+                            ${tcgCenterHTML}
                             <div class="card-val-pos val-top">${card.top}</div>
                             <div class="card-val-pos val-bottom">${card.bottom}</div>
                             <div class="card-val-pos val-left">${card.left}</div>
                             <div class="card-val-pos val-right">${card.right}</div>
                         `;
+
+                        if (hasTCG) {
+                            const infoBtn = div.querySelector('.hand-card-info-btn');
+                            if (infoBtn) {
+                                infoBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    showCardTCGDetails(card, 'hand', p, null);
+                                };
+                            }
+                        }
                     }
                     handEl.appendChild(div);
                 });

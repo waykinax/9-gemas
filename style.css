@@ -519,7 +519,9 @@ body {
     gap: 3px;
 }
 
-.mode-5x5 .gem-info-btn {
+.mode-5x5 .gem-info-btn,
+.mode-5x5 .card-tcg-info-btn,
+.mode-5x5 .board-tcg-pill {
     display: none !important;
 }
 
@@ -706,28 +708,28 @@ body {
 }
 
 .mode-3x3 .gem-pod {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .mode-5x5 .gem-pod { width: 10px; height: 10px; }
-.mode-3x3 .gem-svg { width: 34px; height: 34px; }
+.mode-3x3 .gem-svg { width: 32px; height: 32px; }
 .mode-5x5 .gem-svg { width: 8px; height: 8px; }
 
 .gem-info-btn {
     position: absolute;
     bottom: -3px;
-    right: -3px;
-    background: rgba(15, 23, 42, 0.9);
+    right: -4px;
+    background: rgba(15, 23, 42, 0.95);
     color: #38bdf8;
     border: 1px solid #38bdf8;
     border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    font-size: 9px;
+    width: 15px;
+    height: 15px;
+    font-size: 8.5px;
     font-weight: bold;
     display: flex;
     align-items: center;
@@ -741,6 +743,53 @@ body {
 
 .gem-info-btn:active { transform: scale(1.2); }
 
+/* Botón de Poder TCG en la gema del tablero */
+.card-tcg-info-btn {
+    position: absolute;
+    bottom: -3px;
+    left: -5px;
+    background: linear-gradient(135deg, #b45309, #78350f);
+    color: #fde047;
+    border: 1px solid #fbbf24;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 8.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 12;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.7);
+    transition: transform 0.2s;
+    pointer-events: auto !important;
+}
+
+.card-tcg-info-btn:active { transform: scale(1.2); }
+
+/* Píldora compacta de poder TCG en celdas 3x3 del tablero */
+.board-tcg-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: 2px;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(251, 191, 36, 0.65);
+    color: #fde047;
+    font-size: 0.48rem;
+    font-weight: 800;
+    line-height: 1.1;
+    max-width: 94%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.25);
+    pointer-events: auto !important;
+    cursor: pointer;
+}
+
 .cell-content {
     position: absolute;
     inset: 0;
@@ -749,7 +798,7 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 14px 6px 6px 6px;
+    padding: 13px 6px 8px 6px;
     overflow: hidden;
     pointer-events: none;
 }
@@ -911,7 +960,7 @@ body {
 
 .mini-pile-box {
     width: 38px;
-    height: 54px;
+    height: 58px;
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid rgba(51, 65, 85, 0.8);
     border-radius: 5px;
@@ -952,24 +1001,29 @@ body {
 
 .hand-cards {
     display: flex;
-    gap: 4px;
+    gap: 5px;
     overflow-x: auto;
-    padding: 4px;
+    padding: 5px 4px;
     flex-grow: 1;
     min-width: 0;
 }
 
 .card-item {
-    width: 44px;
-    height: 62px;
-    border-radius: 6px;
-    border: 1px solid;
+    width: 48px;
+    height: 66px;
+    border-radius: 7px;
+    border: 1.5px solid;
     position: relative;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-item.has-tcg-power {
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.35);
 }
 
 .card-item.red {
@@ -989,17 +1043,17 @@ body {
 
 .card-item .card-val-pos {
     position: absolute;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 900;
     color: #ffffff;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.95));
     line-height: 1;
 }
 
-.card-item .val-top { top: 4px; left: 50%; transform: translateX(-50%); }
-.card-item .val-bottom { bottom: 4px; left: 50%; transform: translateX(-50%); }
-.card-item .val-left { left: 4px; top: 50%; transform: translateY(-50%); }
-.card-item .val-right { right: 4px; top: 50%; transform: translateY(-50%); }
+.card-item .val-top { top: 3px; left: 50%; transform: translateX(-50%); }
+.card-item .val-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); }
+.card-item .val-left { left: 3px; top: 50%; transform: translateY(-50%); }
+.card-item .val-right { right: 3px; top: 50%; transform: translateY(-50%); }
 
 .card-energy-hint {
     position: absolute;
@@ -1012,6 +1066,52 @@ body {
     padding: 1px 3px;
     border-radius: 9999px;
     z-index: 10;
+}
+
+/* Centro visual de la carta en mano con poder TCG */
+.hand-tcg-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 6, 23, 0.72);
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    border-radius: 6px;
+    padding: 1px 3px;
+    line-height: 1;
+    pointer-events: none;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.25);
+}
+
+.hand-tcg-icons {
+    font-size: 8px;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+
+/* Botón discreto de info en carta de la mano */
+.hand-card-info-btn {
+    position: absolute;
+    bottom: -4px;
+    left: -4px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #0f172a;
+    color: #fde047;
+    border: 1px solid #fbbf24;
+    font-size: 8px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 15;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+.hand-card-info-btn:active {
+    transform: scale(1.2);
 }
 
 .log-container {
@@ -1093,6 +1193,182 @@ body {
     position: relative;
     overflow: hidden;
     animation: victoryPopAnim 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, modalGlowPulse 2s infinite ease-in-out;
+}
+
+/* Estilos del Modal Estético de Carta TCG */
+.tcg-detail-modal {
+    max-width: 325px;
+    padding: 16px;
+}
+
+.tcg-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 6px;
+}
+
+.tcg-modal-location-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    color: #fde047;
+}
+
+.tcg-modal-owner-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #7dd3fc;
+}
+
+.tcg-preview-card {
+    width: 96px;
+    height: 124px;
+    margin: 0 auto 10px auto;
+    border-radius: 12px;
+    border: 2px solid #fbbf24;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), inset 0 0 14px rgba(251, 191, 36, 0.25);
+}
+
+.tcg-preview-card.red {
+    background: radial-gradient(circle at top, #881337 0%, #3b0413 100%);
+    border-color: #f43f5e;
+}
+
+.tcg-preview-card.blue {
+    background: radial-gradient(circle at top, #0369a1 0%, #051e34 100%);
+    border-color: #38bdf8;
+}
+
+.tcg-pv-val {
+    position: absolute;
+    font-size: 0.92rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 1px 3px #000000;
+    line-height: 1;
+}
+
+.tcg-pv-val.weak {
+    color: #fda4af;
+}
+
+.tcg-pv-val.top { top: 6px; left: 50%; transform: translateX(-50%); }
+.tcg-pv-val.bottom { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.tcg-pv-val.left { left: 7px; top: 50%; transform: translateY(-50%); }
+.tcg-pv-val.right { right: 7px; top: 50%; transform: translateY(-50%); }
+
+.tcg-pv-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.tcg-pv-gem-icon {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tcg-pv-gem-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.tcg-pv-base-tag {
+    font-size: 0.52rem;
+    font-weight: 800;
+    color: #cbd5e1;
+    background: rgba(2, 6, 23, 0.7);
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+.tcg-modal-power-title {
+    color: #fbbf24;
+    font-size: 1.05rem;
+    font-weight: 900;
+    margin-bottom: 4px;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+}
+
+.tcg-modal-status-pill {
+    display: inline-block;
+    font-size: 0.64rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+    background: rgba(34, 197, 94, 0.16);
+    border: 1px solid rgba(34, 197, 94, 0.5);
+    color: #86efac;
+}
+
+.tcg-modal-status-pill.inactive {
+    background: rgba(148, 163, 184, 0.15);
+    border-color: rgba(148, 163, 184, 0.4);
+    color: #cbd5e1;
+}
+
+.tcg-modal-info-box {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: left;
+}
+
+.tcg-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+
+.tcg-info-row-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tcg-info-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #94a3b8;
+}
+
+.tcg-info-value.cond {
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #38bdf8;
+}
+
+.tcg-info-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 8px 0;
+}
+
+.tcg-info-desc {
+    font-size: 0.8rem;
+    color: #f8fafc;
+    line-height: 1.45;
 }
 
 .victory-particles {

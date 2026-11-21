@@ -251,6 +251,44 @@
         </div>
     </div>
 
+    <!-- Modal Estético de Detalle de Poder TCG de Carta -->
+    <div id="card-tcg-modal" class="modal" onclick="closeCardTCGModal()">
+        <div class="modal-content-victory tcg-detail-modal" onclick="event.stopPropagation()">
+            <div class="tcg-modal-header">
+                <span id="tcg-modal-badge" class="tcg-modal-location-badge">🎴 Carta en Mano</span>
+                <span id="tcg-modal-owner" class="tcg-modal-owner-badge">Jugador Rojo</span>
+            </div>
+
+            <div id="tcg-modal-card-preview" class="tcg-preview-card red">
+                <div class="tcg-pv-val top" id="tcg-pv-top">8</div>
+                <div class="tcg-pv-val bottom" id="tcg-pv-bottom">8</div>
+                <div class="tcg-pv-val left" id="tcg-pv-left">2</div>
+                <div class="tcg-pv-val right" id="tcg-pv-right">8</div>
+                <div class="tcg-pv-center">
+                    <div id="tcg-pv-gem-icon" class="tcg-pv-gem-icon"></div>
+                    <span id="tcg-pv-base" class="tcg-pv-base-tag">Base 8</span>
+                </div>
+            </div>
+
+            <h3 id="tcg-modal-title" class="tcg-modal-power-title">Poder: Rubí</h3>
+            <div id="tcg-modal-status-pill" class="tcg-modal-status-pill">✨ Listo para activar</div>
+
+            <div class="tcg-modal-info-box">
+                <div class="tcg-info-row">
+                    <span class="tcg-info-label">🔑 Condición:</span>
+                    <span id="tcg-modal-cond" class="tcg-info-value cond">Sin condición</span>
+                </div>
+                <div class="tcg-info-divider"></div>
+                <div class="tcg-info-row-col">
+                    <span class="tcg-info-label">⚡ Efecto Especial:</span>
+                    <p id="tcg-modal-desc" class="tcg-info-desc"></p>
+                </div>
+            </div>
+
+            <button onclick="closeCardTCGModal()" class="btn-pass" style="width: 100%; padding: 9px; font-size: 0.8rem; margin-top: 10px;">Cerrar</button>
+        </div>
+    </div>
+
     <div id="game-over-modal" class="modal">
         <div class="modal-content-victory">
             <div class="victory-particles" id="victory-particles-container"></div>
