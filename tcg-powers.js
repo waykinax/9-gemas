@@ -13,28 +13,27 @@ const TCG_GEM_TYPES_LIST = [
 
 // Función auxiliar para verificar si el jugador controla una gema en el tablero
 function playerControlsGem(board, player, gemId) {
+    if (!Array.isArray(board)) return false;
     return board.some(c => c !== null && c.owner === player && c.gemRevealed && c.gemRevealed.id === gemId);
 }
 
-// Resolver el poder TCG al jugar una carta en board[index]
-function resolveTCGCardPower(card, board, player, currentEnergy, decks, hands, discards, boardIndex) {
-    if (!card || !card.powerCondition || !card.powerEffect) return { logText: '', energyDelta: 0 };
-
-    const condition = card.powerCondition; // 'none', 'any', o el id de una gema
-    const effectType = card.powerEffect;   // El efecto exclusivo a disparar
-
-    // VALIDADOR DE CONDICIÓN:
-    // Si la condición es distinta de 'none' y 'any', se requiere controlar esa gema obligatoriamente.
-    if (condition !== 'none' && condition !== 'any') {
-        if (!playerControlsGem(board, player, condition)) {
-            return { logText: '', energyDelta: 0 }; // No se cumple la condición -> La carta no activa su efecto
-        }
+// Evaluador central de condiciones TCG (extensible a futuro a mano, mazo o descarte)
+function evaluateTCGCondition(condition, player, context = {}) {
+    if (!condition || condition === 'none' || condition === 'any') {
+        return true;
     }
 
-    let logText = ` 🎴 [Sinergia TCG]`;
-    let energyDelta = 0;
+    const boardRef = context.board || (typeof board !== 'undefined' ? board : []);
+    // Futuro: const handsRef = context.hands || (typeof hands !== 'undefined' ? hands : null);
+    // Futuro: const decksRef = context.decks || (typeof decks !== 'undefined' ? decks : null);
+    // Futuro: const discardsRef = context.discards || (typeof discards !== 'undefined' ? discards : null);
 
-    // Blanquear banderas anteriores para evitar efectos fantasma
+    return playerControlsGem(boardRef, player, condition);
+}
+
+// Limpia banderas de efectos permanentes previos antes de recalcular
+function clearPermanentCardFlags(card) {
+    if (!card) return;
     card.hasTCGRubyEffect = false;
     card.hasTCGZafiroEffect = false;
     card.hasTCGTopacioEffect = false;
@@ -43,92 +42,159 @@ function resolveTCGCardPower(card, board, player, currentEnergy, decks, hands, d
     card.hasTCGQuartzEffect = false;
     card.isBufferedByQuartz = false;
     card.tcgQuartzBoostedSides = null;
+}
+
+// Recalcula poderes permanentes de las cartas en el campo para ambos jugadores
+// cada vez que cambian las cartas controladas en el tablero
+function refreshPermanentBoardPowers(currentBoard, context = {}) {
+    if (!Array.isArray(currentBoard)) return;
+
+    currentBoard.forEach((card) => {
+        if (!card) return;
+        clearPermanentCardFlags(card);
+
+        const owner = card.owner;
+        if (!owner) return;
+
+        const effectType = card.powerEffect;
+        if (!effectType || effectType === 'none') return;
+
+        // Verde y Violeta son efectos de despliegue, no permanentes
+        if (effectType === 'verde' || effectType === 'violeta') return;
+
+        const conditionMet = evaluateTCGCondition(card.powerCondition, owner, {
+            ...context,
+            board: currentBoard
+        });
+
+        if (!conditionMet) return;
+
+        switch (effectType) {
+            case 'rojo':
+                card.hasTCGRubyEffect = true;
+                break;
+            case 'azul':
+                card.hasTCGZafiroEffect = true;
+                break;
+            case 'amarillo':
+                card.hasTCGTopacioEffect = true;
+                break;
+            case 'naranja':
+                card.hasTCGAmberEffect = true;
+                break;
+            case 'negro':
+                card.hasTCGOnixEffect = true;
+                break;
+            case 'marron':
+                // Cuarzo con condición propia ('marron') aplica aura temporal al desplegarse;
+                // en otros casos actúa como efecto permanente mientras se cumpla la condición.
+                if (card.powerCondition !== 'marron') {
+                    card.hasTCGQuartzEffect = true;
+                }
+                break;
+            case 'blanco':
+                // Diamante se activa al desplegarse; se mantiene su escudo si está activo
+                break;
+            default:
+                break;
+        }
+    });
+}
+
+// Resolver el poder TCG al desplegar una carta en board[boardIndex]
+function resolveTCGCardPower(card, currentBoard, player, currentEnergy, playerDecks, playerHands, playerDiscards, boardIndex) {
+    if (!card || !card.powerCondition || !card.powerEffect) return { logText: '', energyDelta: 0 };
+
+    const condition = card.powerCondition; // 'none', 'any', o el id de una gema
+    const effectType = card.powerEffect;   // El efecto exclusivo a disparar
+
+    // Inicializar estado de escudo temporal de la carta al desplegarse
     card.diamondTempShield = false;
     card.diamondShieldOwner = null;
     card.isProtected = (card.gemRevealed && card.gemRevealed.protected) || false;
+    clearPermanentCardFlags(card);
 
-    // --- REGLA ESPECIAL: Diamante (Invulnerabilidad hasta el inicio de tu siguiente turno) ---
+    const conditionMet = evaluateTCGCondition(condition, player, {
+        board: currentBoard,
+        decks: playerDecks,
+        hands: playerHands,
+        discards: playerDiscards
+    });
+
+    if (!conditionMet) {
+        return { logText: '', energyDelta: 0 };
+    }
+
+    let energyDelta = 0;
+
+    // --- DESPLIEGUE: Diamante (Invulnerabilidad hasta el inicio de tu siguiente turno) ---
     if (effectType === 'blanco') {
         card.isProtected = true;
         card.diamondTempShield = true;
         card.diamondShieldOwner = player;
-        return { logText: ` 🎴 [Poder: Diamante (Invulnerable hasta tu próximo turno)]`, energyDelta: 0 };
+        return { logText: ` 🎴 [Poder: Diamante (🛡️ Invuln. hasta tu próximo turno)]`, energyDelta: 0 };
     }
 
-    // APLICAR EL EFECTO ELEGIDO
-    switch (effectType) {
-        case 'rojo': // Efecto Rubí: Activa pasiva de energía al atacar
-            card.hasTCGRubyEffect = true;
-            logText += ` [Efecto Rubí: +1⚡ al Atacar]`;
-            break;
-
-        case 'azul': // Efecto Zafiro: Activa pasiva de energía al robar carta
-            card.hasTCGZafiroEffect = true;
-            logText += ` [Efecto Zafiro: +1⚡ al Robar]`;
-            break;
-
-        case 'amarillo': // Efecto Topacio: +1 energía al recuperar
-            card.hasTCGTopacioEffect = true;
-            logText += ` [Efecto Topacio: +1⚡ al Recuperar]`;
-            break;
-
-        case 'verde': // Efecto Esmeralda: Recupera 2 del descarte al mazo, roba 1, descarta 1 al rival
-            for (let i = 0; i < 2; i++) {
-                if (discards[player].length > 0) { decks[player].push(discards[player].pop()); }
+    // --- DESPLIEGUE: Esmeralda (verde) ---
+    if (effectType === 'verde') {
+        for (let i = 0; i < 2; i++) {
+            if (playerDiscards[player] && playerDiscards[player].length > 0) {
+                playerDecks[player].push(playerDiscards[player].pop());
             }
-            if (decks[player].length > 0) {
-                hands[player].push(decks[player].pop());
-            }
-            const opponent = player === 'red' ? 'blue' : 'red';
-            if (hands[opponent] && hands[opponent].length > 0) {
-                const rIdx = Math.floor(Math.random() * hands[opponent].length);
-                discards[opponent].push(hands[opponent].splice(rIdx, 1)[0]);
-            }
-            logText += ` [Efecto Esmeralda: Recup/Robo/Desc]`;
-            break;
-
-        case 'naranja': // Efecto Ámbar: Extiende energía máxima a 4
-            card.hasTCGAmberEffect = true;
-            logText += ` [Efecto Ámbar: Máx 4⚡]`;
-            break;
-
-        case 'violeta': // Efecto Amatista: Da energía (+2 si la condición era amatista, sino +1)
-            let energyGain = (condition === 'violeta') ? 2 : 1;
-            energyDelta += energyGain;
-            logText += ` [Efecto Amatista: +${energyGain}⚡]`;
-            break;
-
-        case 'negro': // Efecto Ónix: +1 energía al descartar
-            card.hasTCGOnixEffect = true;
-            logText += ` [Efecto Ónix: +1⚡ al Descartar]`;
-            break;
-
-        case 'marron': // Efecto Cuarzo
-            if (condition === 'marron') {
-                const row = Math.floor(boardIndex / 3);
-                const col = boardIndex % 3;
-                const targetIndices = [boardIndex];
-                if (row > 0) targetIndices.push((row - 1) * 3 + col);
-                if (row < 2) targetIndices.push((row + 1) * 3 + col);
-                if (col > 0) targetIndices.push(row * 3 + (col - 1));
-                if (col < 2) targetIndices.push(row * 3 + (col + 1));
-
-                targetIndices.forEach(idx => {
-                    if (board[idx] && board[idx].owner === player) {
-                        board[idx].quartzAuraTempBuff = (board[idx].quartzAuraTempBuff || 0) + 1;
-                        board[idx].quartzAuraOwner = player;
-                    }
-                });
-                logText += ` [Efecto Cuarzo: +1 a carta y adyacentes hasta tu turno]`;
-            } else {
-                card.hasTCGQuartzEffect = true;
-                logText += ` [Efecto Cuarzo: Iguala al mayor en todas tus cartas]`;
-            }
-            break;
-
-        default:
-            break;
+        }
+        if (playerDecks[player] && playerDecks[player].length > 0) {
+            playerHands[player].push(playerDecks[player].pop());
+        }
+        const opponent = player === 'red' ? 'blue' : 'red';
+        if (playerHands[opponent] && playerHands[opponent].length > 0) {
+            const rIdx = Math.floor(Math.random() * playerHands[opponent].length);
+            playerDiscards[opponent].push(playerHands[opponent].splice(rIdx, 1)[0]);
+        }
+        return { logText: ` 🎴 [Efecto Esmeralda: Recup/Robo/Desc]`, energyDelta: 0 };
     }
 
-    return { logText, energyDelta };
+    // --- DESPLIEGUE: Amatista (violeta) ---
+    if (effectType === 'violeta') {
+        const energyGain = (condition === 'violeta') ? 2 : 1;
+        energyDelta += energyGain;
+        return { logText: ` 🎴 [Efecto Amatista: +${energyGain}⚡]`, energyDelta };
+    }
+
+    // --- DESPLIEGUE CON AURA TEMPORAL: Cuarzo con condición 'marron' ---
+    if (effectType === 'marron' && condition === 'marron') {
+        const row = Math.floor(boardIndex / 3);
+        const col = boardIndex % 3;
+        const targetIndices = [boardIndex];
+        if (row > 0) targetIndices.push((row - 1) * 3 + col);
+        if (row < 2) targetIndices.push((row + 1) * 3 + col);
+        if (col > 0) targetIndices.push(row * 3 + (col - 1));
+        if (col < 2) targetIndices.push(row * 3 + (col + 1));
+
+        targetIndices.forEach(idx => {
+            if (currentBoard[idx] && currentBoard[idx].owner === player) {
+                currentBoard[idx].quartzAuraTempBuff = (currentBoard[idx].quartzAuraTempBuff || 0) + 1;
+                currentBoard[idx].quartzAuraOwner = player;
+            }
+        });
+        return { logText: ` 🎴 [Efecto Cuarzo: +1 a carta y adyacentes hasta tu turno]`, energyDelta: 0 };
+    }
+
+    // Los demás efectos ('rojo', 'azul', 'amarillo', 'naranja', 'negro', 'marron')
+    // se sincronizan como permanentes en el campo mediante refreshPermanentBoardPowers.
+    refreshPermanentBoardPowers(currentBoard, {
+        decks: playerDecks,
+        hands: playerHands,
+        discards: playerDiscards
+    });
+
+    const labels = {
+        rojo: ' [Efecto Rubí: +1⚡ al Atacar]',
+        azul: ' [Efecto Zafiro: +1⚡ al Robar]',
+        amarillo: ' [Efecto Topacio: +1⚡ al Recuperar]',
+        naranja: ' [Efecto Ámbar: Máx 4⚡]',
+        negro: ' [Efecto Ónix: +1⚡ al Descartar]',
+        marron: ' [Efecto Cuarzo: Iguala al mayor en todas tus cartas]'
+    };
+
+    return { logText: ` 🎴${labels[effectType] || ''}`, energyDelta: 0 };
 }

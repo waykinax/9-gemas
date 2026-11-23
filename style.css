@@ -369,28 +369,74 @@ body {
 
 .diamond-temp-shield-badge {
     position: absolute;
-    top: 3px;
+    top: 4px;
     left: 4px;
-    z-index: 20;
-    padding: 1px 4px;
-    border-radius: 5px;
-    font-size: 0.48rem;
+    z-index: 18;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 5px;
+    border-radius: 6px;
+    background: rgba(14, 116, 144, 0.94);
+    border: 1px solid #67e8f9;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+    color: #ffffff;
+    font-size: 0.65rem;
     font-weight: 900;
     line-height: 1.1;
-    color: #f0f9ff;
-    background: linear-gradient(135deg, rgba(2, 132, 199, 0.92), rgba(14, 165, 233, 0.88));
-    border: 1px solid #bae6fd;
-    text-shadow: 0 1px 2px rgba(2, 6, 23, 0.95);
-    animation: diamondTempShieldPulse 1.5s infinite ease-in-out;
+    letter-spacing: 0.2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
     pointer-events: none;
+}
+
+/* En 3x3 con ataque diagonal activo: correr un poco abajo y a la derecha para no tapar el valor superior */
+.dynamic-grid.mode-3x3.diagonal-active .diamond-temp-shield-badge,
+.diagonal-active .dynamic-grid.mode-3x3 .diamond-temp-shield-badge {
+    top: 16px;
+    left: 10px;
+}
+
+/* 1/3 - Base compacta para 5x5 centrada debajo del valor superior */
+.dynamic-grid.mode-5x5 .diamond-temp-shield-badge {
+    top: 13px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    z-index: 12;
+    padding: 0 3px;
+    gap: 1px;
+    border-radius: 4px;
+    font-size: 0.44rem;
+    line-height: 1.15;
     white-space: nowrap;
 }
 
-.mode-5x5 .diamond-temp-shield-badge {
-    top: 2px;
-    left: 2px;
-    padding: 0 2px;
-    font-size: 0.38rem;
+/* 2/3 - En celdas espejo de 5x5: ESPEJO a la izquierda y 1T pegado al borde derecho para evitar roce entre ambos */
+.dynamic-grid.mode-5x5 .mirror-edge-cell .mirror-tag {
+    left: 6px;
+    right: auto;
+    transform: none;
+    top: 13px;
+    font-size: 3.8px;
+    padding: 0 1px;
+    letter-spacing: 0.1px;
+}
+
+.dynamic-grid.mode-5x5 .mirror-edge-cell .diamond-temp-shield-badge {
+    z-index: 12;
+    top: 13px;
+    bottom: auto;
+    left: auto;
+    right: 0;
+    transform: none;
+    font-size: 0.27rem;
+    padding: 0 1px;
+}
+
+/* 3/3 - Ajuste fino cuando está activo el ataque diagonal en 5x5 */
+.dynamic-grid.mode-5x5.diagonal-active .diamond-temp-shield-badge,
+.diagonal-active .dynamic-grid.mode-5x5 .diamond-temp-shield-badge {
+    top: 14px;
 }
 
 .flying-projectile {

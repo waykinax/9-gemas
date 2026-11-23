@@ -22,47 +22,47 @@ const TCG_POWER_METADATA = {
     'rojo': {
         shortName: 'Rubí',
         icon: '🔴',
-        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que ataques con éxito en cada turno.'
+        desc: 'Permanente (si se cumple la condición): otorga +1⚡ la primera vez que ataques con éxito en cada turno.'
     },
     'azul': {
         shortName: 'Zafiro',
         icon: '🔵',
-        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que robes una carta en cada turno.'
+        desc: 'Permanente (si se cumple la condición): otorga +1⚡ la primera vez que robes una carta en cada turno.'
     },
     'amarillo': {
         shortName: 'Topacio',
         icon: '🟡',
-        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que recuperes cartas del descarte en cada turno.'
+        desc: 'Permanente (si se cumple la condición): otorga +1⚡ la primera vez que recuperes cartas del descarte en cada turno.'
     },
     'verde': {
         shortName: 'Esmeralda',
         icon: '🟢',
-        desc: 'Al entrar en juego, recupera hasta 2 cartas de tu descarte al mazo, roba 1 carta y descarta 1 al azar de la mano rival.'
+        desc: 'Al desplegarse (si se cumple la condición): recupera hasta 2 cartas del descarte al mazo, roba 1 carta y descarta 1 al azar de la mano rival.'
     },
     'naranja': {
         shortName: 'Ámbar',
         icon: '🟠',
-        desc: 'Mientras esta carta permanezca en el tablero, tu energía máxima pasa a ser 4⚡ en lugar de 3⚡.'
+        desc: 'Permanente (si se cumple la condición): tu energía máxima pasa a ser 4⚡ en lugar de 3⚡ mientras se mantenga.'
     },
     'violeta': {
         shortName: 'Amatista',
         icon: '🟣',
-        desc: 'Al jugarse otorga +1⚡ inmediato (o +2⚡ si cumplís la condición de controlar Amatista).'
+        desc: 'Al desplegarse (si se cumple la condición): otorga +1⚡ inmediato (o +2⚡ si la condición es Amatista).'
     },
     'blanco': {
         shortName: 'Diamante',
         icon: '⚪',
-        desc: 'Al jugarse vuelve a esta carta invulnerable a ataques hasta el inicio de tu próximo turno.'
+        desc: 'Al desplegarse (si se cumple la condición): vuelve a esta carta invulnerable a ataques hasta el inicio de tu próximo turno.'
     },
     'negro': {
         shortName: 'Ónix',
         icon: '⚫',
-        desc: 'Mientras esta carta siga en el tablero, otorga +1⚡ la primera vez que descartes una carta al rival en cada turno.'
+        desc: 'Permanente (si se cumple la condición): otorga +1⚡ la primera vez que descartes una carta al rival en cada turno.'
     },
     'marron': {
         shortName: 'Cuarzo',
         icon: '🟤',
-        desc: 'Iguala todos los lados de tus cartas al mayor valor propio (o da +1 a esta carta y adyacentes hasta tu turno si la condición es Cuarzo).'
+        desc: 'Permanente (si se cumple la condición): iguala todos los lados de tus cartas al mayor valor propio (o da +1 a esta carta y adyacentes hasta tu turno si la condición es Cuarzo).'
     }
 };
 
@@ -70,18 +70,22 @@ function getTCGGemMeta(gemId) {
     return TCG_POWER_METADATA[gemId] || { shortName: gemId || 'Sin poder', icon: '✨', desc: 'Sin poder especial.' };
 }
 
+// Etiqueta compacta Cn => Ef (sin repetir 1T si ya figura en el badge de escudo temporal)
 function getCardTCGShortPillHTML(card) {
     if (!card || !card.powerEffect || card.powerEffect === 'none') return '';
-    const effMeta = getTCGGemMeta(card.powerEffect);
-    if (!card.powerCondition || card.powerCondition === 'none') {
-        return `${effMeta.icon} ${effMeta.shortName}`;
-    }
-    const condMeta = getTCGGemMeta(card.powerCondition);
-    return `${condMeta.icon}→${effMeta.icon} ${effMeta.shortName}`;
+    const hasCond = card.powerCondition && card.powerCondition !== 'none';
+    const condLabel = hasCond ? getTCGGemMeta(card.powerCondition).icon : '✨';
+    const effLabel = card.powerEffect === 'blanco'
+        ? '🛡️ Invuln.'
+        : `${getTCGGemMeta(card.powerEffect).icon} ${getTCGGemMeta(card.powerEffect).shortName}`;
+    return `${condLabel} => ${effLabel}`;
 }
 
 function isCardTCGConditionMetNow(card, player) {
     if (!card || !card.powerEffect || card.powerEffect === 'none') return false;
+    if (typeof evaluateTCGCondition === 'function') {
+        return evaluateTCGCondition(card.powerCondition, player, { board, hands, decks, discards });
+    }
     if (!card.powerCondition || card.powerCondition === 'none' || card.powerCondition === 'any') return true;
     return hasPlayerControlledGem(player, card.powerCondition);
 }
@@ -162,15 +166,16 @@ function showCardTCGDetails(card, locationType, player, boardIdx) {
         if (condEl) condEl.innerText = 'Ninguna';
         if (descEl) descEl.innerText = 'Esta carta pertenece al mazo estándar y combate únicamente con sus valores numéricos.';
     } else {
-        if (titleEl) titleEl.innerText = `${effMeta.icon} Poder: ${effMeta.shortName}`;
+        const effTitleLabel = card.powerEffect === 'blanco' ? '🛡️ Invuln.' : `${effMeta.icon} ${effMeta.shortName}`;
+        if (titleEl) titleEl.innerText = `Poder: ${effTitleLabel}`;
 
         let descText = effMeta.desc;
         if (card.powerEffect === 'violeta' && card.powerCondition === 'violeta') {
-            descText = 'Al jugarse otorga +2⚡ inmediatos (bonificación máxima por condición de Amatista).';
+            descText = 'Al desplegarse otorga +2⚡ inmediatos si se cumple la condición de Amatista.';
         } else if (card.powerEffect === 'marron' && card.powerCondition === 'marron') {
-            descText = 'Al jugarse otorga +1 en todos los lados a esta carta y a tus cartas adyacentes hasta el inicio de tu próximo turno.';
+            descText = 'Al desplegarse otorga +1 en todos los lados a esta carta y a tus cartas adyacentes hasta el inicio de tu próximo turno.';
         } else if (card.powerEffect === 'marron') {
-            descText = 'Mientras esta carta siga en el tablero, iguala todos los lados de tus cartas al mayor valor propio de cada una.';
+            descText = 'Permanente (mientras se cumpla la condición): iguala todos los lados de tus cartas al mayor valor propio de cada una.';
         }
 
         if (condEl) {
@@ -181,8 +186,8 @@ function showCardTCGDetails(card, locationType, player, boardIdx) {
             if (locationType === 'hand') {
                 const ready = isCardTCGConditionMetNow(card, player);
                 statusPillEl.innerText = ready
-                    ? '✅ Condición cumplida: se activará al jugar'
-                    : `🔒 Requiere controlar ${condMeta ? condMeta.shortName : 'gema'} al jugar`;
+                    ? '✅ Condición cumplida: se activará al desplegar'
+                    : `🔒 Requiere cumplir condición (${condMeta ? condMeta.shortName : 'gema'})`;
                 statusPillEl.classList.toggle('inactive', !ready);
             } else {
                 const hasOngoingEffect = Boolean(
@@ -748,14 +753,61 @@ function generateTCGDeckForPlayer(player) {
     });
 }
 
+function canPlayerUseTCG(player) {
+    return (player === 'blue' && gameMode === 'ai') ? isAITCGModeEnabled() : isTCGModeEnabled();
+}
+
 function triggerTCGPower(playedCard, currentBoard, player, energyNow, playerDecks, playerHands, playerDiscards, boardIdx) {
-    const canUseTCG = (player === 'blue' && gameMode === 'ai') ? isAITCGModeEnabled() : isTCGModeEnabled();
-    if (!canUseTCG) return { logText: '', energyDelta: 0 };
-    if (!playedCard.powerEffect || playedCard.powerEffect === 'none') return { logText: '', energyDelta: 0 };
+    if (!canPlayerUseTCG(player)) return { logText: '', energyDelta: 0 };
+    if (!playedCard || !playedCard.powerEffect || playedCard.powerEffect === 'none') return { logText: '', energyDelta: 0 };
     if (typeof resolveTCGCardPower === 'function') {
         return resolveTCGCardPower(playedCard, currentBoard, player, energyNow, playerDecks, playerHands, playerDiscards, boardIdx);
     }
     return { logText: '', energyDelta: 0 };
+}
+
+// Aplica efectos de despliegue de la gema de la casilla (solo 'verde' y 'violeta')
+// validando la condición en el momento del despliegue.
+function applyGemDeployEffect(gem, player, boardIdx) {
+    if (!gem) return { logText: '', energyDelta: 0 };
+
+    const condMet = typeof evaluateTCGCondition === 'function'
+        ? evaluateTCGCondition('none', player, { board, decks, hands, discards })
+        : true;
+
+    if (!condMet) return { logText: '', energyDelta: 0 };
+
+    if (gem.id === 'violeta') {
+        return { logText: ` 🟣 [+1⚡]`, energyDelta: 1 };
+    }
+
+    if (gem.id === 'verde') {
+        for (let i = 0; i < 2; i++) {
+            if (discards[player] && discards[player].length > 0) {
+                decks[player].push(discards[player].pop());
+            }
+        }
+        if (decks[player] && decks[player].length > 0) {
+            hands[player].push(decks[player].pop());
+        }
+        const opponent = player === 'red' ? 'blue' : 'red';
+        if (hands[opponent] && hands[opponent].length > 0) {
+            const rIdx = Math.floor(Math.random() * hands[opponent].length);
+            discards[opponent].push(hands[opponent].splice(rIdx, 1)[0]);
+        }
+        return { logText: ` 🟢 [Esmeralda: Recup/Robo/Desc]`, energyDelta: 0 };
+    }
+
+    return { logText: '', energyDelta: 0 };
+}
+
+// Recalcula poderes permanentes de ambos jugadores cada vez que cambian las cartas
+// controladas en el campo, y actualiza el tope máximo de energía sin sumar energía extra.
+function syncPermanentBoardEffects() {
+    if (typeof refreshPermanentBoardPowers === 'function') {
+        refreshPermanentBoardPowers(board, { decks, hands, discards });
+    }
+    maxEnergy = getMaxEnergyForPlayer(turn);
 }
 
 function splitTCGDeck(fullDeck) {
@@ -964,6 +1016,8 @@ function applyGameState(data) {
     if (!decks.red) decks.red = []; if (!decks.blue) decks.blue = [];
     if (!discards.red) discards.red = []; if (!discards.blue) discards.blue = [];
 
+    syncPermanentBoardEffects();
+
     const logEl = document.getElementById('log-message');
     if (data.lastLog && logEl) {
         logEl.innerText = data.lastLog;
@@ -983,6 +1037,8 @@ function listenRoomState() {
 }
 
 function syncGameState(logText) {
+    syncPermanentBoardEffects();
+
     if (logText) {
         actionLogHistory.unshift(logText);
         if (actionLogHistory.length > 15) actionLogHistory.pop();
@@ -1098,6 +1154,7 @@ function spawnConquestParticles(node, playerColor) {
 
 function startTurn(player) {
     turn = player;
+    syncPermanentBoardEffects();
     maxEnergy = getMaxEnergyForPlayer(player);
     if (maxEnergy > currentEnergy) spawnEnergyParticles();
     currentEnergy = maxEnergy;
@@ -1482,20 +1539,14 @@ function aiPlayCard(handIdx, boardIdx) {
         spawnEnergyParticles();
     }
 
-    if (gem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); }
-    if (gem.id === 'naranja' || playedCard.hasTCGAmberEffect) maxEnergy = getMaxEnergyForPlayer('blue');
-
-    if (gem.id === 'verde') {
-        for (let i = 0; i < 2; i++) {
-            if (discards['blue'].length > 0) { decks['blue'].push(discards['blue'].pop()); }
-        }
-        if (decks['blue'].length > 0) { hands['blue'].push(decks['blue'].pop()); }
-        if (hands['red'].length > 0) {
-            const rIdx = Math.floor(Math.random() * hands['red'].length);
-            discards['red'].push(hands['red'].splice(rIdx, 1)[0]);
-        }
-        logText += ` 🟢 [Esmeralda: Recup/Robo/Desc]`;
+    const gemDeployRes = applyGemDeployEffect(gem, 'blue', boardIdx);
+    if (gemDeployRes.logText) logText += gemDeployRes.logText;
+    if (gemDeployRes.energyDelta) {
+        currentEnergy += gemDeployRes.energyDelta;
+        spawnEnergyParticles();
     }
+
+    syncPermanentBoardEffects();
 
     syncGameState(logText);
 }
@@ -1638,27 +1689,14 @@ function playCard(index) {
         spawnEnergyParticles();
     }
 
-    if (gem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); logText += ` 🟣 [+1⚡]`; }
-
-    if (gem.id === 'naranja' || playedCard.hasTCGAmberEffect) {
-        maxEnergy = getMaxEnergyForPlayer(turn);
-        logText += ` 🟠 [Máx. 4⚡]`;
+    const gemDeployRes = applyGemDeployEffect(gem, turn, index);
+    if (gemDeployRes.logText) logText += gemDeployRes.logText;
+    if (gemDeployRes.energyDelta) {
+        currentEnergy += gemDeployRes.energyDelta;
+        spawnEnergyParticles();
     }
 
-    if (gem.id === 'verde') {
-        for (let i = 0; i < 2; i++) {
-            if (discards[turn].length > 0) { decks[turn].push(discards[turn].pop()); }
-        }
-        if (decks[turn].length > 0) {
-            hands[turn].push(decks[turn].pop());
-        }
-        const opponent = turn === 'red' ? 'blue' : 'red';
-        if (hands[opponent] && hands[opponent].length > 0) {
-            const rIdx = Math.floor(Math.random() * hands[opponent].length);
-            discards[opponent].push(hands[opponent].splice(rIdx, 1)[0]);
-        }
-        logText += ` 🟢 [Esmeralda: Recup/Robo/Desc]`;
-    }
+    syncPermanentBoardEffects();
 
     selectedCard = null; selectedHandIndex = null;
     syncGameState(logText);
@@ -1965,24 +2003,12 @@ function processAttackLogic(idx, targetIdx, dir, oppSide) {
         }
 
         attackMsg = `⚔️ ¡ATAQUE EXITOSO! Conquistó ${targetGem.name} (-1⚡).`;
-        if (targetGem.id === 'violeta') { currentEnergy += 1; spawnEnergyParticles(); }
-        if (targetGem.id === 'naranja' || attackerCard.hasTCGAmberEffect) {
-            maxEnergy = getMaxEnergyForPlayer(turn);
-        }
 
-        if (targetGem.id === 'verde') {
-            for (let i = 0; i < 2; i++) {
-                if (discards[turn].length > 0) { decks[turn].push(discards[turn].pop()); }
-            }
-            if (decks[turn].length > 0) {
-                hands[turn].push(decks[turn].pop());
-            }
-            const opponent = turn === 'red' ? 'blue' : 'red';
-            if (hands[opponent] && hands[opponent].length > 0) {
-                const rIdx = Math.floor(Math.random() * hands[opponent].length);
-                discards[opponent].push(hands[opponent].splice(rIdx, 1)[0]);
-            }
-            attackMsg += ` 🟢 [Esmeralda: Recup/Robo/Desc]`;
+        const gemDeployRes = applyGemDeployEffect(targetGem, turn, targetIdx);
+        if (gemDeployRes.logText) attackMsg += gemDeployRes.logText;
+        if (gemDeployRes.energyDelta) {
+            currentEnergy += gemDeployRes.energyDelta;
+            spawnEnergyParticles();
         }
 
         if ((hasRedBeforeAttack || hasRubíCardEffect) && !usedRedEnergyBonusThisTurn) {
@@ -1991,6 +2017,8 @@ function processAttackLogic(idx, targetIdx, dir, oppSide) {
             spawnEnergyParticles();
             attackMsg += ` 🔴 [+1⚡ Bonus Rubí]`;
         }
+
+        syncPermanentBoardEffects();
     } else {
         attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
     }
@@ -2132,7 +2160,7 @@ function renderDynamicGrid() {
     }
 
     if (!isMapamundiActive) {
-        gridEl.className = "dynamic-grid mode-3x3";
+        gridEl.className = `dynamic-grid mode-3x3${isDiagonalActive ? ' diagonal-active' : ''}`;
 
         for (let idx = 0; idx < 9; idx++) {
             const cell = board[idx];
@@ -2261,7 +2289,7 @@ function renderDynamicGrid() {
             gridEl.appendChild(div);
         }
     } else {
-        gridEl.className = "dynamic-grid mode-5x5";
+        gridEl.className = `dynamic-grid mode-5x5${isDiagonalActive ? ' diagonal-active' : ''}`;
 
         const rowMap = { 0: 2, 1: 0, 2: 1, 3: 2, 4: 0 };
         const colMap = { 0: 2, 1: 0, 2: 1, 3: 2, 4: 0 };
@@ -2618,7 +2646,8 @@ function render() {
                         if (hasTCG) {
                             const effMeta = getTCGGemMeta(card.powerEffect);
                             const condMeta = (card.powerCondition && card.powerCondition !== 'none') ? getTCGGemMeta(card.powerCondition) : null;
-                            const iconsStr = condMeta ? `${condMeta.icon}${effMeta.icon}` : effMeta.icon;
+                            const effIcon = card.powerEffect === 'blanco' ? '🛡️' : effMeta.icon;
+                            const iconsStr = condMeta ? `${condMeta.icon}${effIcon}` : effIcon;
                             tcgCenterHTML = `
                                 <div class="hand-tcg-center">
                                     <span class="hand-tcg-icons">${iconsStr}</span>
