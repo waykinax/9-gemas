@@ -4,6 +4,16 @@ const database = firebase.database();
 
 const TARGET_SCORE = 7;
 
+// Claves de persistencia en localStorage
+const STORAGE_KEYS = {
+    skin: '9gemas_selected_skin',
+    tcgMode: '9gemas_tcg_mode',
+    aiTcgMode: '9gemas_ai_tcg_mode',
+    toroidalOpt: '9gemas_opt_toroidal',
+    diagonalOpt: '9gemas_opt_diagonal',
+    onboardingDone: '9gemas_onboarding_done'
+};
+
 // Respaldo seguro por si tcg-powers.js no estuviera disponible
 const ACTIVE_TCG_GEM_TYPES_LIST = (typeof TCG_GEM_TYPES_LIST !== 'undefined') ? TCG_GEM_TYPES_LIST : [
     { id: 'rojo', name: 'Rubí (Rojo)' },
@@ -70,7 +80,6 @@ function getTCGGemMeta(gemId) {
     return TCG_POWER_METADATA[gemId] || { shortName: gemId || 'Sin poder', icon: '✨', desc: 'Sin poder especial.' };
 }
 
-// Etiqueta compacta Cn => Ef (sin repetir 1T si ya figura en el badge de escudo temporal)
 function getCardTCGShortPillHTML(card) {
     if (!card || !card.powerEffect || card.powerEffect === 'none') return '';
     const hasCond = card.powerCondition && card.powerCondition !== 'none';
@@ -254,6 +263,67 @@ function isAITCGModeEnabled() {
     return chk ? chk.checked : false;
 }
 
+function isToroidalOptionEnabled() {
+    const chk = document.getElementById('check-opt-toroidal');
+    if (chk) return chk.checked;
+    return localStorage.getItem(STORAGE_KEYS.toroidalOpt) === 'true';
+}
+
+function isDiagonalOptionEnabled() {
+    const chk = document.getElementById('check-opt-diagonal');
+    if (chk) return chk.checked;
+    return localStorage.getItem(STORAGE_KEYS.diagonalOpt) === 'true';
+}
+
+let prevToroidalBeforeTutorial = false;
+let prevDiagonalBeforeTutorial = false;
+
+function enableSpecialAttackModesForTutorial() {
+    const chkTor = document.getElementById('check-opt-toroidal');
+    const chkDiag = document.getElementById('check-opt-diagonal');
+    prevToroidalBeforeTutorial = chkTor
+        ? Boolean(chkTor.checked)
+        : localStorage.getItem(STORAGE_KEYS.toroidalOpt) === 'true';
+    prevDiagonalBeforeTutorial = chkDiag
+        ? Boolean(chkDiag.checked)
+        : localStorage.getItem(STORAGE_KEYS.diagonalOpt) === 'true';
+
+    localStorage.setItem(STORAGE_KEYS.toroidalOpt, 'true');
+    localStorage.setItem(STORAGE_KEYS.diagonalOpt, 'true');
+    if (chkTor) chkTor.checked = true;
+    if (chkDiag) chkDiag.checked = true;
+}
+
+function restoreSpecialAttackModesAfterTutorial() {
+    const torVal = Boolean(prevToroidalBeforeTutorial);
+    const diagVal = Boolean(prevDiagonalBeforeTutorial);
+
+    localStorage.setItem(STORAGE_KEYS.toroidalOpt, String(torVal));
+    localStorage.setItem(STORAGE_KEYS.diagonalOpt, String(diagVal));
+
+    const chkTor = document.getElementById('check-opt-toroidal');
+    const chkDiag = document.getElementById('check-opt-diagonal');
+    if (chkTor) chkTor.checked = torVal;
+    if (chkDiag) chkDiag.checked = diagVal;
+
+    if (!torVal) isMapamundiActive = false;
+    if (!diagVal) isDiagonalActive = false;
+}
+
+function isTutorialSpecialModeLocked() {
+    return isTutorialSession && turn === 'red' && tutorialTurnCount <= 2;
+}
+
+function advanceTutorialOnSpecialActivation(activatedMode) {
+    if (!isTutorialSession || turn !== 'red' || tutorialTurnCount < 3) return;
+    if (activatedMode === 'toroidal' && tutorialStep === 8) {
+        tutorialStep = 9;
+    } else if (activatedMode === 'diagonal' && tutorialStep === 9) {
+        tutorialStep = 10;
+        tutorialTurn3DoneWaitingNextTurn = true;
+    }
+}
+
 function triggerVibrate(pattern) {
     if (!isHapticEnabled()) return;
     if (navigator.vibrate) {
@@ -387,6 +457,552 @@ let discardingCardInfo = { player: null, cardIndex: null };
 let lastComboSignatures = { red: "", blue: "" };
 let comboFlashTriggers = { red: true, blue: true };
 
+// --- MODO TUTORIAL JUGADA POR JUGADA ---
+let isTutorialSession = false;
+let tutorialStep = 0;
+let tutorialTurnCount = 1;
+let didStepTwoAttack = false;
+let tutorialTurn2DoneWaitingNextTurn = false;
+let tutorialTurn3DoneWaitingNextTurn = false;
+let coachmarkSequenceTimer = null;
+
+function isOnboardingDismissed() {
+    return !isTutorialSession && localStorage.getItem(STORAGE_KEYS.onboardingDone) === 'true';
+}
+
+function isTutorialSideActionLocked() {
+    if (!isTutorialSession || turn !== 'red') return false;
+    if (tutorialStep === 0 || tutorialStep === 1 || tutorialStep === 2 || tutorialStep === 3) return true;
+    return false;
+}
+
+function finishTutorialSessionWithNotice() {
+    isTutorialSession = false;
+    tutorialStep = 0;
+    tutorialTurnCount = 1;
+    didStepTwoAttack = false;
+    tutorialTurn2DoneWaitingNextTurn = false;
+    tutorialTurn3DoneWaitingNextTurn = false;
+    localStorage.setItem(STORAGE_KEYS.onboardingDone, 'true');
+
+    restoreSpecialAttackModesAfterTutorial();
+    clearCoachmarkHighlights();
+
+    const bubble = document.getElementById('coachmark-bubble');
+    if (bubble) bubble.classList.add('hidden');
+
+    const finishMsg = "✅ ¡Tutorial completado! Podés volver a iniciarlo cuando quieras desde Configuración (⚙️).";
+    actionLogHistory.unshift(finishMsg);
+    if (actionLogHistory.length > 15) actionLogHistory.pop();
+    const logEl = document.getElementById('log-message');
+    if (logEl) logEl.innerText = finishMsg;
+    const statusEl = document.getElementById('room-status');
+    if (statusEl && gameMode === 'ai') {
+        statusEl.innerText = `${getAIStatusLabel()}. Sos ROJO • Tutorial listo en ⚙️.`;
+    }
+    render();
+}
+
+function skipOnboardingCoachmarks() {
+    playSound('click');
+    finishTutorialSessionWithNotice();
+}
+
+function advanceTutorialStepManual() {
+    playSound('click');
+    triggerVibrate(20);
+    if (!isTutorialSession) return;
+    if (tutorialStep === 2) {
+        tutorialStep = 3;
+        renderCoachmarks();
+    } else if (tutorialStep >= 4 && tutorialStep <= 6) {
+        tutorialStep += 1;
+        renderCoachmarks();
+    } else if (tutorialStep === 7) {
+        tutorialTurn2DoneWaitingNextTurn = true;
+        renderCoachmarks();
+    } else if (tutorialStep === 8) {
+        tutorialStep = 9;
+        renderCoachmarks();
+    } else if (tutorialStep === 9) {
+        tutorialStep = 10;
+        tutorialTurn3DoneWaitingNextTurn = true;
+        renderCoachmarks();
+    } else if (tutorialStep === 10) {
+        tutorialStep = 11;
+        renderCoachmarks();
+    } else if (tutorialStep === 11) {
+        tutorialStep = 12;
+        renderCoachmarks();
+    } else if (tutorialStep === 12) {
+        tutorialStep = 13;
+        renderCoachmarks();
+    } else if (tutorialStep >= 13) {
+        finishTutorialSessionWithNotice();
+    }
+}
+
+function resetOnboardingCoachmarks() {
+    playSound('click');
+    triggerVibrate(25);
+    localStorage.removeItem(STORAGE_KEYS.onboardingDone);
+    enableSpecialAttackModesForTutorial();
+    isTutorialSession = true;
+    tutorialStep = 0;
+    tutorialTurnCount = 1;
+    didStepTwoAttack = false;
+    tutorialTurn2DoneWaitingNextTurn = false;
+    tutorialTurn3DoneWaitingNextTurn = false;
+    gameMode = 'ai';
+    aiDifficulty = 'easy';
+    myRole = 'red';
+    lastTurnNotified = null;
+    actionLogHistory = [];
+
+    const btnOnline = document.getElementById('btn-mode-online');
+    const btnAi = document.getElementById('btn-mode-ai');
+    if (btnOnline) btnOnline.classList.remove('active');
+    if (btnAi) btnAi.classList.add('active');
+    const onlineCtrl = document.getElementById('online-controls');
+    const aiCtrl = document.getElementById('ai-controls');
+    if (onlineCtrl) onlineCtrl.classList.add('hidden');
+    if (aiCtrl) aiCtrl.classList.remove('hidden');
+
+    const statusEl = document.getElementById('room-status');
+    if (statusEl) statusEl.innerText = `🎓 Modo Tutorial activo vs IA (Sos ROJO).`;
+
+    const tutState = createTutorialGameState();
+    applyGameState(tutState);
+}
+
+function clearCoachmarkHighlights() {
+    if (coachmarkSequenceTimer) {
+        clearTimeout(coachmarkSequenceTimer);
+        coachmarkSequenceTimer = null;
+    }
+    document.querySelectorAll('.coachmark-highlight, .coachmark-highlight-pass').forEach(el => {
+        el.classList.remove('coachmark-highlight');
+        el.classList.remove('coachmark-highlight-pass');
+    });
+}
+
+function startSequentialCoachmarkHighlight(selectors, stepDelayMs = 480) {
+    clearCoachmarkHighlights();
+    if (!Array.isArray(selectors) || selectors.length === 0) return;
+
+    const validEls = selectors
+        .map(sel => document.querySelector(sel))
+        .filter(Boolean);
+    if (validEls.length === 0) return;
+
+    if (validEls.length === 1) {
+        validEls[0].classList.add('coachmark-highlight');
+        return;
+    }
+
+    let currentIdx = 0;
+    const stepHighlight = () => {
+        validEls.forEach(el => el.classList.remove('coachmark-highlight'));
+        validEls[currentIdx].classList.add('coachmark-highlight');
+        currentIdx = (currentIdx + 1) % validEls.length;
+        coachmarkSequenceTimer = setTimeout(stepHighlight, stepDelayMs);
+    };
+
+    stepHighlight();
+}
+
+function scrollDownToTarget(el) {
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function ensureAtLeastOneGemVisibleForTutorial() {
+    const hasRevealedGem = board.some((c, idx) => (c && c.gemRevealed) || revealedBoardGems[idx]);
+    if (!hasRevealedGem) {
+        const targetIdx = board.findIndex(c => c !== null) >= 0 ? board.findIndex(c => c !== null) : 4;
+        const g = gems[targetIdx] || GEM_TYPES[0];
+        revealedBoardGems[targetIdx] = true;
+        if (board[targetIdx] && !board[targetIdx].gemRevealed) {
+            board[targetIdx].gemRevealed = g;
+        }
+    }
+}
+
+function hasAnyAttackableEnemyForPlayer(player) {
+    const directions = ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
+    const realMapamundi = isMapamundiActive;
+    const realDiagonal = isDiagonalActive;
+    isMapamundiActive = isToroidalOptionEnabled();
+    isDiagonalActive = isDiagonalOptionEnabled();
+
+    let found = false;
+    for (let idx = 0; idx < 9; idx++) {
+        const cell = board[idx];
+        if (!cell || cell.owner !== player) continue;
+        for (const dir of directions) {
+            const targetInfo = getAttackTarget(idx, dir);
+            if (!targetInfo || targetInfo.targetIdx === null) continue;
+            const defender = board[targetInfo.targetIdx];
+            if (defender && defender.owner !== player && !defender.isProtected) {
+                found = true;
+                break;
+            }
+        }
+        if (found) break;
+    }
+
+    isMapamundiActive = realMapamundi;
+    isDiagonalActive = realDiagonal;
+    return found;
+}
+
+function hasOrthogonalAttackableEnemyForPlayer(player) {
+    const orthoDirs = ['top', 'bottom', 'left', 'right'];
+    for (let idx = 0; idx < 9; idx++) {
+        const cell = board[idx];
+        if (!cell || cell.owner !== player) continue;
+        const row = Math.floor(idx / 3);
+        const col = idx % 3;
+        for (const dir of orthoDirs) {
+            let tRow = row;
+            let tCol = col;
+            if (dir === 'top') tRow -= 1;
+            else if (dir === 'bottom') tRow += 1;
+            else if (dir === 'left') tCol -= 1;
+            else if (dir === 'right') tCol += 1;
+            if (tRow < 0 || tRow > 2 || tCol < 0 || tCol > 2) continue;
+            const tIdx = tRow * 3 + tCol;
+            const defender = board[tIdx];
+            if (defender && defender.owner !== player && !defender.isProtected) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function renderCoachmarks() {
+    const bubble = document.getElementById('coachmark-bubble');
+    const badgeEl = document.getElementById('coachmark-step-badge');
+    const textEl = document.getElementById('coachmark-text');
+    const nextBtn = document.getElementById('btn-next-coachmark');
+    clearCoachmarkHighlights();
+
+    if (!bubble || !badgeEl || !textEl) return;
+    if (nextBtn) nextBtn.classList.add('hidden');
+
+    if (isOnboardingDismissed()) {
+        bubble.classList.add('hidden');
+        return;
+    }
+
+    const activePlayer = gameMode === 'ai' ? 'red' : (myRole || 'red');
+    const isHumanTurn = (gameMode === 'ai' && turn === 'red') || (gameMode === 'online' && myRole && turn === myRole);
+
+    if (!isHumanTurn) {
+        bubble.classList.add('hidden');
+        return;
+    }
+
+    const hasOwnedCardOnBoard = board.some(c => c !== null && c.owner === activePlayer);
+    const hasEmptyCell = board.some(c => c === null);
+    const hasHandCards = hands[activePlayer] && hands[activePlayer].length > 0;
+    const hasEnemyOnBoard = board.some(c => c !== null && c.owner !== activePlayer && !c.isProtected);
+    const canAttackNow = currentEnergy >= 1 && hasOwnedCardOnBoard && hasEnemyOnBoard && hasAnyAttackableEnemyForPlayer(activePlayer);
+
+    if (isTutorialSession) {
+        if ((tutorialTurn2DoneWaitingNextTurn && tutorialTurnCount === 2) ||
+            (tutorialTurn3DoneWaitingNextTurn && tutorialTurnCount === 3)) {
+            bubble.classList.add('hidden');
+            return;
+        }
+
+        if (tutorialStep === 0 && currentEnergy >= 2 && hasHandCards && hasEmptyCell) {
+            badgeEl.innerText = 'Tutorial 1/4 • Jugar Carta';
+            textEl.innerText = 'Elegí una carta de tu mano y tocá una casilla vacía ortogonal junto a la carta Azul del centro para jugarla (2⚡).';
+            bubble.classList.remove('hidden');
+            const handEl = document.getElementById(`hand-${activePlayer}`);
+            if (handEl) handEl.classList.add('coachmark-highlight');
+            return;
+        }
+
+        if (tutorialStep === 1 && currentEnergy >= 1 && hasOwnedCardOnBoard && hasOrthogonalAttackableEnemyForPlayer(activePlayer)) {
+            badgeEl.innerText = 'Tutorial 2/4 • Atacar Rival';
+            textEl.innerText = 'Tocá tu carta Roja en el tablero y elegí la dirección hacia la carta Azul para atacarla (1⚡). Si tu número supera al suyo, la conquistás.';
+            bubble.classList.remove('hidden');
+            const gridEl = document.getElementById('dynamic-grid');
+            if (gridEl) gridEl.classList.add('coachmark-highlight');
+            return;
+        }
+
+        if (tutorialStep === 2) {
+            badgeEl.innerText = 'Tutorial 3/4 • Puntaje y Combos';
+            textEl.innerText = didStepTwoAttack
+                ? 'Gemas y combos suman hacia la meta (7 pts). Mirá el marcador arriba y tocá "Siguiente".'
+                : 'Sin rival ortogonal al lado ahora. Para atacar (1⚡), tocá tu carta y elegí dirección si tu número supera al rival. Mirá puntaje/combos arriba y tocá "Siguiente".';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            const scoreboardEl = document.querySelector('.scoreboard');
+            if (scoreboardEl) {
+                scoreboardEl.classList.add('coachmark-highlight');
+                scoreboardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            return;
+        }
+
+        if (tutorialStep === 3) {
+            badgeEl.innerText = 'Tutorial 4/4 • Pasar Turno';
+            textEl.innerText = 'Tocá PASAR ⏭️ (resaltado en cian) para ceder el turno y ver las acciones laterales en el próximo turno.';
+            bubble.classList.remove('hidden');
+            const btnPass = document.getElementById('btn-pass-turn');
+            if (btnPass && !btnPass.classList.contains('hidden')) {
+                btnPass.classList.add('coachmark-highlight-pass');
+                btnPass.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            return;
+        }
+
+        if (tutorialStep === 4 && tutorialTurnCount === 2) {
+            badgeEl.innerText = 'Turno 2 • Acción 1/4: Robar 1';
+            textEl.innerText = 'Robar 1 (1⚡) toma 1 carta del Mazo y la suma a tu Mano. Mirá cómo se iluminan en secuencia y tocá "Siguiente".';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            startSequentialCoachmarkHighlight(['#btn-action-draw', `#pile-deck-${activePlayer}`, `#hand-${activePlayer}`], 480);
+            scrollDownToTarget(document.getElementById('btn-action-draw') || bubble);
+            return;
+        }
+
+        if (tutorialStep === 5 && tutorialTurnCount === 2) {
+            const hasDiscardCards = discards[activePlayer] && discards[activePlayer].length > 0;
+            badgeEl.innerText = 'Turno 2 • Acción 2/4: Recup. 2';
+            textEl.innerText = hasDiscardCards
+                ? 'Recup. 2 (1⚡) mueve cartas de tu Descarte hacia tu Mazo. Mirá el orden iluminado y tocá "Siguiente".'
+                : 'Recup. 2 (1⚡) mueve cartas del Descarte al Mazo (ahora no tenés descartes). Tocá "Siguiente".';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            startSequentialCoachmarkHighlight(['#btn-action-recover', `#pile-discard-${activePlayer}`, `#pile-deck-${activePlayer}`], 480);
+            scrollDownToTarget(document.getElementById('btn-action-recover') || bubble);
+            return;
+        }
+
+        if (tutorialStep === 6 && tutorialTurnCount === 2) {
+            const oppPlayer = activePlayer === 'red' ? 'blue' : 'red';
+            badgeEl.innerText = 'Turno 2 • Acción 3/4: Descartar Rival';
+            textEl.innerText = 'Descartar Rival (1⚡) saca 1 carta de la Mano rival y la envía al Descarte rival. Mirá la secuencia y tocá "Siguiente".';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            startSequentialCoachmarkHighlight(['#btn-action-discard-opp', `#hand-${oppPlayer}`, `#pile-discard-${oppPlayer}`], 480);
+            scrollDownToTarget(document.getElementById('btn-action-discard-opp') || bubble);
+            return;
+        }
+
+        if (tutorialStep === 7 && tutorialTurnCount === 2) {
+            const vCost = hasPlayerControlledGem(activePlayer, 'violeta') ? 0 : 1;
+            badgeEl.innerText = 'Turno 2 • Acción 4/4: Ver Gema';
+            textEl.innerText = `Ver Gema (${vCost}⚡) revela una gema en el Campo antes de jugar. Tocá "Siguiente" y pasá al Turno 3 para probar los modos especiales.`;
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            startSequentialCoachmarkHighlight(['#btn-action-inspect', '#dynamic-grid'], 520);
+            scrollDownToTarget(document.getElementById('btn-action-inspect') || bubble);
+            return;
+        }
+
+        if (tutorialStep === 8 && tutorialTurnCount === 3) {
+            const toroidalOn = isToroidalOptionEnabled();
+            badgeEl.innerText = 'Turno 3 • Modo 1/2: Borde Opuesto';
+            textEl.innerText = toroidalOn
+                ? 'Atq. borde opuesto (1⚡ en el turno) permite atacar atravesando los bordes del tablero (efecto espejo 5x5). Activalo o tocá "Siguiente".'
+                : 'Atq. borde opuesto está "Off en ⚙️": si querés probar ataques que cruzan los bordes (1⚡ en el turno), activalo en ⚙️. Tocá "Siguiente".';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            const btnMap = document.getElementById('btn-action-mapamundi');
+            if (btnMap) {
+                btnMap.classList.add('coachmark-highlight');
+                scrollDownToTarget(btnMap);
+            }
+            return;
+        }
+
+        if (tutorialStep === 9 && tutorialTurnCount === 3) {
+            const diagonalOn = isDiagonalOptionEnabled();
+            badgeEl.innerText = 'Turno 3 • Modo 2/2: Atq. Diagonal';
+            textEl.innerText = diagonalOn
+                ? 'Atq. Diagonal (1⚡ en el turno) habilita ataques en las 4 esquinas y muestra los valores diagonales en las celdas. Activalo o tocá "Siguiente" para pasar al Turno 4.'
+                : 'Atq. Diagonal está "Off en ⚙️": si querés atacar en diagonal (1⚡ en el turno), activalo en ⚙️. Tocá "Siguiente" para avanzar.';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            const btnDiag = document.getElementById('btn-action-diagonal');
+            if (btnDiag) {
+                btnDiag.classList.add('coachmark-highlight');
+                scrollDownToTarget(btnDiag);
+            }
+            return;
+        }
+
+        if (tutorialStep === 10 && tutorialTurnCount >= 4) {
+            badgeEl.innerText = 'Turno 4 • Gemas 1/2: Descripción Corta';
+            textEl.innerText = 'En cada gema revelada ves su descripción corta (puntos, bono de energía o efecto rápido). Mirá el tablero y tocá "Siguiente" para ver la ampliación.';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            const gridEl = document.getElementById('dynamic-grid');
+            if (gridEl) {
+                gridEl.classList.add('coachmark-highlight');
+                scrollDownToTarget(gridEl);
+            }
+            return;
+        }
+
+        if (tutorialStep === 11 && tutorialTurnCount >= 4) {
+            badgeEl.innerText = 'Turno 4 • Gemas 2/2: Ampliación (ℹ️)';
+            textEl.innerText = 'Tocá el ícono ℹ️ de una gema para abrir su ficha ampliada (puntos, estado de control y detalle). Luego tocá "Siguiente" para seguir.';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            const gemInfoBtn = document.querySelector('#dynamic-grid .gem-info-btn');
+            if (gemInfoBtn) {
+                gemInfoBtn.classList.add('coachmark-highlight');
+                scrollDownToTarget(gemInfoBtn);
+            } else {
+                const gridEl = document.getElementById('dynamic-grid');
+                if (gridEl) {
+                    gridEl.classList.add('coachmark-highlight');
+                    scrollDownToTarget(gridEl);
+                }
+            }
+            return;
+        }
+
+        if (tutorialStep === 12 && tutorialTurnCount >= 4) {
+            badgeEl.innerText = 'Extras • Historial de Jugadas';
+            textEl.innerText = 'Tocá el registro de acciones para desplegar el historial de jugadas y repasar qué pasó en los últimos turnos. Tocá "Siguiente" para continuar.';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            const logContainerEl = document.getElementById('log-container');
+            if (logContainerEl) {
+                logContainerEl.classList.add('coachmark-highlight');
+                scrollDownToTarget(logContainerEl);
+            }
+            return;
+        }
+
+        if (tutorialStep === 13 && tutorialTurnCount >= 4) {
+            badgeEl.innerText = 'Extras • Mazo TCG y Rejugabilidad';
+            textEl.innerText = 'Si activás el modo TCG y su ℹ️ en cartas/tablero, ves condición y efecto de cada carta. Tocá "Siguiente" para finalizar (podés reabrir el tutorial desde ⚙️).';
+            bubble.classList.remove('hidden');
+            if (nextBtn) nextBtn.classList.remove('hidden');
+            const tcgTarget = document.querySelector('.hand-card-info-btn, .card-tcg-info-btn, #tcg-mode-badge, #btn-settings');
+            if (tcgTarget) {
+                tcgTarget.classList.add('coachmark-highlight');
+                scrollDownToTarget(tcgTarget);
+            }
+            return;
+        }
+
+        bubble.classList.add('hidden');
+        return;
+    }
+
+    if (currentEnergy >= 2 && hasHandCards && hasEmptyCell) {
+        badgeEl.innerText = 'Guía 1/3 • Jugar Carta';
+        textEl.innerText = 'Elegí una carta de tu mano y tocá una casilla vacía para jugarla (cuesta 2⚡).';
+        bubble.classList.remove('hidden');
+        const handEl = document.getElementById(`hand-${activePlayer}`);
+        if (handEl) handEl.classList.add('coachmark-highlight');
+        return;
+    }
+
+    if (canAttackNow) {
+        badgeEl.innerText = 'Guía 2/3 • Atacar';
+        textEl.innerText = 'Tocá tu carta en el tablero y elegí una dirección para atacar si superás al rival (cuesta 1⚡).';
+        bubble.classList.remove('hidden');
+        const gridEl = document.getElementById('dynamic-grid');
+        if (gridEl) gridEl.classList.add('coachmark-highlight');
+        return;
+    }
+
+    if (hasOwnedCardOnBoard || currentEnergy < 2) {
+        badgeEl.innerText = 'Guía 3/3 • Puntaje y Turno';
+        textEl.innerText = 'Sumá puntos controlando gemas y combos hasta llegar a la meta, y pasá el turno cuando termines.';
+        bubble.classList.remove('hidden');
+        const btnPass = document.getElementById('btn-pass-turn');
+        if (btnPass && !btnPass.classList.contains('hidden')) {
+            btnPass.classList.add('coachmark-highlight-pass');
+        }
+        return;
+    }
+
+    bubble.classList.add('hidden');
+}
+
+function createTutorialGameState() {
+    const baseState = createInitialGameState();
+    const tutorialGems = [...GEM_TYPES];
+    const centerGem = tutorialGems[4];
+
+    const newBoard = Array(9).fill(false);
+    newBoard[4] = {
+        val: 3,
+        top: 3,
+        right: 3,
+        bottom: 3,
+        left: 3,
+        specialDir: 'top',
+        powerCondition: 'none',
+        powerEffect: 'none',
+        owner: 'blue',
+        gemRevealed: centerGem,
+        isProtected: false
+    };
+
+    const newRevealed = Array(9).fill(false);
+    newRevealed[4] = true;
+
+    const redHand = [...baseState.hands.red];
+    if (!redHand.some(c => Math.max(c.top, c.bottom, c.left, c.right) >= 6)) {
+        redHand[0] = {
+            val: 7,
+            top: 7,
+            right: 7,
+            bottom: 7,
+            left: 2,
+            specialDir: 'left',
+            powerCondition: 'none',
+            powerEffect: 'none'
+        };
+    }
+
+    const redDiscards = baseState.discards.red && baseState.discards.red.length > 0
+        ? baseState.discards.red
+        : [{
+            val: 5,
+            top: 5,
+            right: 5,
+            bottom: 5,
+            left: 1,
+            specialDir: 'left',
+            powerCondition: 'none',
+            powerEffect: 'none'
+        }];
+
+    return {
+        ...baseState,
+        board: newBoard,
+        revealedBoardGems: newRevealed,
+        gems: tutorialGems,
+        turn: 'red',
+        currentEnergy: 3,
+        maxEnergy: 3,
+        hands: {
+            red: redHand,
+            blue: baseState.hands.blue
+        },
+        discards: {
+            red: redDiscards,
+            blue: baseState.discards.blue
+        },
+        lastLog: '🎓 Tutorial iniciado: jugá una carta al lado de la carta Azul del centro (2⚡) y luego atacala (1⚡).'
+    };
+}
+
 function getDiamondTempShieldBadgeHTML(cell) {
     if (!cell || !cell.diamondTempShield) return '';
     return `<div class="diamond-temp-shield-badge" title="Escudo temporal de Diamante (expira al iniciar el siguiente turno del dueño)">💠 1T</div>`;
@@ -401,11 +1017,38 @@ function getAIStatusLabel() {
 function initGameApp() {
     initSettingsManager();
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('sala');
+
+    if (!roomParam && localStorage.getItem(STORAGE_KEYS.onboardingDone) !== 'true') {
+        enableSpecialAttackModesForTutorial();
+        isTutorialSession = true;
+        tutorialStep = 0;
+        tutorialTurnCount = 1;
+        didStepTwoAttack = false;
+        tutorialTurn2DoneWaitingNextTurn = false;
+        tutorialTurn3DoneWaitingNextTurn = false;
+        gameMode = 'ai';
+        aiDifficulty = 'easy';
+        myRole = 'red';
+        const btnOnline = document.getElementById('btn-mode-online');
+        const btnAi = document.getElementById('btn-mode-ai');
+        if (btnOnline) btnOnline.classList.remove('active');
+        if (btnAi) btnAi.classList.add('active');
+        const onlineCtrl = document.getElementById('online-controls');
+        const aiCtrl = document.getElementById('ai-controls');
+        if (onlineCtrl) onlineCtrl.classList.add('hidden');
+        if (aiCtrl) aiCtrl.classList.remove('hidden');
+        const statusEl = document.getElementById('room-status');
+        if (statusEl) statusEl.innerText = `🎓 Modo Tutorial activo vs IA (Sos ROJO).`;
+
+        applyGameState(createTutorialGameState());
+        return;
+    }
+
     const initialState = createInitialGameState();
     applyGameState(initialState);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('sala');
     if (roomParam) {
         switchGameMode('online');
         const roomInput = document.getElementById('room-code-input');
@@ -440,7 +1083,6 @@ const TCG_DEEF_SLOTS = [
 ];
 
 function initSettingsManager() {
-    const STORAGE_KEY = '9gemas_selected_skin';
     const DEFAULT_SKIN = 'modern';
 
     const btnSettings = document.getElementById('btn-settings');
@@ -450,19 +1092,45 @@ function initSettingsManager() {
     const checkHaptic = document.getElementById('check-haptic');
     const checkTcgMode = document.getElementById('check-tcg-mode');
     const checkAiTcgMode = document.getElementById('check-ai-tcg-mode');
+    const checkToroidalOpt = document.getElementById('check-opt-toroidal');
+    const checkDiagonalOpt = document.getElementById('check-opt-diagonal');
+    const btnResetCoachmarks = document.getElementById('btn-reset-coachmarks');
     const tcgBuilderContainer = document.getElementById('tcg-builder-container');
     const btnOpenTcgBuilder = document.getElementById('btn-open-tcg-builder');
 
-    if (localStorage.getItem('9gemas_tcg_mode') === 'true' && checkTcgMode) {
-        checkTcgMode.checked = true;
-        if (tcgBuilderContainer) tcgBuilderContainer.classList.remove('hidden');
+    if (checkTcgMode) {
+        checkTcgMode.checked = localStorage.getItem(STORAGE_KEYS.tcgMode) === 'true';
+        if (tcgBuilderContainer) tcgBuilderContainer.classList.toggle('hidden', !checkTcgMode.checked);
     }
 
     if (checkAiTcgMode) {
-        checkAiTcgMode.checked = localStorage.getItem('9gemas_ai_tcg_mode') === 'true';
+        checkAiTcgMode.checked = localStorage.getItem(STORAGE_KEYS.aiTcgMode) === 'true';
+    }
+
+    if (checkToroidalOpt) {
+        checkToroidalOpt.checked = localStorage.getItem(STORAGE_KEYS.toroidalOpt) === 'true';
+        checkToroidalOpt.addEventListener('change', () => {
+            playSound('click');
+            localStorage.setItem(STORAGE_KEYS.toroidalOpt, checkToroidalOpt.checked);
+            if (!checkToroidalOpt.checked) isMapamundiActive = false;
+            render();
+        });
+    }
+
+    if (checkDiagonalOpt) {
+        checkDiagonalOpt.checked = localStorage.getItem(STORAGE_KEYS.diagonalOpt) === 'true';
+        checkDiagonalOpt.addEventListener('change', () => {
+            playSound('click');
+            localStorage.setItem(STORAGE_KEYS.diagonalOpt, checkDiagonalOpt.checked);
+            if (!checkDiagonalOpt.checked) isDiagonalActive = false;
+            render();
+        });
+    }
+
+    if (checkAiTcgMode) {
         checkAiTcgMode.addEventListener('change', () => {
             playSound('click');
-            localStorage.setItem('9gemas_ai_tcg_mode', checkAiTcgMode.checked);
+            localStorage.setItem(STORAGE_KEYS.aiTcgMode, checkAiTcgMode.checked);
             const statusEl = document.getElementById('room-status');
             if (gameMode === 'ai' && statusEl) {
                 statusEl.innerText = `${getAIStatusLabel()}. Sos ROJO.`;
@@ -475,7 +1143,7 @@ function initSettingsManager() {
         checkTcgMode.addEventListener('change', () => {
             playSound('click');
             if (tcgBuilderContainer) tcgBuilderContainer.classList.toggle('hidden', !checkTcgMode.checked);
-            localStorage.setItem('9gemas_tcg_mode', checkTcgMode.checked);
+            localStorage.setItem(STORAGE_KEYS.tcgMode, checkTcgMode.checked);
             render();
         });
     }
@@ -484,6 +1152,13 @@ function initSettingsManager() {
         btnOpenTcgBuilder.addEventListener('click', () => {
             playSound('click');
             openTCGBuilderModal();
+        });
+    }
+
+    if (btnResetCoachmarks) {
+        btnResetCoachmarks.addEventListener('click', () => {
+            resetOnboardingCoachmarks();
+            if (modalSettings) modalSettings.style.display = 'none';
         });
     }
 
@@ -503,7 +1178,7 @@ function initSettingsManager() {
     }
 
     function loadSavedSkin() {
-        const savedSkin = localStorage.getItem(STORAGE_KEY) || DEFAULT_SKIN;
+        const savedSkin = localStorage.getItem(STORAGE_KEYS.skin) || DEFAULT_SKIN;
         applySkin(savedSkin);
         if (selectSkin) selectSkin.value = savedSkin;
     }
@@ -513,8 +1188,23 @@ function initSettingsManager() {
         triggerVibrate(30);
         if (!selectSkin) return;
         const chosenSkin = selectSkin.value;
-        localStorage.setItem(STORAGE_KEY, chosenSkin);
+        localStorage.setItem(STORAGE_KEYS.skin, chosenSkin);
         applySkin(chosenSkin);
+
+        if (checkToroidalOpt) {
+            localStorage.setItem(STORAGE_KEYS.toroidalOpt, checkToroidalOpt.checked);
+            if (!checkToroidalOpt.checked) isMapamundiActive = false;
+        }
+        if (checkDiagonalOpt) {
+            localStorage.setItem(STORAGE_KEYS.diagonalOpt, checkDiagonalOpt.checked);
+            if (!checkDiagonalOpt.checked) isDiagonalActive = false;
+        }
+        if (checkTcgMode) {
+            localStorage.setItem(STORAGE_KEYS.tcgMode, checkTcgMode.checked);
+        }
+        if (checkAiTcgMode) {
+            localStorage.setItem(STORAGE_KEYS.aiTcgMode, checkAiTcgMode.checked);
+        }
 
         if (checkHaptic) {
             localStorage.setItem('9gemas_haptic_set', 'true');
@@ -766,8 +1456,6 @@ function triggerTCGPower(playedCard, currentBoard, player, energyNow, playerDeck
     return { logText: '', energyDelta: 0 };
 }
 
-// Aplica efectos de despliegue de la gema de la casilla (solo 'verde' y 'violeta')
-// validando la condición en el momento del despliegue.
 function applyGemDeployEffect(gem, player, boardIdx) {
     if (!gem) return { logText: '', energyDelta: 0 };
 
@@ -801,8 +1489,6 @@ function applyGemDeployEffect(gem, player, boardIdx) {
     return { logText: '', energyDelta: 0 };
 }
 
-// Recalcula poderes permanentes de ambos jugadores cada vez que cambian las cartas
-// controladas en el campo, y actualiza el tope máximo de energía sin sumar energía extra.
 function syncPermanentBoardEffects() {
     if (typeof refreshPermanentBoardPowers === 'function') {
         refreshPermanentBoardPowers(board, { decks, hands, discards });
@@ -837,6 +1523,24 @@ function startAIGame() {
     myRole = 'red';
     lastTurnNotified = null;
     actionLogHistory = [];
+
+    if (!isTutorialSession && localStorage.getItem(STORAGE_KEYS.onboardingDone) !== 'true') {
+        enableSpecialAttackModesForTutorial();
+        isTutorialSession = true;
+        tutorialStep = 0;
+        tutorialTurnCount = 1;
+        didStepTwoAttack = false;
+        tutorialTurn2DoneWaitingNextTurn = false;
+        tutorialTurn3DoneWaitingNextTurn = false;
+        const tutState = createTutorialGameState();
+        applyGameState(tutState);
+        const statusEl = document.getElementById('room-status');
+        if (statusEl) statusEl.innerText = `🎓 Modo Tutorial activo vs IA (Sos ROJO).`;
+        const modalSettings = document.getElementById('modal-settings');
+        if (modalSettings) modalSettings.style.display = 'none';
+        return;
+    }
+
     const initialState = createInitialGameState();
     applyGameState(initialState);
 
@@ -855,6 +1559,12 @@ function startAIGame() {
 function createRoom() {
     playSound('click');
     triggerVibrate(40);
+    isTutorialSession = false;
+    tutorialStep = 0;
+    tutorialTurnCount = 1;
+    didStepTwoAttack = false;
+    tutorialTurn2DoneWaitingNextTurn = false;
+    tutorialTurn3DoneWaitingNextTurn = false;
     const code = Math.random().toString(36).substring(2, 6).toUpperCase();
     myRole = 'red';
     currentRoomCode = code;
@@ -892,6 +1602,12 @@ function shareRoomLink() {
 function joinRoom() {
     playSound('click');
     triggerVibrate(40);
+    isTutorialSession = false;
+    tutorialStep = 0;
+    tutorialTurnCount = 1;
+    didStepTwoAttack = false;
+    tutorialTurn2DoneWaitingNextTurn = false;
+    tutorialTurn3DoneWaitingNextTurn = false;
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     if (code.length !== 4) return alert("Ingresá un código válido de 4 letras.");
     myRole = 'blue';
@@ -909,6 +1625,12 @@ function joinRoom() {
 }
 
 function joinRoomAuto(code) {
+    isTutorialSession = false;
+    tutorialStep = 0;
+    tutorialTurnCount = 1;
+    didStepTwoAttack = false;
+    tutorialTurn2DoneWaitingNextTurn = false;
+    tutorialTurn3DoneWaitingNextTurn = false;
     myRole = 'blue';
     currentRoomCode = code;
     lastTurnNotified = null;
@@ -1000,8 +1722,8 @@ function applyGameState(data) {
     currentEnergy = newEnergy;
 
     maxEnergy = data.maxEnergy !== undefined ? data.maxEnergy : 3;
-    isMapamundiActive = data.isMapamundiActive || false;
-    isDiagonalActive = data.isDiagonalActive || false;
+    isMapamundiActive = isToroidalOptionEnabled() ? (data.isMapamundiActive || false) : false;
+    isDiagonalActive = isDiagonalOptionEnabled() ? (data.isDiagonalActive || false) : false;
     usedRedEnergyBonusThisTurn = data.usedRedEnergyBonusThisTurn || false;
     usedBlueEnergyBonusThisTurn = data.usedBlueEnergyBonusThisTurn || false;
     usedYellowEnergyBonusThisTurn = data.usedYellowEnergyBonusThisTurn || false;
@@ -1153,6 +1875,45 @@ function spawnConquestParticles(node, playerColor) {
 }
 
 function startTurn(player) {
+    if (isTutorialSession && player === 'red') {
+        tutorialTurnCount += 1;
+        tutorialTurn2DoneWaitingNextTurn = false;
+        tutorialTurn3DoneWaitingNextTurn = false;
+        if (tutorialTurnCount === 2) {
+            tutorialStep = 4;
+            if (!discards.red || discards.red.length === 0) {
+                discards.red = [{
+                    val: 5,
+                    top: 5,
+                    right: 5,
+                    bottom: 5,
+                    left: 1,
+                    specialDir: 'left',
+                    powerCondition: 'none',
+                    powerEffect: 'none'
+                }];
+            }
+            if (!decks.red || decks.red.length === 0) {
+                decks.red = [{
+                    val: 6,
+                    top: 6,
+                    right: 6,
+                    bottom: 6,
+                    left: 2,
+                    specialDir: 'top',
+                    powerCondition: 'none',
+                    powerEffect: 'none'
+                }];
+            }
+        } else if (tutorialTurnCount === 3) {
+            enableSpecialAttackModesForTutorial();
+            tutorialStep = 8;
+        } else if (tutorialTurnCount >= 4) {
+            tutorialStep = 10;
+            ensureAtLeastOneGemVisibleForTutorial();
+        }
+    }
+
     turn = player;
     syncPermanentBoardEffects();
     maxEnergy = getMaxEnergyForPlayer(player);
@@ -1204,34 +1965,56 @@ function actionActivateMapamundi() {
     playSound('click');
     triggerVibrate(30);
     if (!isMyTurn()) return;
+    if (isTutorialSpecialModeLocked()) return;
+    if (!isToroidalOptionEnabled()) {
+        const logEl = document.getElementById('log-message');
+        if (logEl) logEl.innerText = "🔒 Activá 'Ataque por Borde Opuesto' en ⚙️ para usarlo.";
+        return;
+    }
     if (isMapamundiActive) return;
     if (currentEnergy < 1) {
         triggerVibrate([30, 30]);
+        const logEl = document.getElementById('log-message');
+        if (logEl) logEl.innerText = "⚡ Necesitás 1⚡ para activar Atq. borde opuesto.";
         return;
     }
 
     currentEnergy -= 1;
     isMapamundiActive = true;
+    advanceTutorialOnSpecialActivation('toroidal');
     spawnEnergyParticles();
 
     syncGameState(`🌍 ¡Atq. borde opuesto Activado! Los ataques atraviesan los bordes (-1⚡).`);
+    const gridEl = document.getElementById('dynamic-grid');
+    if (gridEl) gridEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function toggleDiagonal() {
     playSound('click');
     triggerVibrate(30);
     if (!isMyTurn()) return;
+    if (isTutorialSpecialModeLocked()) return;
+    if (!isDiagonalOptionEnabled()) {
+        const logEl = document.getElementById('log-message');
+        if (logEl) logEl.innerText = "🔒 Activá 'Ataque Diagonal' en ⚙️ para usarlo.";
+        return;
+    }
     if (isDiagonalActive) return;
     if (currentEnergy < 1) {
         triggerVibrate([30, 30]);
+        const logEl = document.getElementById('log-message');
+        if (logEl) logEl.innerText = "⚡ Necesitás 1⚡ para activar Atq. Diagonal.";
         return;
     }
 
     currentEnergy -= 1;
     isDiagonalActive = true;
+    advanceTutorialOnSpecialActivation('diagonal');
     spawnEnergyParticles();
 
     syncGameState(`❖ ¡Ataque Diagonal Activado! Esquinas visibles (-1⚡).`);
+    const gridEl = document.getElementById('dynamic-grid');
+    if (gridEl) gridEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function getAttackTarget(idx, dir) {
@@ -1242,47 +2025,50 @@ function getAttackTarget(idx, dir) {
     let targetCol = col;
     let oppSide = '';
 
+    const toroidalAllowed = isToroidalOptionEnabled() && isMapamundiActive;
+    const diagonalAllowed = isDiagonalOptionEnabled() && isDiagonalActive;
+
     if (dir === 'top') {
         targetRow = row - 1; oppSide = 'bottom';
-        if (targetRow < 0) { if (!isMapamundiActive) return null; targetRow = 2; }
+        if (targetRow < 0) { if (!toroidalAllowed) return null; targetRow = 2; }
     } else if (dir === 'bottom') {
         targetRow = row + 1; oppSide = 'top';
-        if (targetRow > 2) { if (!isMapamundiActive) return null; targetRow = 0; }
+        if (targetRow > 2) { if (!toroidalAllowed) return null; targetRow = 0; }
     } else if (dir === 'left') {
         targetCol = col - 1; oppSide = 'right';
-        if (targetCol < 0) { if (!isMapamundiActive) return null; targetCol = 2; }
+        if (targetCol < 0) { if (!toroidalAllowed) return null; targetCol = 2; }
     } else if (dir === 'right') {
         targetCol = col + 1; oppSide = 'left';
-        if (targetCol > 2) { if (!isMapamundiActive) return null; targetCol = 0; }
+        if (targetCol > 2) { if (!toroidalAllowed) return null; targetCol = 0; }
     } else if (dir === 'top-left') {
-        if (!isDiagonalActive) return null;
+        if (!diagonalAllowed) return null;
         targetRow = row - 1; targetCol = col - 1; oppSide = 'bottom-right';
         if (targetRow < 0 || targetCol < 0) {
-            if (!isMapamundiActive) return null;
+            if (!toroidalAllowed) return null;
             if (targetRow < 0) targetRow = 2;
             if (targetCol < 0) targetCol = 2;
         }
     } else if (dir === 'top-right') {
-        if (!isDiagonalActive) return null;
+        if (!diagonalAllowed) return null;
         targetRow = row - 1; targetCol = col + 1; oppSide = 'bottom-left';
         if (targetRow < 0 || targetCol > 2) {
-            if (!isMapamundiActive) return null;
+            if (!toroidalAllowed) return null;
             if (targetRow < 0) targetRow = 2;
             if (targetCol > 2) targetCol = 0;
         }
     } else if (dir === 'bottom-left') {
-        if (!isDiagonalActive) return null;
+        if (!diagonalAllowed) return null;
         targetRow = row + 1; targetCol = col - 1; oppSide = 'top-right';
         if (targetRow > 2 || targetCol < 0) {
-            if (!isMapamundiActive) return null;
+            if (!toroidalAllowed) return null;
             if (targetRow > 2) targetRow = 0;
             if (targetCol < 0) targetCol = 2;
         }
     } else if (dir === 'bottom-right') {
-        if (!isDiagonalActive) return null;
+        if (!diagonalAllowed) return null;
         targetRow = row + 1; targetCol = col + 1; oppSide = 'top-left';
         if (targetRow > 2 || targetCol > 2) {
-            if (!isMapamundiActive) return null;
+            if (!toroidalAllowed) return null;
             if (targetRow > 2) targetRow = 0;
             if (targetCol > 2) targetCol = 0;
         }
@@ -1297,8 +2083,8 @@ function checkIfAnyAttackPossible() {
     const realMapamundiState = isMapamundiActive;
     const realDiagonalState = isDiagonalActive;
 
-    isMapamundiActive = true;
-    isDiagonalActive = true;
+    isMapamundiActive = isToroidalOptionEnabled();
+    isDiagonalActive = isDiagonalOptionEnabled();
 
     let attackFound = false;
 
@@ -1423,7 +2209,7 @@ function executeAITurn() {
     let bestAttack = findBestAIAttack();
     if (bestAttack) { aiExecuteAttack(bestAttack); return; }
 
-    if (aiDifficulty === 'hard' && !isMapamundiActive && currentEnergy >= 2) {
+    if (aiDifficulty === 'hard' && isToroidalOptionEnabled() && !isMapamundiActive && currentEnergy >= 2) {
         isMapamundiActive = true;
         currentEnergy -= 1;
         bestAttack = findBestAIAttack();
@@ -1579,6 +2365,7 @@ function toggleInspectMode() {
     playSound('click');
     triggerVibrate(20);
     if (!isMyTurn()) return;
+    if (isTutorialSideActionLocked()) return;
     const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
     const inspectCost = controlsViolet ? 0 : 1;
 
@@ -1598,7 +2385,7 @@ function toggleInspectMode() {
 function handleBoardClick(index) {
     if (!isMyTurn()) return;
 
-    if (isInspectMode) {
+    if (isInspectMode && !isTutorialSideActionLocked()) {
         if (board[index] === null) {
             if (revealedBoardGems[index]) return;
             const controlsViolet = hasPlayerControlledGem(turn, 'violeta');
@@ -1612,6 +2399,9 @@ function handleBoardClick(index) {
             currentEnergy -= inspectCost;
             revealedBoardGems[index] = true;
             isInspectMode = false;
+            if (isTutorialSession && turn === 'red' && tutorialStep === 7) {
+                tutorialTurn2DoneWaitingNextTurn = true;
+            }
             triggerVibrate(30);
 
             const gName = gems[index] ? gems[index].name : "Gema";
@@ -1678,6 +2468,9 @@ function playCard(index) {
     hands[turn].splice(selectedHandIndex, 1);
     newlyDrawnCardIndex[turn] = null;
     newlyDeployedCellIndex = index;
+    if (isTutorialSession && turn === 'red' && tutorialStep === 0) {
+        tutorialStep = hasOrthogonalAttackableEnemyForPlayer('red') ? 1 : 2;
+    }
     triggerVibrate(35);
 
     let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-2⚡)`;
@@ -1704,6 +2497,7 @@ function playCard(index) {
 
 function actionDrawCard() {
     playSound('click');
+    if (isTutorialSideActionLocked()) return;
     if (currentEnergy < 1 || !decks[turn] || decks[turn].length === 0) {
         triggerVibrate([30, 30]);
         return;
@@ -1712,6 +2506,9 @@ function actionDrawCard() {
     currentEnergy -= 1;
     hands[turn].push(decks[turn].pop());
     newlyDrawnCardIndex[turn] = hands[turn].length - 1;
+    if (isTutorialSession && turn === 'red' && tutorialStep === 4) {
+        tutorialStep = 5;
+    }
 
     let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} robó 1 carta (-1⚡).`;
 
@@ -1730,6 +2527,7 @@ function actionDrawCard() {
 
 function actionRecoverDiscard() {
     playSound('click');
+    if (isTutorialSideActionLocked()) return;
     if (currentEnergy < 1 || !discards[turn] || discards[turn].length === 0) {
         triggerVibrate([30, 30]);
         return;
@@ -1738,6 +2536,9 @@ function actionRecoverDiscard() {
     currentEnergy -= 1;
     for (let i = 0; i < 2; i++) {
         if (discards[turn].length > 0) decks[turn].push(discards[turn].pop());
+    }
+    if (isTutorialSession && turn === 'red' && tutorialStep === 5) {
+        tutorialStep = 6;
     }
 
     let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} recuperó cartas al mazo (-1⚡).`;
@@ -1756,6 +2557,7 @@ function actionRecoverDiscard() {
 
 function actionDiscardOpponent() {
     playSound('click');
+    if (isTutorialSideActionLocked()) return;
     if (currentEnergy < 1) {
         triggerVibrate([30, 30]);
         return;
@@ -1766,6 +2568,9 @@ function actionDiscardOpponent() {
     triggerVibrate(30);
     currentEnergy -= 1;
     const randomIdx = Math.floor(Math.random() * hands[opponent].length);
+    if (isTutorialSession && turn === 'red' && tutorialStep === 6) {
+        tutorialStep = 7;
+    }
 
     discardingCardInfo = { player: opponent, cardIndex: randomIdx };
 
@@ -1865,9 +2670,10 @@ function executeAttack(dir) {
     }
     const gridNodes = gridEl.children;
 
+    const toroidalVisual = isToroidalOptionEnabled() && isMapamundiActive;
     let attackerVisualIdx = idx;
     let targetVisualIdx = targetIdx;
-    if (isMapamundiActive) {
+    if (toroidalVisual) {
         const rFrom = Math.floor(idx / 3) + 1;
         const cFrom = (idx % 3) + 1;
         attackerVisualIdx = rFrom * 5 + cFrom;
@@ -1892,7 +2698,7 @@ function executeAttack(dir) {
     const deltaX = targetRect.left - sourceRect.left;
     const deltaY = targetRect.top - sourceRect.top;
 
-    const isToroidalWrap = isMapamundiActive && (
+    const isToroidalWrap = toroidalVisual && (
         (dir === 'top' && Math.floor(idx / 3) === 0) ||
         (dir === 'bottom' && Math.floor(idx / 3) === 2) ||
         (dir === 'left' && (idx % 3) === 0) ||
@@ -1991,8 +2797,9 @@ function processAttackLogic(idx, targetIdx, dir, oppSide) {
         board[idx] = null;
         newlyDeployedCellIndex = null;
 
+        const toroidalVisual = isToroidalOptionEnabled() && isMapamundiActive;
         let targetVisualIdx = targetIdx;
-        if (isMapamundiActive) {
+        if (toroidalVisual) {
             const rTo = Math.floor(targetIdx / 3) + 1;
             const cTo = (targetIdx % 3) + 1;
             targetVisualIdx = rTo * 5 + cTo;
@@ -2021,6 +2828,11 @@ function processAttackLogic(idx, targetIdx, dir, oppSide) {
         syncPermanentBoardEffects();
     } else {
         attackMsg = `🛡️ ATAQUE FALLIDO (${attackVal} vs ${defenseVal}) (-1⚡).`;
+    }
+
+    if (isTutorialSession && turn === 'red' && tutorialStep === 1) {
+        didStepTwoAttack = true;
+        tutorialStep = 2;
     }
 
     selectedBoardIndex = null;
@@ -2141,6 +2953,10 @@ function renderDynamicGrid() {
     gridEl.innerHTML = '';
 
     const isClassic = document.body.classList.contains('skin-classic');
+    const toroidalAllowed = isToroidalOptionEnabled();
+    const diagonalAllowed = isDiagonalOptionEnabled();
+    const showToroidalGrid = toroidalAllowed && isMapamundiActive;
+    const showDiagonalNums = diagonalAllowed && isDiagonalActive;
 
     const redCombos = getActiveCombosDetails('red');
     const blueCombos = getActiveCombosDetails('blue');
@@ -2159,8 +2975,8 @@ function renderDynamicGrid() {
         lastComboSignatures.blue = blueComboSig;
     }
 
-    if (!isMapamundiActive) {
-        gridEl.className = `dynamic-grid mode-3x3${isDiagonalActive ? ' diagonal-active' : ''}`;
+    if (!showToroidalGrid) {
+        gridEl.className = `dynamic-grid mode-3x3${showDiagonalNums ? ' diagonal-active' : ''}`;
 
         for (let idx = 0; idx < 9; idx++) {
             const cell = board[idx];
@@ -2194,7 +3010,7 @@ function renderDynamicGrid() {
                     : (GEM_SVGS[cell.gemRevealed.id] || '');
 
                 let diagonalHTML = '';
-                if (isDiagonalActive && eff) {
+                if (showDiagonalNums && eff) {
                     const diagTL = eff['top-left'].toFixed(1).replace('.0', '');
                     const diagTR = eff['top-right'].toFixed(1).replace('.0', '');
                     const diagBR = eff['bottom-right'].toFixed(1).replace('.0', '');
@@ -2289,7 +3105,7 @@ function renderDynamicGrid() {
             gridEl.appendChild(div);
         }
     } else {
-        gridEl.className = `dynamic-grid mode-5x5${isDiagonalActive ? ' diagonal-active' : ''}`;
+        gridEl.className = `dynamic-grid mode-5x5${showDiagonalNums ? ' diagonal-active' : ''}`;
 
         const rowMap = { 0: 2, 1: 0, 2: 1, 3: 2, 4: 0 };
         const colMap = { 0: 2, 1: 0, 2: 1, 3: 2, 4: 0 };
@@ -2329,7 +3145,7 @@ function renderDynamicGrid() {
                             : (GEM_SVGS[coreCell.gemRevealed.id] || '');
 
                         let diagonalHTML = '';
-                        if (isDiagonalActive && eff) {
+                        if (showDiagonalNums && eff) {
                             const diagTL = eff['top-left'].toFixed(1).replace('.0', '');
                             const diagTR = eff['top-right'].toFixed(1).replace('.0', '');
                             const diagBR = eff['bottom-right'].toFixed(1).replace('.0', '');
@@ -2389,7 +3205,7 @@ function renderDynamicGrid() {
                             : (GEM_SVGS[cell.gemRevealed.id] || '');
 
                         let diagonalMirrorHTML = '';
-                        if (isDiagonalActive && effMirror) {
+                        if (showDiagonalNums && effMirror) {
                             const diagTL = effMirror['top-left'].toFixed(1).replace('.0', '');
                             const diagTR = effMirror['top-right'].toFixed(1).replace('.0', '');
                             const diagBR = effMirror['bottom-right'].toFixed(1).replace('.0', '');
@@ -2439,8 +3255,13 @@ function render() {
             showTurnBanner(turn);
         }
 
+        const toroidalAllowed = isToroidalOptionEnabled();
+        const diagonalAllowed = isDiagonalOptionEnabled();
+        if (!toroidalAllowed) isMapamundiActive = false;
+        if (!diagonalAllowed) isDiagonalActive = false;
+
         const boardWrapper = document.getElementById('board-wrapper');
-        if (boardWrapper) boardWrapper.classList.toggle('mapamundi-active', isMapamundiActive);
+        if (boardWrapper) boardWrapper.classList.toggle('mapamundi-active', toroidalAllowed && isMapamundiActive);
 
         renderDynamicGrid();
 
@@ -2579,23 +3400,55 @@ function render() {
         if (inspectLabel) inspectLabel.innerText = `(${inspectCost}⚡)`;
 
         const isMyTurnActive = gameMode === 'ai' ? turn === 'red' : turn === myRole;
+        const sideActionsLocked = isMyTurnActive && isTutorialSideActionLocked();
+        const specialModesLocked = isMyTurnActive && isTutorialSpecialModeLocked();
 
         const btnMapamundi = document.getElementById('btn-action-mapamundi');
         if (btnMapamundi) {
-            btnMapamundi.classList.toggle('mapamundi-btn-active', isMapamundiActive);
-            btnMapamundi.disabled = !isMyTurnActive || isMapamundiActive || currentEnergy < 1;
+            const isMapActiveNow = toroidalAllowed && isMapamundiActive;
+            btnMapamundi.classList.toggle('mapamundi-btn-active', isMapActiveNow);
+            btnMapamundi.classList.toggle('special-mode-locked', !toroidalAllowed || specialModesLocked);
+            btnMapamundi.disabled = !isMyTurnActive || specialModesLocked || !toroidalAllowed || isMapamundiActive || currentEnergy < 1;
+            if (!toroidalAllowed) {
+                btnMapamundi.innerHTML = `🌐 Atq. borde opuesto <span class="special-mode-tag">Off en ⚙️</span>`;
+                btnMapamundi.title = 'Deshabilitado en Configuración (⚙️)';
+            } else if (specialModesLocked) {
+                btnMapamundi.innerHTML = `🌐 Atq. borde opuesto <span class="special-mode-tag">Turno 3</span>`;
+                btnMapamundi.title = 'Disponible desde el Turno 3 del tutorial';
+            } else if (isMapActiveNow) {
+                btnMapamundi.innerHTML = `🌐 Atq. borde opuesto <span class="special-mode-tag active">ACTIVO</span>`;
+                btnMapamundi.title = 'Activo en este turno (borde opuesto y grilla 5x5 habilitados)';
+            } else {
+                btnMapamundi.innerHTML = `🌐 Atq. borde opuesto <span class="special-mode-tag">(1⚡)</span>`;
+                btnMapamundi.title = 'Activar ataque por borde opuesto por 1⚡ en este turno';
+            }
         }
 
         const btnDiagonal = document.getElementById('btn-action-diagonal');
         if (btnDiagonal) {
-            btnDiagonal.classList.toggle('mapamundi-btn-active', isDiagonalActive);
-            btnDiagonal.disabled = !isMyTurnActive || isDiagonalActive || currentEnergy < 1;
+            const isDiagActiveNow = diagonalAllowed && isDiagonalActive;
+            btnDiagonal.classList.toggle('mapamundi-btn-active', isDiagActiveNow);
+            btnDiagonal.classList.toggle('special-mode-locked', !diagonalAllowed || specialModesLocked);
+            btnDiagonal.disabled = !isMyTurnActive || specialModesLocked || !diagonalAllowed || isDiagonalActive || currentEnergy < 1;
+            if (!diagonalAllowed) {
+                btnDiagonal.innerHTML = `❖ Atq. Diagonal <span class="special-mode-tag">Off en ⚙️</span>`;
+                btnDiagonal.title = 'Deshabilitado en Configuración (⚙️)';
+            } else if (specialModesLocked) {
+                btnDiagonal.innerHTML = `❖ Atq. Diagonal <span class="special-mode-tag">Turno 3</span>`;
+                btnDiagonal.title = 'Disponible desde el Turno 3 del tutorial';
+            } else if (isDiagActiveNow) {
+                btnDiagonal.innerHTML = `❖ Atq. Diagonal <span class="special-mode-tag active">ACTIVO</span>`;
+                btnDiagonal.title = 'Activo en este turno (diagonales habilitadas)';
+            } else {
+                btnDiagonal.innerHTML = `❖ Atq. Diagonal <span class="special-mode-tag">(1⚡)</span>`;
+                btnDiagonal.title = 'Activar ataque diagonal por 1⚡ en este turno';
+            }
         }
 
         ['tl', 'tr', 'bl', 'br'].forEach(corner => {
             const btn = document.getElementById(`btn-atk-${corner}`);
             if (btn) {
-                if (isDiagonalActive) {
+                if (diagonalAllowed && isDiagonalActive) {
                     btn.classList.remove('diagonal-hidden');
                     btn.disabled = false;
                 } else {
@@ -2611,10 +3464,10 @@ function render() {
         const btnDiscOpp = document.getElementById('btn-action-discard-opp');
         const btnInsp = document.getElementById('btn-action-inspect');
         const opp = turn === 'red' ? 'blue' : 'red';
-        if (btnDraw) btnDraw.disabled = !isMyTurnActive || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
-        if (btnRec) btnRec.disabled = !isMyTurnActive || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
-        if (btnDiscOpp) btnDiscOpp.disabled = !isMyTurnActive || currentEnergy < 1 || !hands[opp] || hands[opp].length === 0;
-        if (btnInsp) btnInsp.disabled = !isMyTurnActive || currentEnergy < inspectCost;
+        if (btnDraw) btnDraw.disabled = !isMyTurnActive || sideActionsLocked || currentEnergy < 1 || !decks[turn] || decks[turn].length === 0;
+        if (btnRec) btnRec.disabled = !isMyTurnActive || sideActionsLocked || currentEnergy < 1 || !discards[turn] || discards[turn].length === 0;
+        if (btnDiscOpp) btnDiscOpp.disabled = !isMyTurnActive || sideActionsLocked || currentEnergy < 1 || !hands[opp] || hands[opp].length === 0;
+        if (btnInsp) btnInsp.disabled = !isMyTurnActive || sideActionsLocked || currentEnergy < inspectCost;
 
         ['red', 'blue'].forEach(p => {
             const handEl = document.getElementById(`hand-${p}`);
@@ -2681,6 +3534,8 @@ function render() {
             }
             newlyDrawnCardIndex[p] = null;
         });
+
+        renderCoachmarks();
     } catch (err) {
         console.error("Error en render():", err);
     }
