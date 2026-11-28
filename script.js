@@ -8,6 +8,7 @@ const TARGET_SCORE = 7;
 const STORAGE_KEYS = {
     skin: '9gemas_selected_skin',
     tcgMode: '9gemas_tcg_mode',
+    tcgSubmode: '9gemas_tcg_submode',
     aiTcgMode: '9gemas_ai_tcg_mode',
     toroidalOpt: '9gemas_opt_toroidal',
     diagonalOpt: '9gemas_opt_diagonal',
@@ -16,15 +17,15 @@ const STORAGE_KEYS = {
 
 // Respaldo seguro por si tcg-powers.js no estuviera disponible
 const ACTIVE_TCG_GEM_TYPES_LIST = (typeof TCG_GEM_TYPES_LIST !== 'undefined') ? TCG_GEM_TYPES_LIST : [
-    { id: 'rojo', name: 'Rubí (Rojo)' },
-    { id: 'azul', name: 'Zafiro (Azul)' },
-    { id: 'amarillo', name: 'Topacio (Amarillo)' },
-    { id: 'verde', name: 'Esmeralda (Verde)' },
-    { id: 'naranja', name: 'Ámbar (Naranja)' },
-    { id: 'violeta', name: 'Amatista (Violeta)' },
-    { id: 'blanco', name: 'Diamante (Blanco)' },
-    { id: 'negro', name: 'Ónix (Negro)' },
-    { id: 'marron', name: 'Cuarzo (Marrón)' }
+    { id: 'rojo', name: 'Rubí (Rojo)', short: 'Rubí', icon: '🔴' },
+    { id: 'azul', name: 'Zafiro (Azul)', short: 'Zafiro', icon: '🔵' },
+    { id: 'amarillo', name: 'Topacio (Amarillo)', short: 'Topacio', icon: '🟡' },
+    { id: 'verde', name: 'Esmeralda (Verde)', short: 'Esmeralda', icon: '🟢' },
+    { id: 'naranja', name: 'Ámbar (Naranja)', short: 'Ámbar', icon: '🟠' },
+    { id: 'violeta', name: 'Amatista (Violeta)', short: 'Amatista', icon: '🟣' },
+    { id: 'blanco', name: 'Diamante (Blanco)', short: 'Diamante', icon: '⚪' },
+    { id: 'negro', name: 'Ónix (Negro)', short: 'Ónix', icon: '⚫' },
+    { id: 'marron', name: 'Cuarzo (Marrón)', short: 'Cuarzo', icon: '🟤' }
 ];
 
 // Diccionario detallado de poderes TCG para visualización en mano, tablero y modal
@@ -72,7 +73,22 @@ const TCG_POWER_METADATA = {
     'marron': {
         shortName: 'Cuarzo',
         icon: '🟤',
-        desc: 'Permanente (si se cumple la condición): iguala todos los lados de tus cartas al mayor valor propio (o da +1 a esta carta y adyacentes hasta tu turno si la condición es Cuarzo).'
+        desc: 'Permanente (si se cumple la condición): iguala todos los lados de tus cartas al mayor valor propio de cada una.'
+    },
+    'jump_reveal_gem': {
+        shortName: 'Explorador',
+        icon: '🧭',
+        desc: 'Sin condición. Al jugarse, si la gema indicada está libre en el tablero, salta a ella y la revela si estaba oculta.'
+    },
+    'refund_energy_1': {
+        shortName: 'Chispa',
+        icon: '⚡',
+        desc: 'Al desplegarse: si ya controlás la gema indicada al jugarla, recuperás 1⚡.'
+    },
+    'discount_energy_1': {
+        shortName: 'Filo',
+        icon: '🗡️',
+        desc: 'Al desplegarse: cuesta 1⚡ menos (1⚡ total) si ya controlás la gema indicada.'
     }
 };
 
@@ -82,18 +98,27 @@ function getTCGGemMeta(gemId) {
 
 function getCardTCGShortPillHTML(card) {
     if (!card || !card.powerEffect || card.powerEffect === 'none') return '';
+    const effMeta = getTCGGemMeta(card.powerEffect);
+    if (card.powerEffect === 'jump_reveal_gem' || card.powerEffect === 'refund_energy_1' || card.powerEffect === 'discount_energy_1') {
+        const targetMeta = card.targetGemId ? getTCGGemMeta(card.targetGemId) : null;
+        return targetMeta ? `${effMeta.icon} ${effMeta.shortName} (${targetMeta.icon})` : `${effMeta.icon} ${effMeta.shortName}`;
+    }
     const hasCond = card.powerCondition && card.powerCondition !== 'none';
     const condLabel = hasCond ? getTCGGemMeta(card.powerCondition).icon : '✨';
     const effLabel = card.powerEffect === 'blanco'
         ? '🛡️ Invuln.'
-        : `${getTCGGemMeta(card.powerEffect).icon} ${getTCGGemMeta(card.powerEffect).shortName}`;
+        : `${effMeta.icon} ${effMeta.shortName}`;
     return `${condLabel} => ${effLabel}`;
 }
 
 function isCardTCGConditionMetNow(card, player) {
     if (!card || !card.powerEffect || card.powerEffect === 'none') return false;
+    if (card.powerEffect === 'jump_reveal_gem') return true;
     if (typeof evaluateTCGCondition === 'function') {
-        return evaluateTCGCondition(card.powerCondition, player, { board, hands, decks, discards });
+        const condToCheck = (card.powerEffect === 'refund_energy_1' || card.powerEffect === 'discount_energy_1')
+            ? (card.powerCondition || card.targetGemId)
+            : card.powerCondition;
+        return evaluateTCGCondition(condToCheck, player, { board, hands, decks, discards });
     }
     if (!card.powerCondition || card.powerCondition === 'none' || card.powerCondition === 'any') return true;
     return hasPlayerControlledGem(player, card.powerCondition);
@@ -107,6 +132,7 @@ function showCardTCGDetails(card, locationType, player, boardIdx) {
     const hasPower = card.powerEffect && card.powerEffect !== 'none';
     const effMeta = getTCGGemMeta(card.powerEffect);
     const condMeta = (card.powerCondition && card.powerCondition !== 'none') ? getTCGGemMeta(card.powerCondition) : null;
+    const targetGemMeta = card.targetGemId ? getTCGGemMeta(card.targetGemId) : null;
 
     const badgeEl = document.getElementById('tcg-modal-badge');
     const ownerEl = document.getElementById('tcg-modal-owner');
@@ -154,7 +180,9 @@ function showCardTCGDetails(card, locationType, player, boardIdx) {
 
     if (gemIconEl) {
         const isClassic = document.body.classList.contains('skin-classic');
-        const iconId = hasPower ? card.powerEffect : (card.gemRevealed ? card.gemRevealed.id : null);
+        const iconId = (card.powerEffect === 'jump_reveal_gem' || card.powerEffect === 'refund_energy_1' || card.powerEffect === 'discount_energy_1')
+            ? (card.targetGemId || (card.gemRevealed ? card.gemRevealed.id : null))
+            : (hasPower ? card.powerEffect : (card.gemRevealed ? card.gemRevealed.id : null));
         if (iconId) {
             gemIconEl.innerHTML = isClassic
                 ? `<span style="font-size: 1.8rem;">${GEM_CLASSIC_ICONS[iconId] || '💎'}</span>`
@@ -174,6 +202,49 @@ function showCardTCGDetails(card, locationType, player, boardIdx) {
         }
         if (condEl) condEl.innerText = 'Ninguna';
         if (descEl) descEl.innerText = 'Esta carta pertenece al mazo estándar y combate únicamente con sus valores numéricos.';
+    } else if (card.powerEffect === 'jump_reveal_gem') {
+        const gName = targetGemMeta ? `${targetGemMeta.icon} ${targetGemMeta.shortName}` : 'gema objetivo';
+        if (titleEl) titleEl.innerText = `Explorador de ${targetGemMeta ? targetGemMeta.shortName : 'Gema'}`;
+        if (condEl) condEl.innerText = '✨ Sin condición (salto al desplegar)';
+        if (statusPillEl) {
+            statusPillEl.innerText = locationType === 'hand'
+                ? `🧭 Salta a ${gName} si está libre al jugar`
+                : '🧭 Carta Explorador desplegada';
+            statusPillEl.classList.toggle('inactive', locationType === 'board');
+        }
+        if (descEl) {
+            descEl.innerText = `Sin condición. Al jugar, si ${gName} está libre en el tablero, salta a ella y la revela si estaba oculta.`;
+        }
+    } else if (card.powerEffect === 'refund_energy_1') {
+        const reqMeta = condMeta || targetGemMeta;
+        const gName = reqMeta ? `${reqMeta.icon} ${reqMeta.shortName}` : 'la gema indicada';
+        if (titleEl) titleEl.innerText = `Chispa de ${reqMeta ? reqMeta.shortName : 'Gema'}`;
+        if (condEl) condEl.innerText = reqMeta ? `${reqMeta.icon} Controlar ${reqMeta.shortName}` : 'Gema indicada';
+        if (statusPillEl) {
+            const ready = isCardTCGConditionMetNow(card, player);
+            statusPillEl.innerText = locationType === 'hand'
+                ? (ready ? '✅ Condición cumplida: recuperás +1⚡ al jugar' : `🔒 Requiere controlar ${gName} al jugar`)
+                : '⚡ Carta Chispa desplegada';
+            statusPillEl.classList.toggle('inactive', locationType === 'board' || !ready);
+        }
+        if (descEl) {
+            descEl.innerText = `Cuesta 1⚡. Si ya controlás ${gName} al jugarla, recuperás 1⚡.`;
+        }
+    } else if (card.powerEffect === 'discount_energy_1') {
+        const reqMeta = condMeta || targetGemMeta;
+        const gName = reqMeta ? `${reqMeta.icon} ${reqMeta.shortName}` : 'la gema indicada';
+        if (titleEl) titleEl.innerText = `Filo de ${reqMeta ? reqMeta.shortName : 'Gema'}`;
+        if (condEl) condEl.innerText = reqMeta ? `${reqMeta.icon} Controlar ${reqMeta.shortName}` : 'Gema indicada';
+        if (statusPillEl) {
+            const ready = isCardTCGConditionMetNow(card, player);
+            statusPillEl.innerText = locationType === 'hand'
+                ? (ready ? '✅ Descuento activo: cuesta 1⚡ en vez de 2⚡' : `🔒 Requiere controlar ${gName} para descuento`)
+                : '🗡️ Carta Filo desplegada';
+            statusPillEl.classList.toggle('inactive', locationType === 'board' || !ready);
+        }
+        if (descEl) {
+            descEl.innerText = `Cuesta 1⚡ menos (1⚡ total) si ya controlás ${gName}.`;
+        }
     } else {
         const effTitleLabel = card.powerEffect === 'blanco' ? '🛡️ Invuln.' : `${effMeta.icon} ${effMeta.shortName}`;
         if (titleEl) titleEl.innerText = `Poder: ${effTitleLabel}`;
@@ -261,6 +332,18 @@ function isTCGModeEnabled() {
 function isAITCGModeEnabled() {
     const chk = document.getElementById('check-ai-tcg-mode');
     return chk ? chk.checked : false;
+}
+
+function getTCGSubmode() {
+    const sel = document.getElementById('select-tcg-submode');
+    const raw = sel ? sel.value : localStorage.getItem(STORAGE_KEYS.tcgSubmode);
+    return raw === 'custom' ? 'custom' : 'preset';
+}
+
+function getTCGSaveStorageKey(player, submode = getTCGSubmode()) {
+    return submode === 'custom'
+        ? `9gemas_tcg_deck_custom_${player}`
+        : `9gemas_tcg_deck_preset_${player}`;
 }
 
 function isToroidalOptionEnabled() {
@@ -938,7 +1021,7 @@ function createTutorialGameState() {
     const tutorialGems = [...GEM_TYPES];
     const centerGem = tutorialGems[4];
 
-    const newBoard = Array(9).fill(false);
+    const newBoard = Array(9).fill(null);
     newBoard[4] = {
         val: 3,
         top: 3,
@@ -1091,6 +1174,7 @@ function initSettingsManager() {
     const selectSkin = document.getElementById('select-skin');
     const checkHaptic = document.getElementById('check-haptic');
     const checkTcgMode = document.getElementById('check-tcg-mode');
+    const selectTcgSubmode = document.getElementById('select-tcg-submode');
     const checkAiTcgMode = document.getElementById('check-ai-tcg-mode');
     const checkToroidalOpt = document.getElementById('check-opt-toroidal');
     const checkDiagonalOpt = document.getElementById('check-opt-diagonal');
@@ -1101,6 +1185,16 @@ function initSettingsManager() {
     if (checkTcgMode) {
         checkTcgMode.checked = localStorage.getItem(STORAGE_KEYS.tcgMode) === 'true';
         if (tcgBuilderContainer) tcgBuilderContainer.classList.toggle('hidden', !checkTcgMode.checked);
+    }
+
+    if (selectTcgSubmode) {
+        const savedSubmode = localStorage.getItem(STORAGE_KEYS.tcgSubmode) || 'preset';
+        selectTcgSubmode.value = savedSubmode === 'custom' ? 'custom' : 'preset';
+        selectTcgSubmode.addEventListener('change', () => {
+            playSound('click');
+            localStorage.setItem(STORAGE_KEYS.tcgSubmode, selectTcgSubmode.value);
+            render();
+        });
     }
 
     if (checkAiTcgMode) {
@@ -1202,6 +1296,9 @@ function initSettingsManager() {
         if (checkTcgMode) {
             localStorage.setItem(STORAGE_KEYS.tcgMode, checkTcgMode.checked);
         }
+        if (selectTcgSubmode) {
+            localStorage.setItem(STORAGE_KEYS.tcgSubmode, selectTcgSubmode.value);
+        }
         if (checkAiTcgMode) {
             localStorage.setItem(STORAGE_KEYS.aiTcgMode, checkAiTcgMode.checked);
         }
@@ -1235,7 +1332,22 @@ function openTCGBuilderModal() {
     if (!container) return;
     container.innerHTML = '';
 
-    const savedDeck = getSavedCustomTCGDeck('red');
+    const submode = getTCGSubmode();
+    const titleEl = document.getElementById('tcg-builder-title');
+    const subEl = document.getElementById('tcg-builder-subtitle');
+
+    if (titleEl) {
+        titleEl.innerText = submode === 'preset'
+            ? 'Mazo TCG Preasignado'
+            : 'Constructor de Mazo TCG Custom';
+    }
+    if (subEl) {
+        subEl.innerText = submode === 'preset'
+            ? 'Sin repetir carta: elegí carta preasignada, valor flojo (0-4) y dirección débil.'
+            : 'Configura valor flojo, dirección débil, condición y efecto para cada carta.';
+    }
+
+    const savedDeck = getSavedCustomTCGDeck('red', submode);
 
     TCG_DEEF_SLOTS.forEach((slot, idx) => {
         const currentVal = savedDeck[idx] || { minorVal: 2, specialDir: 'top', powerCondition: 'none', powerEffect: 'rojo' };
@@ -1243,12 +1355,7 @@ function openTCGBuilderModal() {
         div.className = 'tcg-card-row';
         div.style.cssText = "flex-direction: column; align-items: stretch; gap: 4px; margin-bottom: 8px;";
 
-        const conditionOptionsHtml = `<option value="none" ${currentVal.powerCondition === 'none' ? 'selected' : ''}>Sin Condición</option>` +
-            ACTIVE_TCG_GEM_TYPES_LIST.map(g => `<option value="${g.id}" ${currentVal.powerCondition === g.id ? 'selected' : ''}>Controlar: ${g.name}</option>`).join('');
-
-        const effectOptionsHtml = ACTIVE_TCG_GEM_TYPES_LIST.map(g => `<option value="${g.id}" ${currentVal.powerEffect === g.id ? 'selected' : ''}>Efecto: ${g.name}</option>`).join('');
-
-        div.innerHTML = `
+        const minorAndDirHtml = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span><b>${slot.label}</b> (Base: ${slot.val})</span>
                 <div style="display: flex; gap: 4px;">
@@ -1267,50 +1374,158 @@ function openTCGBuilderModal() {
                     </select>
                 </div>
             </div>
-            <div style="display: flex; gap: 4px;">
-                <select id="tcg-cond-${idx}" style="flex: 1; font-size: 0.6rem; padding: 3px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 4px;">
-                    ${conditionOptionsHtml}
-                </select>
-                <select id="tcg-eff-${idx}" style="flex: 1; font-size: 0.6rem; padding: 3px; background: #0f172a; color: #fbbf24; border: 1px solid #334155; border-radius: 4px;">
-                    ${effectOptionsHtml}
-                </select>
-            </div>
         `;
-        container.appendChild(div);
+
+        if (submode === 'preset') {
+            const options = (typeof getPresetOptionsForValue === 'function')
+                ? getPresetOptionsForValue(slot.val)
+                : [];
+            const chosenPreset = (typeof resolvePresetCardConfig === 'function')
+                ? resolvePresetCardConfig(slot.val, currentVal.presetId)
+                : { id: 'default', name: 'Carta Preasignada', energyCost: 2, desc: '' };
+
+            const presetOptionsHtml = options.map(opt =>
+                `<option value="${opt.id}" ${chosenPreset.id === opt.id ? 'selected' : ''}>${opt.name} (${opt.energyCost}⚡)</option>`
+            ).join('');
+
+            div.innerHTML = `
+                ${minorAndDirHtml}
+                <select id="tcg-preset-${idx}" style="width: 100%; font-size: 0.62rem; padding: 3px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 4px;">
+                    ${presetOptionsHtml}
+                </select>
+                <div style="font-size: 0.56rem; color: #cbd5e1; line-height: 1.25; padding: 2px 4px; background: rgba(15,23,42,0.5); border-radius: 4px;">
+                    ${chosenPreset.desc || ''}
+                </div>
+            `;
+            container.appendChild(div);
+
+            const presetSelect = div.querySelector(`#tcg-preset-${idx}`);
+            if (presetSelect) {
+                presetSelect.addEventListener('change', (e) => {
+                    const nextPreset = (typeof resolvePresetCardConfig === 'function')
+                        ? resolvePresetCardConfig(slot.val, e.target.value)
+                        : chosenPreset;
+                    const descBox = div.lastElementChild;
+                    if (descBox) descBox.innerText = nextPreset.desc || '';
+                });
+            }
+        } else {
+            const conditionOptionsHtml = `<option value="none" ${currentVal.powerCondition === 'none' ? 'selected' : ''}>Sin Condición</option>` +
+                ACTIVE_TCG_GEM_TYPES_LIST.map(g => `<option value="${g.id}" ${currentVal.powerCondition === g.id ? 'selected' : ''}>Controlar: ${g.name}</option>`).join('');
+
+            const effectOptionsHtml = ACTIVE_TCG_GEM_TYPES_LIST.map(g => `<option value="${g.id}" ${currentVal.powerEffect === g.id ? 'selected' : ''}>Efecto: ${g.name}</option>`).join('');
+
+            div.innerHTML = `
+                ${minorAndDirHtml}
+                <div style="display: flex; gap: 4px;">
+                    <select id="tcg-cond-${idx}" style="flex: 1; font-size: 0.6rem; padding: 3px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 4px;">
+                        ${conditionOptionsHtml}
+                    </select>
+                    <select id="tcg-eff-${idx}" style="flex: 1; font-size: 0.6rem; padding: 3px; background: #0f172a; color: #fbbf24; border: 1px solid #334155; border-radius: 4px;">
+                        ${effectOptionsHtml}
+                    </select>
+                </div>
+            `;
+            container.appendChild(div);
+        }
     });
 
     const modalBuilder = document.getElementById('modal-tcg-builder');
     if (modalBuilder) modalBuilder.style.display = 'flex';
 }
 
-function getSavedCustomTCGDeck(player) {
-    const key = `9gemas_tcg_deck_${player}`;
+function getSavedCustomTCGDeck(player, submode = getTCGSubmode()) {
+    const key = getTCGSaveStorageKey(player, submode);
     const data = localStorage.getItem(key);
     if (data) {
         try { return JSON.parse(data); } catch (e) {}
     }
-    return TCG_DEEF_SLOTS.map(() => ({ minorVal: 2, specialDir: 'top', powerCondition: 'none', powerEffect: 'rojo' }));
+
+    const usedPresetIds = new Set();
+    return TCG_DEEF_SLOTS.map((slot) => {
+        if (submode === 'preset' && typeof getPresetOptionsForValue === 'function') {
+            const pool = getPresetOptionsForValue(slot.val);
+            const unused = pool.find(opt => !usedPresetIds.has(opt.id)) || pool[0];
+            if (unused) {
+                usedPresetIds.add(unused.id);
+                return {
+                    minorVal: 2,
+                    specialDir: 'top',
+                    presetId: unused.id,
+                    energyCost: unused.energyCost,
+                    powerCondition: unused.powerCondition,
+                    powerEffect: unused.powerEffect,
+                    targetGemId: unused.targetGemId || null
+                };
+            }
+        }
+        return { minorVal: 2, specialDir: 'top', powerCondition: 'none', powerEffect: 'rojo', energyCost: 2 };
+    });
 }
 
 function saveCustomTCGDeck() {
     playSound('click');
     triggerVibrate(30);
 
+    const submode = getTCGSubmode();
     const customDeck = [];
     const counts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+    const seenPresetIds = new Set();
 
-    TCG_DEEF_SLOTS.forEach((slot, idx) => {
+    for (let idx = 0; idx < TCG_DEEF_SLOTS.length; idx++) {
+        const slot = TCG_DEEF_SLOTS[idx];
         const minorVal = parseInt(document.getElementById(`tcg-minor-${idx}`).value, 10);
         const specialDir = document.getElementById(`tcg-dir-${idx}`).value;
-        const powerCondition = document.getElementById(`tcg-cond-${idx}`).value;
-        const powerEffect = document.getElementById(`tcg-eff-${idx}`).value;
 
         if (counts[minorVal] !== undefined) {
             counts[minorVal]++;
         }
 
-        customDeck.push({ val: slot.val, minorVal, specialDir, powerCondition, powerEffect });
-    });
+        if (submode === 'preset') {
+            const presetEl = document.getElementById(`tcg-preset-${idx}`);
+            const presetId = presetEl ? presetEl.value : undefined;
+            const preset = (typeof resolvePresetCardConfig === 'function')
+                ? resolvePresetCardConfig(slot.val, presetId)
+                : { id: presetId, energyCost: 2, powerCondition: 'none', powerEffect: 'rojo' };
+
+            if (seenPresetIds.has(preset.id)) {
+                triggerVibrate([40, 40]);
+                alert(`⚠️ Carta repetida en el mazo:\n"${preset.name}" ya está asignada en otro slot.\nNo se pueden repetir cartas en el mazo.`);
+                return;
+            }
+            seenPresetIds.add(preset.id);
+
+            customDeck.push({
+                val: slot.val,
+                minorVal,
+                specialDir,
+                presetId: preset.id,
+                energyCost: preset.energyCost,
+                powerCondition: preset.powerCondition,
+                powerEffect: preset.powerEffect,
+                targetGemId: preset.targetGemId || null
+            });
+        } else {
+            const powerCondition = document.getElementById(`tcg-cond-${idx}`).value;
+            const powerEffect = document.getElementById(`tcg-eff-${idx}`).value;
+            const customKey = `${slot.val}_${minorVal}_${specialDir}_${powerCondition}_${powerEffect}`;
+            if (seenPresetIds.has(customKey)) {
+                triggerVibrate([40, 40]);
+                alert(`⚠️ Carta repetida en el mazo:\nTenés dos cartas idénticas (mismo valor, flojo, dirección, condición y efecto).`);
+                return;
+            }
+            seenPresetIds.add(customKey);
+
+            customDeck.push({
+                val: slot.val,
+                minorVal,
+                specialDir,
+                powerCondition,
+                powerEffect,
+                energyCost: 2
+            });
+        }
+    }
 
     if (counts[0] !== 1 || counts[1] !== 2 || counts[2] !== 2 || counts[3] !== 2 || counts[4] !== 2) {
         triggerVibrate([40, 40]);
@@ -1318,10 +1533,10 @@ function saveCustomTCGDeck() {
         return;
     }
 
-    localStorage.setItem('9gemas_tcg_deck_red', JSON.stringify(customDeck));
+    localStorage.setItem(getTCGSaveStorageKey('red', submode), JSON.stringify(customDeck));
     const modalBuilder = document.getElementById('modal-tcg-builder');
     if (modalBuilder) modalBuilder.style.display = 'none';
-    alert("¡Mazo TCG custom guardado con éxito!");
+    alert(submode === 'preset' ? "¡Mazo TCG Preasignado guardado con éxito!" : "¡Mazo TCG custom guardado con éxito!");
 }
 
 function showGemDetails(gemObj, isControlled, owner) {
@@ -1420,15 +1635,25 @@ function generateAITCGDeckConfig() {
             minorVal: card[card.specialDir],
             specialDir: card.specialDir,
             powerCondition,
-            powerEffect
+            powerEffect,
+            energyCost: 2
         };
     });
 }
 
+function getCardPlayEnergyCost(card, player = turn) {
+    if (!card) return 2;
+    if (typeof getEffectiveCardEnergyCost === 'function') {
+        return getEffectiveCardEnergyCost(card, player, { board, decks, hands, discards });
+    }
+    return typeof card.energyCost === 'number' ? card.energyCost : 2;
+}
+
 function generateTCGDeckForPlayer(player) {
+    const submode = player === 'blue' && gameMode === 'ai' ? 'custom' : getTCGSubmode();
     const customConfig = (player === 'blue' && gameMode === 'ai')
         ? generateAITCGDeckConfig()
-        : getSavedCustomTCGDeck(player);
+        : getSavedCustomTCGDeck(player, submode);
 
     return customConfig.map(item => {
         const card = {
@@ -1436,7 +1661,9 @@ function generateTCGDeckForPlayer(player) {
             top: item.val, right: item.val, bottom: item.val, left: item.val,
             specialDir: item.specialDir,
             powerCondition: item.powerCondition || 'none',
-            powerEffect: item.powerEffect || 'rojo'
+            powerEffect: item.powerEffect || 'rojo',
+            energyCost: typeof item.energyCost === 'number' ? item.energyCost : 2,
+            targetGemId: item.targetGemId || null
         };
         card[item.specialDir] = item.minorVal;
         return card;
@@ -1448,12 +1675,30 @@ function canPlayerUseTCG(player) {
 }
 
 function triggerTCGPower(playedCard, currentBoard, player, energyNow, playerDecks, playerHands, playerDiscards, boardIdx) {
-    if (!canPlayerUseTCG(player)) return { logText: '', energyDelta: 0 };
-    if (!playedCard || !playedCard.powerEffect || playedCard.powerEffect === 'none') return { logText: '', energyDelta: 0 };
-    if (typeof resolveTCGCardPower === 'function') {
-        return resolveTCGCardPower(playedCard, currentBoard, player, energyNow, playerDecks, playerHands, playerDiscards, boardIdx);
+    if (!canPlayerUseTCG(player)) return { logText: '', energyDelta: 0, finalBoardIndex: boardIdx };
+    if (!playedCard || !playedCard.powerEffect || playedCard.powerEffect === 'none') {
+        return { logText: '', energyDelta: 0, finalBoardIndex: boardIdx };
     }
-    return { logText: '', energyDelta: 0 };
+    if (typeof resolveTCGCardPower === 'function') {
+        return resolveTCGCardPower(
+            playedCard,
+            currentBoard,
+            player,
+            energyNow,
+            playerDecks,
+            playerHands,
+            playerDiscards,
+            boardIdx,
+            {
+                gems,
+                revealedBoardGems,
+                onCardMoved: (newIdx) => {
+                    newlyDeployedCellIndex = newIdx;
+                }
+            }
+        );
+    }
+    return { logText: '', energyDelta: 0, finalBoardIndex: boardIdx };
 }
 
 function applyGemDeployEffect(gem, player, boardIdx) {
@@ -1686,7 +1931,7 @@ function createInitialGameState() {
             ? "Modo IA con Mazo TCG Activo."
             : "Modo IA Estándar (sin poderes TCG).";
     } else if (isPlayerTCG) {
-        initialLog = "Modo TCG Sinergia Activo. ¡Mazo cargado!";
+        initialLog = `Modo TCG (${getTCGSubmode() === 'preset' ? 'Preasignado' : 'Custom'}) Activo. ¡Mazo cargado!`;
     }
 
     return {
@@ -2299,15 +2544,20 @@ function findBestAICardPlacement() {
 function aiPlayCard(handIdx, boardIdx) {
     playSound('fly');
     triggerVibrate(35);
-    currentEnergy -= 2;
+    const card = hands.blue[handIdx];
+    const playCost = getCardPlayEnergyCost(card, 'blue');
+    currentEnergy -= playCost;
     const gem = gems[boardIdx] || GEM_TYPES[0];
     revealedBoardGems[boardIdx] = true;
-    const card = hands.blue[handIdx];
 
     const playedCard = {
         val: card.val,
         top: card.top, right: card.right, bottom: card.bottom, left: card.left,
-        specialDir: card.specialDir, powerCondition: card.powerCondition, powerEffect: card.powerEffect,
+        specialDir: card.specialDir,
+        powerCondition: card.powerCondition,
+        powerEffect: card.powerEffect,
+        energyCost: playCost,
+        targetGemId: card.targetGemId || null,
         owner: 'blue', gemRevealed: gem, isProtected: gem.protected || false
     };
 
@@ -2316,16 +2566,19 @@ function aiPlayCard(handIdx, boardIdx) {
     newlyDrawnCardIndex.blue = null;
     newlyDeployedCellIndex = boardIdx;
 
-    let logText = `🤖 IA jugó en ${gem.name}! (-2⚡)`;
+    let logText = `🤖 IA jugó en ${gem.name}! (-${playCost}⚡)`;
 
     const tcgRes = triggerTCGPower(playedCard, board, 'blue', currentEnergy, decks, hands, discards, boardIdx);
+    const activeBoardIdx = typeof tcgRes.finalBoardIndex === 'number' ? tcgRes.finalBoardIndex : boardIdx;
+    const activeGem = (board[activeBoardIdx] && board[activeBoardIdx].gemRevealed) || gem;
+
     if (tcgRes.logText) logText += tcgRes.logText;
     if (tcgRes.energyDelta) {
         currentEnergy += tcgRes.energyDelta;
         spawnEnergyParticles();
     }
 
-    const gemDeployRes = applyGemDeployEffect(gem, 'blue', boardIdx);
+    const gemDeployRes = applyGemDeployEffect(activeGem, 'blue', activeBoardIdx);
     if (gemDeployRes.logText) logText += gemDeployRes.logText;
     if (gemDeployRes.energyDelta) {
         currentEnergy += gemDeployRes.energyDelta;
@@ -2346,18 +2599,20 @@ function selectHandCard(player, index) {
     playSound('click');
     triggerVibrate(20);
     if (!isMyTurn()) return;
-    if (currentEnergy < 2) {
+    const candidateCard = hands[player][index];
+    const playCost = getCardPlayEnergyCost(candidateCard, player);
+    if (currentEnergy < playCost) {
         triggerVibrate([30, 30]);
         return;
     }
     isInspectMode = false;
-    selectedCard = hands[player][index];
+    selectedCard = candidateCard;
     selectedHandIndex = index;
     selectedBoardIndex = null;
     const atkPanel = document.getElementById('attack-panel');
     if (atkPanel) atkPanel.classList.add('hidden');
     const logEl = document.getElementById('log-message');
-    if (logEl) logEl.innerText = "Tocá casilla vacía para JUGAR la carta (2⚡).";
+    if (logEl) logEl.innerText = `Tocá casilla vacía para JUGAR la carta (${playCost}⚡).`;
     render();
 }
 
@@ -2412,7 +2667,8 @@ function handleBoardClick(index) {
     }
 
     if (selectedCard !== null && board[index] === null) {
-        if (currentEnergy < 2) {
+        const playCost = getCardPlayEnergyCost(selectedCard, turn);
+        if (currentEnergy < playCost) {
             triggerVibrate([30, 30]);
             return;
         }
@@ -2450,7 +2706,13 @@ function cancelAttack() {
 }
 
 function playCard(index) {
-    currentEnergy -= 2;
+    const playCost = getCardPlayEnergyCost(selectedCard, turn);
+    if (currentEnergy < playCost) {
+        triggerVibrate([30, 30]);
+        return;
+    }
+
+    currentEnergy -= playCost;
     const gem = gems[index] || GEM_TYPES[0];
     revealedBoardGems[index] = true;
 
@@ -2460,6 +2722,8 @@ function playCard(index) {
         specialDir: selectedCard.specialDir,
         powerCondition: selectedCard.powerCondition,
         powerEffect: selectedCard.powerEffect,
+        energyCost: playCost,
+        targetGemId: selectedCard.targetGemId || null,
         owner: turn, gemRevealed: gem,
         isProtected: gem.protected || false
     };
@@ -2473,16 +2737,19 @@ function playCard(index) {
     }
     triggerVibrate(35);
 
-    let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-2⚡)`;
+    let logText = `${turn === 'red' ? 'Rojo' : 'Azul'} jugó en ${gem.name}! (-${playCost}⚡)`;
 
     const tcgRes = triggerTCGPower(playedCard, board, turn, currentEnergy, decks, hands, discards, index);
+    const activeBoardIdx = typeof tcgRes.finalBoardIndex === 'number' ? tcgRes.finalBoardIndex : index;
+    const activeGem = (board[activeBoardIdx] && board[activeBoardIdx].gemRevealed) || gem;
+
     if (tcgRes.logText) logText += tcgRes.logText;
     if (tcgRes.energyDelta) {
         currentEnergy += tcgRes.energyDelta;
         spawnEnergyParticles();
     }
 
-    const gemDeployRes = applyGemDeployEffect(gem, turn, index);
+    const gemDeployRes = applyGemDeployEffect(activeGem, turn, activeBoardIdx);
     if (gemDeployRes.logText) logText += gemDeployRes.logText;
     if (gemDeployRes.energyDelta) {
         currentEnergy += gemDeployRes.energyDelta;
@@ -3268,7 +3535,8 @@ function render() {
         const tcgBadge = document.getElementById('tcg-mode-badge');
         if (tcgBadge) {
             const isTcgActive = isTCGModeEnabled();
-            tcgBadge.innerText = isTcgActive ? '🎴 TCG (Sinergias)' : '⚡ Mazo Normal';
+            const submodeLabel = getTCGSubmode() === 'preset' ? 'Preasignado' : 'Custom';
+            tcgBadge.innerText = isTcgActive ? `🎴 TCG (${submodeLabel})` : '⚡ Mazo Normal';
             tcgBadge.style.color = isTcgActive ? '#fbbf24' : '#38bdf8';
             tcgBadge.style.borderColor = isTcgActive ? 'rgba(251, 191, 36, 0.4)' : 'rgba(56, 189, 248, 0.4)';
             tcgBadge.style.background = isTcgActive ? 'rgba(251, 191, 36, 0.1)' : 'rgba(56, 189, 248, 0.1)';
@@ -3484,7 +3752,8 @@ function render() {
                         div.innerHTML = `<span style="font-size:0.6rem; opacity:0.3;">💎</span>`;
                     } else {
                         const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
-                        const lacksEnergy = (isMyTurnActive && currentEnergy < 2);
+                        const playCost = getCardPlayEnergyCost(card, p);
+                        const lacksEnergy = (isMyTurnActive && currentEnergy < playCost);
                         const hasTCG = card.powerEffect && card.powerEffect !== 'none';
 
                         div.className = `card-item ${p} ${hasTCG ? 'has-tcg-power' : ''} ${isSel ? 'selected' : ''} ${isNewlyDrawn ? 'anim-card-draw' : ''} ${lacksEnergy ? 'disabled-energy' : ''}`;
@@ -3499,8 +3768,11 @@ function render() {
                         if (hasTCG) {
                             const effMeta = getTCGGemMeta(card.powerEffect);
                             const condMeta = (card.powerCondition && card.powerCondition !== 'none') ? getTCGGemMeta(card.powerCondition) : null;
+                            const targetMeta = card.targetGemId ? getTCGGemMeta(card.targetGemId) : null;
                             const effIcon = card.powerEffect === 'blanco' ? '🛡️' : effMeta.icon;
-                            const iconsStr = condMeta ? `${condMeta.icon}${effIcon}` : effIcon;
+                            const iconsStr = (card.powerEffect === 'jump_reveal_gem' || card.powerEffect === 'refund_energy_1' || card.powerEffect === 'discount_energy_1')
+                                ? (targetMeta ? `${effIcon}${targetMeta.icon}` : effIcon)
+                                : (condMeta ? `${condMeta.icon}${effIcon}` : effIcon);
                             tcgCenterHTML = `
                                 <div class="hand-tcg-center">
                                     <span class="hand-tcg-icons">${iconsStr}</span>
@@ -3509,14 +3781,15 @@ function render() {
                             tcgInfoBtnHTML = `<div class="hand-card-info-btn" title="Ver poder de la carta">ℹ️</div>`;
                         }
 
+                        const weakDir = card.specialDir;
                         div.innerHTML = `
-                            <div class="card-energy-hint">2⚡</div>
+                            <div class="card-energy-hint">${playCost}⚡</div>
                             ${tcgInfoBtnHTML}
                             ${tcgCenterHTML}
-                            <div class="card-val-pos val-top">${card.top}</div>
-                            <div class="card-val-pos val-bottom">${card.bottom}</div>
-                            <div class="card-val-pos val-left">${card.left}</div>
-                            <div class="card-val-pos val-right">${card.right}</div>
+                            <div class="card-val-pos val-top ${weakDir === 'top' ? 'weak-side' : ''}">${card.top}</div>
+                            <div class="card-val-pos val-bottom ${weakDir === 'bottom' ? 'weak-side' : ''}">${card.bottom}</div>
+                            <div class="card-val-pos val-left ${weakDir === 'left' ? 'weak-side' : ''}">${card.left}</div>
+                            <div class="card-val-pos val-right ${weakDir === 'right' ? 'weak-side' : ''}">${card.right}</div>
                         `;
 
                         if (hasTCG) {

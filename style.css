@@ -1702,3 +1702,75 @@ body.skin-gothic .cell-dynamic.core-cell { background: rgba(63, 63, 70, 0.85); b
     opacity: 0.58;
     border-style: dashed !important;
 }
+
+
+/* Mano: mayor aire y lado flojo visible */
+.hand-cards {
+    padding: 7px 5px;
+    gap: 6px;
+}
+
+.card-item .card-val-pos.weak-side {
+    color: #fda4af;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.hand-tcg-center {
+    padding: 2px 4px;
+    border-radius: 7px;
+}
+
+.hand-tcg-icons {
+    font-size: 9px;
+    letter-spacing: 0;
+}
+
+/* Tablero 5x5: evitar choque entre ESPEJO y escudo temporal, y suavizar reflejos */
+.dynamic-grid.mode-5x5 .mirror-edge-cell {
+    opacity: 0.85;
+}
+
+.dynamic-grid.mode-5x5 .mirror-tag,
+.dynamic-grid.mode-5x5 .mirror-edge-cell .mirror-tag {
+    top: 12px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    font-size: 0.42rem;
+    padding: 0 3px;
+    letter-spacing: 0.2px;
+}
+
+.dynamic-grid.mode-5x5 .diamond-temp-shield-badge,
+.dynamic-grid.mode-5x5 .mirror-edge-cell .diamond-temp-shield-badge {
+    top: auto;
+    bottom: 2px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    font-size: 0.42rem;
+    padding: 0 3px;
+}
+
+/* Modales: mejor lectura y toque en móvil */
+.modal-content-settings {
+    max-width: 340px;
+    padding: 16px;
+}
+
+.modal-content-settings .room-status,
+.modal-content-settings .btn-lobby,
+.modal-content-settings .ai-select {
+    font-size: 0.75rem;
+}
+
+.tcg-detail-modal {
+    max-width: 340px;
+}
+
+.tcg-info-desc,
+#modal-gem-desc {
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
