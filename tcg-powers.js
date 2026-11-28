@@ -1,3 +1,6 @@
+// Versión del catálogo TCG: incrementala cada vez que modifiques las cartas puras o la matriz de 81 combinaciones
+const TCG_CATALOG_VERSION = '2026-11-28-v3';
+
 // Definición de las 9 Gemas / Tipos para Condiciones y Efectos
 const TCG_GEM_TYPES_LIST = [
     { id: 'rojo', name: 'Rubí (Rojo)', short: 'Rubí', icon: '🔴' },
@@ -161,29 +164,21 @@ function buildPure27Catalog() {
     return byVal;
 }
 
-// Construye las 81 combinaciones exactas (9 condiciones x 9 efectos = 81):
-// - Cada condición aparece 2 veces en 5, 2 en 6, 2 en 7, 2 en 8 y 1 en 9 (9 efectos distintos por condición).
-// - Cada efecto aparece exactamente 9 veces en total (una vez por cada condición), respetando las franjas:
-//   * 5 y 6: Rubí (9 en 5), Zafiro (6 en 5, 3 en 6), Ónix (3 en 5, 6 en 6)
-//   * 6 y 7: Ámbar (5 en 6, 4 en 7), Cuarzo (4 en 6, 5 en 7)
-//   * 7 y 8: Topacio (5 en 7, 4 en 8), Diamante (4 en 7, 5 en 8)
-//   * 8 y 9: Amatista (4 en 8, 5 en 9), Esmeralda (5 en 8, 4 en 9)
+// Construye las 81 combinaciones exactas (9 condiciones x 9 efectos = 81)
 function build81CombinationsByValue() {
     const byVal = { 5: [], 6: [], 7: [], 8: [], 9: [] };
     const gems = TCG_GEM_TYPES_LIST;
 
-    // Secuencia ordenada de los 9 efectos distintos para cada condición idx (0..8)
-    // Posiciones [0,1] -> valor 5 | [2,3] -> valor 6 | [4,5] -> valor 7 | [6,7] -> valor 8 | [8] -> valor 9
     const EFFECTS_BY_CONDITION_INDEX = [
-        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'violeta', 'verde'],     // 0: Rubí
-        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'verde', 'violeta'],     // 1: Zafiro
-        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'violeta', 'verde'],     // 2: Topacio
-        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'verde', 'violeta'],     // 3: Esmeralda
-        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'blanco', 'amarillo', 'violeta', 'verde'],     // 4: Ámbar
-        ['rojo', 'azul', 'negro', 'marron', 'naranja', 'blanco', 'amarillo', 'verde', 'violeta'],     // 5: Amatista
-        ['rojo', 'negro', 'azul', 'marron', 'naranja', 'blanco', 'amarillo', 'violeta', 'verde'],     // 6: Diamante
-        ['rojo', 'negro', 'azul', 'marron', 'naranja', 'blanco', 'amarillo', 'verde', 'violeta'],     // 7: Ónix
-        ['rojo', 'negro', 'azul', 'marron', 'naranja', 'amarillo', 'blanco', 'verde', 'violeta']      // 8: Cuarzo
+        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'violeta', 'verde'],
+        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'verde', 'violeta'],
+        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'violeta', 'verde'],
+        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'amarillo', 'blanco', 'verde', 'violeta'],
+        ['rojo', 'azul', 'negro', 'naranja', 'marron', 'blanco', 'amarillo', 'violeta', 'verde'],
+        ['rojo', 'azul', 'negro', 'marron', 'naranja', 'blanco', 'amarillo', 'verde', 'violeta'],
+        ['rojo', 'negro', 'azul', 'marron', 'naranja', 'blanco', 'amarillo', 'violeta', 'verde'],
+        ['rojo', 'negro', 'azul', 'marron', 'naranja', 'blanco', 'amarillo', 'verde', 'violeta'],
+        ['rojo', 'negro', 'azul', 'marron', 'naranja', 'amarillo', 'blanco', 'verde', 'violeta']
     ];
 
     const SLOT_VALUES_BY_POS = [5, 5, 6, 6, 7, 7, 8, 8, 9];
@@ -223,6 +218,13 @@ const TCG_PRESET_CATALOG_BY_VAL = {
 // Devuelve una lista de presets disponibles para un slot de valor base dado
 function getPresetOptionsForValue(val) {
     return TCG_PRESET_CATALOG_BY_VAL[val] || TCG_PRESET_CATALOG_BY_VAL[6] || [];
+}
+
+// Verifica si un presetId pertenece al catálogo vigente para ese valor base
+function isValidPresetIdForValue(val, presetId) {
+    if (!presetId || typeof presetId !== 'string') return false;
+    const pool = getPresetOptionsForValue(val);
+    return pool.some(item => item.id === presetId);
 }
 
 // Busca un preset por id o devuelve uno por defecto para el valor base indicado

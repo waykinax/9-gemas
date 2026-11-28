@@ -28,6 +28,8 @@ const ACTIVE_TCG_GEM_TYPES_LIST = (typeof TCG_GEM_TYPES_LIST !== 'undefined') ? 
     { id: 'marron', name: 'Cuarzo (Marrón)', short: 'Cuarzo', icon: '🟤' }
 ];
 
+const ACTIVE_TCG_CATALOG_VERSION = (typeof TCG_CATALOG_VERSION !== 'undefined') ? TCG_CATALOG_VERSION : 'default-v1';
+
 // Diccionario detallado de poderes TCG para visualización en mano, tablero y modal
 const TCG_POWER_METADATA = {
     'rojo': {
@@ -1165,6 +1167,37 @@ const TCG_DEEF_SLOTS = [
     { val: 9, label: 'Valor 9 (#1)' }
 ];
 
+function buildDefaultTCGDeckForSubmode(submode) {
+    const usedPresetIds = new Set();
+    return TCG_DEEF_SLOTS.map((slot) => {
+        if (submode === 'preset' && typeof getPresetOptionsForValue === 'function') {
+            const pool = getPresetOptionsForValue(slot.val);
+            const unused = pool.find(opt => !usedPresetIds.has(opt.id)) || pool[0];
+            if (unused) {
+                usedPresetIds.add(unused.id);
+                return {
+                    val: slot.val,
+                    minorVal: 2,
+                    specialDir: 'top',
+                    presetId: unused.id,
+                    energyCost: unused.energyCost,
+                    powerCondition: unused.powerCondition,
+                    powerEffect: unused.powerEffect,
+                    targetGemId: unused.targetGemId || null
+                };
+            }
+        }
+        return {
+            val: slot.val,
+            minorVal: 2,
+            specialDir: 'top',
+            powerCondition: 'none',
+            powerEffect: 'rojo',
+            energyCost: 2
+        };
+    });
+}
+
 function initSettingsManager() {
     const DEFAULT_SKIN = 'modern';
 
@@ -1436,31 +1469,57 @@ function openTCGBuilderModal() {
 
 function getSavedCustomTCGDeck(player, submode = getTCGSubmode()) {
     const key = getTCGSaveStorageKey(player, submode);
-    const data = localStorage.getItem(key);
-    if (data) {
-        try { return JSON.parse(data); } catch (e) {}
+    const raw = localStorage.getItem(key);
+
+    if (raw) {
+        try {
+            const parsed = JSON.parse(raw);
+            // Formato nuevo versionado: { version, slots }
+            if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.slots)) {
+                const versionMatches = parsed.version === ACTIVE_TCG_CATALOG_VERSION;
+                const validCount = parsed.slots.length === TCG_DEEF_SLOTS.length;
+                const allPresetsValid = submode !== 'preset' || parsed.slots.every((item, idx) => {
+                    const expectedVal = TCG_DEEF_SLOTS[idx].val;
+                    return typeof isValidPresetIdForValue === 'function'
+                        ? isValidPresetIdForValue(expectedVal, item && item.presetId)
+                        : Boolean(item && item.presetId);
+                });
+
+                if (versionMatches && validCount && allPresetsValid) {
+                    return parsed.slots.map((item, idx) => {
+                        const slotVal = TCG_DEEF_SLOTS[idx].val;
+                        if (submode === 'preset' && typeof resolvePresetCardConfig === 'function') {
+                            const fresh = resolvePresetCardConfig(slotVal, item.presetId);
+                            return {
+                                val: slotVal,
+                                minorVal: typeof item.minorVal === 'number' ? item.minorVal : 2,
+                                specialDir: item.specialDir || 'top',
+                                presetId: fresh.id,
+                                energyCost: fresh.energyCost,
+                                powerCondition: fresh.powerCondition,
+                                powerEffect: fresh.powerEffect,
+                                targetGemId: fresh.targetGemId || null
+                            };
+                        }
+                        return {
+                            ...item,
+                            val: slotVal
+                        };
+                    });
+                }
+            }
+        } catch (e) {}
+
+        // Si el formato era viejo sin versión, la versión cambió o algún preset quedó obsoleto, se limpia
+        localStorage.removeItem(key);
     }
 
-    const usedPresetIds = new Set();
-    return TCG_DEEF_SLOTS.map((slot) => {
-        if (submode === 'preset' && typeof getPresetOptionsForValue === 'function') {
-            const pool = getPresetOptionsForValue(slot.val);
-            const unused = pool.find(opt => !usedPresetIds.has(opt.id)) || pool[0];
-            if (unused) {
-                usedPresetIds.add(unused.id);
-                return {
-                    minorVal: 2,
-                    specialDir: 'top',
-                    presetId: unused.id,
-                    energyCost: unused.energyCost,
-                    powerCondition: unused.powerCondition,
-                    powerEffect: unused.powerEffect,
-                    targetGemId: unused.targetGemId || null
-                };
-            }
-        }
-        return { minorVal: 2, specialDir: 'top', powerCondition: 'none', powerEffect: 'rojo', energyCost: 2 };
-    });
+    const freshDeck = buildDefaultTCGDeckForSubmode(submode);
+    localStorage.setItem(key, JSON.stringify({
+        version: ACTIVE_TCG_CATALOG_VERSION,
+        slots: freshDeck
+    }));
+    return freshDeck;
 }
 
 function saveCustomTCGDeck() {
@@ -1533,7 +1592,10 @@ function saveCustomTCGDeck() {
         return;
     }
 
-    localStorage.setItem(getTCGSaveStorageKey('red', submode), JSON.stringify(customDeck));
+    localStorage.setItem(getTCGSaveStorageKey('red', submode), JSON.stringify({
+        version: ACTIVE_TCG_CATALOG_VERSION,
+        slots: customDeck
+    }));
     const modalBuilder = document.getElementById('modal-tcg-builder');
     if (modalBuilder) modalBuilder.style.display = 'none';
     alert(submode === 'preset' ? "¡Mazo TCG Preasignado guardado con éxito!" : "¡Mazo TCG custom guardado con éxito!");
@@ -1655,17 +1717,38 @@ function generateTCGDeckForPlayer(player) {
         ? generateAITCGDeckConfig()
         : getSavedCustomTCGDeck(player, submode);
 
-    return customConfig.map(item => {
-        const card = {
-            val: item.val,
-            top: item.val, right: item.val, bottom: item.val, left: item.val,
-            specialDir: item.specialDir,
+    return customConfig.map((item, idx) => {
+        const slotVal = item.val || (TCG_DEEF_SLOTS[idx] ? TCG_DEEF_SLOTS[idx].val : 6);
+        const minorVal = typeof item.minorVal === 'number' ? item.minorVal : 2;
+        const specialDir = item.specialDir || 'top';
+
+        let resolved = {
             powerCondition: item.powerCondition || 'none',
             powerEffect: item.powerEffect || 'rojo',
             energyCost: typeof item.energyCost === 'number' ? item.energyCost : 2,
             targetGemId: item.targetGemId || null
         };
-        card[item.specialDir] = item.minorVal;
+
+        if (submode === 'preset' && typeof resolvePresetCardConfig === 'function') {
+            const freshPreset = resolvePresetCardConfig(slotVal, item.presetId);
+            resolved = {
+                powerCondition: freshPreset.powerCondition,
+                powerEffect: freshPreset.powerEffect,
+                energyCost: freshPreset.energyCost,
+                targetGemId: freshPreset.targetGemId || null
+            };
+        }
+
+        const card = {
+            val: slotVal,
+            top: slotVal, right: slotVal, bottom: slotVal, left: slotVal,
+            specialDir,
+            powerCondition: resolved.powerCondition,
+            powerEffect: resolved.powerEffect,
+            energyCost: resolved.energyCost,
+            targetGemId: resolved.targetGemId
+        };
+        card[specialDir] = minorVal;
         return card;
     });
 }
