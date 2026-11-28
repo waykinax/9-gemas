@@ -113,6 +113,38 @@ function getCardTCGShortPillHTML(card) {
     return `${condLabel} => ${effLabel}`;
 }
 
+function getRequiredGemIdForSelectedCard(card) {
+    if (!card || !card.powerEffect || card.powerEffect === 'none') return null;
+    if (card.powerEffect === 'jump_reveal_gem') return null;
+    if (card.powerEffect === 'refund_energy_1' || card.powerEffect === 'discount_energy_1') {
+        return (card.powerCondition && card.powerCondition !== 'none') ? card.powerCondition : card.targetGemId;
+    }
+    if (card.powerCondition && card.powerCondition !== 'none') {
+        return card.powerCondition;
+    }
+    return null;
+}
+
+function isBoardCellMatchingSelectedCardCondition(cell, selectedHandCard, activePlayer) {
+    if (!cell || !cell.gemRevealed || !selectedHandCard) return false;
+    if (cell.owner !== activePlayer) return false;
+    const reqGemId = getRequiredGemIdForSelectedCard(selectedHandCard);
+    if (!reqGemId) return false;
+    if (reqGemId === 'any') return true;
+    return cell.gemRevealed.id === reqGemId;
+}
+
+function applyConditionGlowStyle(div, isCondMatch) {
+    if (!div) return;
+    if (isCondMatch) {
+        div.style.borderColor = '#facc15';
+        div.style.boxShadow = '0 0 0 2px rgba(250, 204, 21, 0.95), 0 0 14px rgba(250, 204, 21, 0.75)';
+    } else {
+        div.style.borderColor = '';
+        div.style.boxShadow = '';
+    }
+}
+
 function isCardTCGConditionMetNow(card, player) {
     if (!card || !card.powerEffect || card.powerEffect === 'none') return false;
     if (card.powerEffect === 'jump_reveal_gem') return true;
@@ -124,6 +156,18 @@ function isCardTCGConditionMetNow(card, player) {
     }
     if (!card.powerCondition || card.powerCondition === 'none' || card.powerCondition === 'any') return true;
     return hasPlayerControlledGem(player, card.powerCondition);
+}
+
+function getSelectedCardStatusTag(card, player) {
+    if (!card || !card.powerEffect || card.powerEffect === 'none') return '';
+    const playCost = getCardPlayEnergyCost(card, player);
+    const baseCost = typeof card.energyCost === 'number' ? card.energyCost : 2;
+    const hasDiscount = playCost < baseCost;
+    const condMet = isCardTCGConditionMetNow(card, player);
+
+    if (hasDiscount) return ' • 🔥 Activa';
+    if (condMet) return ' • ⚡ Lista';
+    return '';
 }
 
 function showCardTCGDetails(card, locationType, player, boardIdx) {
@@ -1167,6 +1211,67 @@ const TCG_DEEF_SLOTS = [
     { val: 9, label: 'Valor 9 (#1)' }
 ];
 
+const REQUIRED_MINOR_COUNTS = { 0: 1, 1: 2, 2: 2, 3: 2, 4: 2 };
+
+function updateMinorCounterLive() {
+    const counterEl = document.getElementById('tcg-minor-counter');
+    if (!counterEl) return;
+
+    const counts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+    for (let idx = 0; idx < TCG_DEEF_SLOTS.length; idx++) {
+        const sel = document.getElementById(`tcg-minor-${idx}`);
+        if (!sel) continue;
+        const val = parseInt(sel.value, 10);
+        if (counts[val] !== undefined) counts[val]++;
+    }
+
+    let allValid = true;
+    const pills = [0, 1, 2, 3, 4].map((v) => {
+        const current = counts[v];
+        const target = REQUIRED_MINOR_COUNTS[v];
+        const ok = current === target;
+        if (!ok) allValid = false;
+        const bg = ok ? 'rgba(34, 197, 94, 0.16)' : 'rgba(245, 158, 11, 0.14)';
+        const border = ok ? 'rgba(34, 197, 94, 0.55)' : 'rgba(245, 158, 11, 0.45)';
+        const color = ok ? '#4ade80' : '#fbbf24';
+        return `<span style="padding: 2px 5px; border-radius: 5px; background: ${bg}; border: 1px solid ${border}; color: ${color}; font-weight: bold;">${v}: ${current}/${target}</span>`;
+    }).join(' ');
+
+    counterEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <span style="font-size: 0.58rem; color: ${allValid ? '#4ade80' : '#fbbf24'}; font-weight: bold;">
+                ${allValid ? '✅ Valores flojos listos para guardar' : '⚠️ Valores flojos requeridos (0×1, 1..4×2)'}
+            </span>
+            <button type="button" id="btn-autocomplete-minors" style="padding: 3px 7px; font-size: 0.56rem; font-weight: bold; background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); border-radius: 5px; cursor: pointer;">
+                🎲 Autocompletar válido
+            </button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 4px; font-size: 0.56rem;">${pills}</div>
+    `;
+
+    const btnAuto = document.getElementById('btn-autocomplete-minors');
+    if (btnAuto) {
+        btnAuto.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            autocompleteValidMinors();
+        };
+    }
+}
+
+function autocompleteValidMinors() {
+    playSound('click');
+    triggerVibrate(25);
+    const validPool = shuffle([0, 1, 1, 2, 2, 3, 3, 4, 4]);
+    for (let idx = 0; idx < TCG_DEEF_SLOTS.length; idx++) {
+        const sel = document.getElementById(`tcg-minor-${idx}`);
+        if (sel && validPool[idx] !== undefined) {
+            sel.value = String(validPool[idx]);
+        }
+    }
+    updateMinorCounterLive();
+}
+
 function buildDefaultTCGDeckForSubmode(submode) {
     const usedPresetIds = new Set();
     return TCG_DEEF_SLOTS.map((slot) => {
@@ -1380,6 +1485,11 @@ function openTCGBuilderModal() {
             : 'Configura valor flojo, dirección débil, condición y efecto para cada carta.';
     }
 
+    const counterBox = document.createElement('div');
+    counterBox.id = 'tcg-minor-counter';
+    counterBox.style.cssText = 'background: rgba(15, 23, 42, 0.75); border: 1px solid #334155; border-radius: 7px; padding: 6px 8px; margin-bottom: 8px;';
+    container.appendChild(counterBox);
+
     const savedDeck = getSavedCustomTCGDeck('red', submode);
 
     TCG_DEEF_SLOTS.forEach((slot, idx) => {
@@ -1461,7 +1571,17 @@ function openTCGBuilderModal() {
             `;
             container.appendChild(div);
         }
+
+        const minorSelect = div.querySelector(`#tcg-minor-${idx}`);
+        if (minorSelect) {
+            minorSelect.addEventListener('change', () => {
+                playSound('click');
+                updateMinorCounterLive();
+            });
+        }
     });
+
+    updateMinorCounterLive();
 
     const modalBuilder = document.getElementById('modal-tcg-builder');
     if (modalBuilder) modalBuilder.style.display = 'flex';
@@ -1474,7 +1594,6 @@ function getSavedCustomTCGDeck(player, submode = getTCGSubmode()) {
     if (raw) {
         try {
             const parsed = JSON.parse(raw);
-            // Formato nuevo versionado: { version, slots }
             if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.slots)) {
                 const versionMatches = parsed.version === ACTIVE_TCG_CATALOG_VERSION;
                 const validCount = parsed.slots.length === TCG_DEEF_SLOTS.length;
@@ -1510,7 +1629,6 @@ function getSavedCustomTCGDeck(player, submode = getTCGSubmode()) {
             }
         } catch (e) {}
 
-        // Si el formato era viejo sin versión, la versión cambió o algún preset quedó obsoleto, se limpia
         localStorage.removeItem(key);
     }
 
@@ -2694,8 +2812,9 @@ function selectHandCard(player, index) {
     selectedBoardIndex = null;
     const atkPanel = document.getElementById('attack-panel');
     if (atkPanel) atkPanel.classList.add('hidden');
+    const statusTag = getSelectedCardStatusTag(candidateCard, player);
     const logEl = document.getElementById('log-message');
-    if (logEl) logEl.innerText = `Tocá casilla vacía para JUGAR la carta (${playCost}⚡).`;
+    if (logEl) logEl.innerText = `Tocá casilla vacía para JUGAR la carta (${playCost}⚡)${statusTag}.`;
     render();
 }
 
@@ -3325,6 +3444,8 @@ function renderDynamicGrid() {
         lastComboSignatures.blue = blueComboSig;
     }
 
+    const activeHumanPlayer = gameMode === 'ai' ? 'red' : (myRole || 'red');
+
     if (!showToroidalGrid) {
         gridEl.className = `dynamic-grid mode-3x3${showDiagonalNums ? ' diagonal-active' : ''}`;
 
@@ -3333,6 +3454,7 @@ function renderDynamicGrid() {
             const gemData = gems[idx] || GEM_TYPES[idx % GEM_TYPES.length];
             const isSelectedAttacker = selectedBoardIndex === idx;
             const isNewlyDeployed = newlyDeployedCellIndex === idx;
+            const isCondMatch = isBoardCellMatchingSelectedCardCondition(cell, selectedCard, activeHumanPlayer);
 
             let isComboCard = false;
             if (cell) {
@@ -3341,7 +3463,8 @@ function renderDynamicGrid() {
             }
 
             const div = document.createElement('div');
-            div.className = `cell-dynamic core-cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''} ${isNewlyDeployed ? 'anim-card-deploy' : ''} ${isComboCard ? 'card-combo-flash' : ''}`;
+            div.className = `cell-dynamic core-cell ${cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[idx] ? 'inspectable' : ''} ${isSelectedAttacker ? 'selected-attacker' : ''} ${isNewlyDeployed ? 'anim-card-deploy' : ''} ${isComboCard ? 'card-combo-flash' : ''} ${isCondMatch ? 'condition-match-glow' : ''}`;
+            applyConditionGlowStyle(div, isCondMatch);
             div.onclick = () => handleBoardClick(idx);
 
             if (cell && cell.gemRevealed) {
@@ -3477,6 +3600,7 @@ function renderDynamicGrid() {
                     const coreGemData = gems[coreIdx] || GEM_TYPES[coreIdx % GEM_TYPES.length];
                     const isCoreSel = selectedBoardIndex === coreIdx;
                     const isCoreNew = newlyDeployedCellIndex === coreIdx;
+                    const isCoreCondMatch = isBoardCellMatchingSelectedCardCondition(coreCell, selectedCard, activeHumanPlayer);
 
                     let isCoreCombo = false;
                     if (coreCell) {
@@ -3484,7 +3608,8 @@ function renderDynamicGrid() {
                         if (coreCell.owner === 'blue' && blueComboIndices.includes(coreIdx) && comboFlashTriggers.blue) isCoreCombo = true;
                     }
 
-                    div.className = `cell-dynamic core-cell ${coreCell ? (coreCell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[coreIdx] ? 'inspectable' : ''} ${isCoreSel ? 'selected-attacker' : ''} ${isCoreNew ? 'anim-card-deploy' : ''} ${isCoreCombo ? 'card-combo-flash' : ''}`;
+                    div.className = `cell-dynamic core-cell ${coreCell ? (coreCell.owner === 'red' ? 'card-red' : 'card-blue') : ''} ${isInspectMode && !revealedBoardGems[coreIdx] ? 'inspectable' : ''} ${isCoreSel ? 'selected-attacker' : ''} ${isCoreNew ? 'anim-card-deploy' : ''} ${isCoreCombo ? 'card-combo-flash' : ''} ${isCoreCondMatch ? 'condition-match-glow' : ''}`;
+                    applyConditionGlowStyle(div, isCoreCondMatch);
                     div.onclick = () => handleBoardClick(coreIdx);
 
                     if (coreCell && coreCell.gemRevealed) {
@@ -3539,13 +3664,15 @@ function renderDynamicGrid() {
                     }
                 } else {
                     const mirrorOwnerClass = cell ? (cell.owner === 'red' ? 'card-red' : 'card-blue') : '';
+                    const isMirrorCondMatch = isBoardCellMatchingSelectedCardCondition(cell, selectedCard, activeHumanPlayer);
                     let isMirrorCombo = false;
                     if (cell) {
                         if (cell.owner === 'red' && redComboIndices.includes(originalCoreIdx) && comboFlashTriggers.red) isMirrorCombo = true;
                         if (cell.owner === 'blue' && blueComboIndices.includes(originalCoreIdx) && comboFlashTriggers.blue) isMirrorCombo = true;
                     }
 
-                    div.className = `cell-dynamic mirror-edge-cell ${mirrorOwnerClass} ${isMirrorCombo ? 'card-combo-flash' : ''}`;
+                    div.className = `cell-dynamic mirror-edge-cell ${mirrorOwnerClass} ${isMirrorCombo ? 'card-combo-flash' : ''} ${isMirrorCondMatch ? 'condition-match-glow' : ''}`;
+                    applyConditionGlowStyle(div, isMirrorCondMatch);
                     const mirrorTag = `<div class="mirror-tag">ESPEJO</div>`;
 
                     if (cell && cell.gemRevealed) {
@@ -3836,6 +3963,9 @@ function render() {
                     } else {
                         const isNewlyDrawn = newlyDrawnCardIndex[p] === idx;
                         const playCost = getCardPlayEnergyCost(card, p);
+                        const baseCost = typeof card.energyCost === 'number' ? card.energyCost : 2;
+                        const hasDiscountNow = playCost < baseCost;
+                        const condReadyNow = isCardTCGConditionMetNow(card, p);
                         const lacksEnergy = (isMyTurnActive && currentEnergy < playCost);
                         const hasTCG = card.powerEffect && card.powerEffect !== 'none';
 
@@ -3864,9 +3994,13 @@ function render() {
                             tcgInfoBtnHTML = `<div class="hand-card-info-btn" title="Ver poder de la carta">ℹ️</div>`;
                         }
 
+                        const costBadgeStyle = hasDiscountNow
+                            ? 'background: rgba(34, 197, 94, 0.25); border: 1px solid #4ade80; color: #4ade80;'
+                            : (condReadyNow && hasTCG ? 'border: 1px solid rgba(251, 191, 36, 0.75); color: #fde047;' : '');
+
                         const weakDir = card.specialDir;
                         div.innerHTML = `
-                            <div class="card-energy-hint">${playCost}⚡</div>
+                            <div class="card-energy-hint" style="${costBadgeStyle}">${playCost}⚡</div>
                             ${tcgInfoBtnHTML}
                             ${tcgCenterHTML}
                             <div class="card-val-pos val-top ${weakDir === 'top' ? 'weak-side' : ''}">${card.top}</div>
